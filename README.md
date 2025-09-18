@@ -1,5 +1,5 @@
 # JGNSolutions
 INTEGRANTES: 
-Gauchat Nicolas
-Mallet Gabriel
-Poggi Juan Ignacio
+Gauchat Nicolas,
+Mallet Gabriel,
+Poggi Juan Ignacio.
