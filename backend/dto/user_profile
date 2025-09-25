@@ -1,0 +1,40 @@
+package dto
+
+type UserProfileCreateRequest struct {
+	UserID          string  `json:"user_id" binding:"required,hexadecimal,len=24"`
+	Nombre          string  `json:"nombre" binding:"required,min=2,max=80"`
+	FechaNacimiento string  `json:"fecha_nacimiento" binding:"required,datetime=2006-01-02"` // yyyy-mm-dd
+	PesoKg          float64 `json:"peso_kg" binding:"required,gt=0,lte=500"`
+	AlturaCm        int     `json:"altura_cm" binding:"required,gt=0,lte=300"`
+	Nivel           string  `json:"nivel" binding:"required,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Objetivo        string  `json:"objetivo" binding:"required,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+}
+
+type UserProfileUpdateRequest struct {
+	Nombre          *string  `json:"nombre" binding:"omitempty,min=2,max=80"`
+	FechaNacimiento *string  `json:"fecha_nacimiento" binding:"omitempty,datetime=2006-01-02"`
+	PesoKg          *float64 `json:"peso_kg" binding:"omitempty,gt=0,lte=500"`
+	AlturaCm        *int     `json:"altura_cm" binding:"omitempty,gt=0,lte=300"`
+	Nivel           *string  `json:"nivel" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Objetivo        *string  `json:"objetivo" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+}
+
+type UserProfileSearchRequest struct {
+	UserID string `form:"user_id" binding:"omitempty,hexadecimal,len=24"`
+	Nombre string `form:"nombre"`
+	Nivel  string `form:"nivel" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Objetivo string `form:"objetivo" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+	PageQuery
+}
+
+type UserProfileResponse struct {
+	ID              string  `json:"id"`
+	UserID          string  `json:"user_id"`
+	Nombre          string  `json:"nombre"`
+	FechaNacimiento string  `json:"fecha_nacimiento"` // yyyy-mm-dd en mapper
+	PesoKg          float64 `json:"peso_kg"`
+	AlturaCm        int     `json:"altura_cm"`
+	Nivel           string  `json:"nivel"`
+	Objetivo        string  `json:"objetivo"`
+	UpdatedAt       string  `json:"updated_at"` // RFC3339
+}

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.orgmongo-driver/bson/primitive"
 )
 
 type Nivel string
