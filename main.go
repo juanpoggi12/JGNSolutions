@@ -3,42 +3,114 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
+	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-
-	"github.com/tuusuario/nombre-equipo/backend/internal/config"
-	"github.com/tuusuario/nombre-equipo/backend/internal/db"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func main() {
-	_ = godotenv.Load(".env") // en prod no hace falta
+// --- Config ---
 
-	cfg := config.Load()
+type AppConfig struct {
+	Port     string
+	MongoURI string
+	DBName   string
+}
 
-	// Conexión a Mongo (solo para validar)
-	m, err := db.Connect(context.Background(), cfg.MongoURI, cfg.DBName)
-	if err != nil {
-		log.Fatalf("Error conectando a Mongo: %v", err)
+func loadConfig() AppConfig {
+	// En desarrollo: carga .env si existe. En producción, las vars vienen del entorno.
+	_ = godotenv.Load()
+
+	return AppConfig{
+		Port:     getEnv("PORT", "8080"),
+		MongoURI: getEnv("MONGO_URI", "mongodb://localhost:27017"),
+		DBName:   getEnv("DB_NAME", "jgnsolutions"),
 	}
-	defer func() { _ = m.Client.Disconnect(context.Background()) }()
+}
 
+func getEnv(k, def string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return def
+}
+
+// --- Mongo ---
+
+type MongoClient struct {
+	Client *mongo.Client
+	DB     *mongo.Database
+}
+
+func connectMongo(ctx context.Context, uri, dbName string) (*MongoClient, error) {
+	clientOpts := options.Client().ApplyURI(uri)
+
+	client, err := mongo.Connect(ctx, clientOpts)
+	if err != nil {
+		return nil, err
+	}
+	// Verificamos conexión con ping
+	if err := client.Ping(ctx, nil); err != nil {
+		return nil, err
+	}
+
+	return &MongoClient{
+		Client: client,
+		DB:     client.Database(dbName),
+	}, nil
+}
+
+// --- main ---
+
+func main() {
+	cfg := loadConfig()
+
+	// Router con logger y recovery
 	r := gin.Default()
 
-	// static + templates (los usaremos en próximos pasos)
-	r.Static("/static", "./static")
-	r.LoadHTMLGlob("templates/*.html")
+	// Conexión a Mongo con timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	// ruta mínima de salud
+	mc, err := connectMongo(ctx, cfg.MongoURI, cfg.DBName)
+	if err != nil {
+		log.Fatalf("Error conectando a MongoDB: %v", err)
+	}
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := mc.Client.Disconnect(shutdownCtx); err != nil {
+			log.Printf("Error cerrando MongoDB: %v", err)
+		}
+	}()
+
+	// Health check
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"ok":       true,
-			"database": cfg.DBName,
+		c.JSON(http.StatusOK, gin.H{
+			"ok":   true,
+			"db":   cfg.DBName,
+			"time": time.Now().Format(time.RFC3339),
 		})
 	})
 
-	log.Printf("Escuchando en :%s", cfg.Port)
+	// Grupo base para tu API real
+	api := r.Group("/api")
+	{
+		api.GET("/ping", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"message": "pong"})
+		})
+		// Ejemplos a futuro:
+		// api.POST("/auth/register", registerHandler(mc.DB))
+		// api.POST("/auth/login", loginHandler(mc.DB))
+		// api.GET("/exercises", authMiddleware(), listExercisesHandler(mc.DB))
+	}
+
+	log.Printf("Servidor escuchando en :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error al iniciar servidor: %v", err)
 	}
 }
