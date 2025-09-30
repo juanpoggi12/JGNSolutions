@@ -1,4 +1,4 @@
-package dto
+﻿package dto
 
 type WorkoutSessionCreateRequest struct {
 	UserID           string  `json:"user_id" binding:"required,hexadecimal,len=24"`

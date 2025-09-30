@@ -1,4 +1,4 @@
-package models
+﻿package models
 
 import (
 	"time"
@@ -15,8 +15,8 @@ const (
 
 type User struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Username     string             `bson:"username" json:"username"` // único
-	Email        string             `bson:"email" json:"email"`       // único
+	Username     string             `bson:"username" json:"username"` // Ãºnico
+	Email        string             `bson:"email" json:"email"`       // Ãºnico
 	PasswordHash string             `bson:"passwordHash" json:"-"`    // nunca se expone en JSON
 	Role         Role               `bson:"role" json:"role"`
 	CreatedAt    time.Time          `bson:"createdAt" json:"createdAt"`

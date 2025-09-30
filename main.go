@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"context"
@@ -22,7 +22,7 @@ type AppConfig struct {
 }
 
 func loadConfig() AppConfig {
-	// En desarrollo: carga .env si existe. En producción, las vars vienen del entorno.
+	// En desarrollo: carga .env si existe. En producciÃ³n, las vars vienen del entorno.
 	_ = godotenv.Load()
 
 	return AppConfig{
@@ -53,7 +53,7 @@ func connectMongo(ctx context.Context, uri, dbName string) (*MongoClient, error)
 	if err != nil {
 		return nil, err
 	}
-	// Verificamos conexión con ping
+	// Verificamos conexiÃ³n con ping
 	if err := client.Ping(ctx, nil); err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func main() {
 	// Router con logger y recovery
 	r := gin.Default()
 
-	// Conexión a Mongo con timeout
+	// ConexiÃ³n a Mongo con timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

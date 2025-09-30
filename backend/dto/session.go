@@ -1,4 +1,4 @@
-package dto
+﻿package dto
 
 type SessionResponse struct {
 	ID         string  `json:"id"`
@@ -8,7 +8,7 @@ type SessionResponse struct {
 	RevokedAt  *string `json:"revoked_at,omitempty"` // RFC3339
 }
 
-// Para revocar una sesión específica (por path: /sessions/:id/revoke)
+// Para revocar una sesiÃ³n especÃ­fica (por path: /sessions/:id/revoke)
 type SessionIDUri struct {
 	ID string `uri:"id" binding:"required,hexadecimal,len=24"`
 }

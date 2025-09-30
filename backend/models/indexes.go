@@ -1,4 +1,4 @@
-package models
+﻿package models
 
 import (
 	"context"
@@ -13,7 +13,7 @@ func EnsureExerciseIndexes(ctx context.Context, coll *mongo.Collection, uniquePe
 		{Keys: bson.D{{Key: "categoria", Value: 1}}},
 		{Keys: bson.D{{Key: "grupoMuscular", Value: 1}}},
 		{Keys: bson.D{{Key: "createdByUserId", Value: 1}}},
-		{Keys: bson.D{{Key: "isDeleted", Value: 1}}}, // útil p/filtrar soft delete
+		{Keys: bson.D{{Key: "isDeleted", Value: 1}}}, // Ãºtil p/filtrar soft delete
 	}
 
 	if uniquePerCreator {

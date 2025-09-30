@@ -1,4 +1,4 @@
-package dto
+﻿package dto
 
 type RoutineExerciseCreateRequest struct {
 	RoutineID      string   `json:"routine_id" binding:"required,hexadecimal,len=24"`

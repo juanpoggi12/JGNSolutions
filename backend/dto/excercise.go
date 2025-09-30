@@ -1,14 +1,14 @@
-package dto
+﻿package dto
 
 type ExerciseCreateRequest struct {
-	Nombre            string `json:"nombre" binding:"required,min=2,max=120"`
-	Descripcion       string `json:"descripcion" binding:"omitempty,max=2000"`
-	Categoria         string `json:"categoria" binding:"required,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
-	GrupoMuscular     string `json:"grupo_muscular" binding:"required,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
-	Dificultad        string `json:"dificultad" binding:"required,oneof=BAJA MEDIA ALTA"`
-	MediaURL          string `json:"media_url" binding:"omitempty,url"`
-	Instrucciones     []string `json:"instrucciones" binding:"omitempty,max=100"`
-	CreatedByUserID   string `json:"created_by_user_id" binding:"required,hexadecimal,len=24"`
+	Nombre          string   `json:"nombre" binding:"required,min=2,max=120"`
+	Descripcion     string   `json:"descripcion" binding:"omitempty,max=2000"`
+	Categoria       string   `json:"categoria" binding:"required,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
+	GrupoMuscular   string   `json:"grupo_muscular" binding:"required,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
+	Dificultad      string   `json:"dificultad" binding:"required,oneof=BAJA MEDIA ALTA"`
+	MediaURL        string   `json:"media_url" binding:"omitempty,url"`
+	Instrucciones   []string `json:"instrucciones" binding:"omitempty,max=100"`
+	CreatedByUserID string   `json:"created_by_user_id" binding:"required,hexadecimal,len=24"`
 }
 
 type ExerciseUpdateRequest struct {
@@ -20,7 +20,7 @@ type ExerciseUpdateRequest struct {
 	Dificultad    *string   `json:"dificultad" binding:"omitempty,oneof=BAJA MEDIA ALTA"`
 	MediaURL      *string   `json:"media_url" binding:"omitempty,url"`
 	Instrucciones *[]string `json:"instrucciones" binding:"omitempty,max=100"`
-	// created_by_user_id no se debería cambiar normalmente
+	// created_by_user_id no se deberÃ­a cambiar normalmente
 }
 
 type ExerciseSearchRequest struct {
@@ -30,7 +30,6 @@ type ExerciseSearchRequest struct {
 	Dificultad    string `form:"dificultad" binding:"omitempty,oneof=BAJA MEDIA ALTA"`
 	CreatedBy     string `form:"created_by_user_id" binding:"omitempty,hexadecimal,len=24"`
 	IncludeDel    bool   `form:"include_deleted"`
-	PageQuery
 }
 
 type ExerciseResponse struct {
@@ -47,4 +46,3 @@ type ExerciseResponse struct {
 	UpdatedAt       string   `json:"updated_at"`
 	IsDeleted       bool     `json:"is_deleted"`
 }
-
