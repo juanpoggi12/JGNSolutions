@@ -21,7 +21,6 @@ type WorkoutEntryUpdateRequest struct {
 type WorkoutEntrySearchRequest struct {
 	WorkoutSessionID string `form:"workout_session_id" binding:"omitempty,hexadecimal,len=24"`
 	ExerciseID       string `form:"exercise_id" binding:"omitempty,hexadecimal,len=24"`
-	PageQuery
 }
 
 type WorkoutEntryResponse struct {

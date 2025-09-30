@@ -1,11 +1,11 @@
 ﻿package dto
 
 type WorkoutSessionCreateRequest struct {
-	UserID           string  `json:"user_id" binding:"required,hexadecimal,len=24"`
-	RoutineID        *string `json:"routine_id" binding:"omitempty,hexadecimal,len=24"`
-	FechaHoraInicio  string  `json:"fecha_hora_inicio" binding:"required,datetime=2006-01-02T15:04:05Z07:00"` // RFC3339
-	FechaHoraFin     *string `json:"fecha_hora_fin" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
-	NotasGenerales   string  `json:"notas_generales" binding:"omitempty,max=2000"`
+	UserID          string  `json:"user_id" binding:"required,hexadecimal,len=24"`
+	RoutineID       *string `json:"routine_id" binding:"omitempty,hexadecimal,len=24"`
+	FechaHoraInicio string  `json:"fecha_hora_inicio" binding:"required,datetime=2006-01-02T15:04:05Z07:00"` // RFC3339
+	FechaHoraFin    *string `json:"fecha_hora_fin" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
+	NotasGenerales  string  `json:"notas_generales" binding:"omitempty,max=2000"`
 }
 
 type WorkoutSessionUpdateRequest struct {
@@ -16,11 +16,10 @@ type WorkoutSessionUpdateRequest struct {
 }
 
 type WorkoutSessionSearchRequest struct {
-	UserID          string `form:"user_id" binding:"omitempty,hexadecimal,len=24"`
-	RoutineID       string `form:"routine_id" binding:"omitempty,hexadecimal,len=24"`
-	StartedAfter    string `form:"started_after" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
-	StartedBefore   string `form:"started_before" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
-	PageQuery
+	UserID        string `form:"user_id" binding:"omitempty,hexadecimal,len=24"`
+	RoutineID     string `form:"routine_id" binding:"omitempty,hexadecimal,len=24"`
+	StartedAfter  string `form:"started_after" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
+	StartedBefore string `form:"started_before" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
 }
 
 type WorkoutSessionResponse struct {
@@ -30,6 +29,5 @@ type WorkoutSessionResponse struct {
 	FechaHoraInicio string  `json:"fecha_hora_inicio"` // RFC3339
 	FechaHoraFin    string  `json:"fecha_hora_fin"`    // RFC3339
 	NotasGenerales  string  `json:"notas_generales,omitempty"`
-	CreatedAt       string  `json:"created_at"`        // RFC3339
+	CreatedAt       string  `json:"created_at"` // RFC3339
 }
-

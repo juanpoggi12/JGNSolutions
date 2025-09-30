@@ -1,27 +1,33 @@
 ﻿package utils
 
 import (
-	"JGNSolutions/backend/dto"
-	"JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
+	"github.com/juanpoggi12/JGNSolutions/backend/models"
 )
 
-func ConvertWorkoutEntryRequestToModel(req dto.WorkoutEntryRequest) models.WorkoutEntry {
+// Request -> Model
+func ConvertWorkoutEntryCreateRequestToModel(req dto.WorkoutEntryCreateRequest) models.WorkoutEntry {
 	return models.WorkoutEntry{
-		WorkoutID:  ToObjectID(req.WorkoutID),
-		ExerciseID: ToObjectID(req.ExerciseID),
-		Sets:       req.Sets,
-		Reps:       req.Reps,
-		Weight:     req.Weight,
+		WorkoutSessionID:   ToObjectID(req.WorkoutSessionID),
+		ExerciseID:         ToObjectID(req.ExerciseID),
+		Serie:              req.Serie,
+		RepsHechas:         req.RepsHechas,
+		PesoUsado:          req.PesoUsado,
+		TiempoSeg:          req.TiempoSeg,
+		PercepcionEsfuerzo: req.PercepcionEsfuerzo,
 	}
 }
 
+// Model -> Response
 func ConvertWorkoutEntryModelToResponse(we models.WorkoutEntry) dto.WorkoutEntryResponse {
 	return dto.WorkoutEntryResponse{
-		ID:         we.ID.Hex(),
-		WorkoutID:  we.WorkoutID.Hex(),
-		ExerciseID: we.ExerciseID.Hex(),
-		Sets:       we.Sets,
-		Reps:       we.Reps,
-		Weight:     we.Weight,
+		ID:                 we.ID.Hex(),
+		WorkoutSessionID:   we.WorkoutSessionID.Hex(),
+		ExerciseID:         we.ExerciseID.Hex(),
+		Serie:              we.Serie,
+		RepsHechas:         we.RepsHechas,
+		PesoUsado:          we.PesoUsado,
+		TiempoSeg:          we.TiempoSeg,
+		PercepcionEsfuerzo: we.PercepcionEsfuerzo,
 	}
 }

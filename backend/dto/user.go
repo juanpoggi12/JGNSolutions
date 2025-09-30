@@ -1,6 +1,5 @@
 ﻿package dto
 
-
 type UserCreateRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=40"`
 	Email    string `json:"email" binding:"required,email"`
@@ -18,11 +17,10 @@ type UserUpdateRequest struct {
 }
 
 type UserSearchRequest struct {
-	Username   string `form:"username"`
-	Email      string `form:"email"`
-	Role       string `form:"role" binding:"omitempty,oneof=ADMIN USER"`
-	IsActive   *bool  `form:"is_active"`
-	PageQuery
+	Username string `form:"username"`
+	Email    string `form:"email"`
+	Role     string `form:"role" binding:"omitempty,oneof=ADMIN USER"`
+	IsActive *bool  `form:"is_active"`
 }
 
 type UserResponse struct {

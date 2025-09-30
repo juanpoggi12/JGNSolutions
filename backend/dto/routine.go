@@ -1,6 +1,5 @@
 ﻿package dto
 
-
 type RoutineCreateRequest struct {
 	UserID      string `json:"user_id" binding:"required,hexadecimal,len=24"`
 	Nombre      string `json:"nombre" binding:"required,min=2,max=120"`
@@ -19,7 +18,6 @@ type RoutineSearchRequest struct {
 	Nombre     string `form:"nombre"`
 	IsTemplate *bool  `form:"is_template"`
 	IncludeDel bool   `form:"include_deleted"`
-	PageQuery
 }
 
 type RoutineResponse struct {
