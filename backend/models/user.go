@@ -15,9 +15,9 @@ const (
 
 type User struct {
 	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Username     string             `bson:"username" json:"username"` // Ãºnico
-	Email        string             `bson:"email" json:"email"`       // Ãºnico
-	PasswordHash string             `bson:"passwordHash" json:"-"`    // nunca se expone en JSON
+	Username     string             `bson:"username" json:"username"` // unique
+	Email        string             `bson:"email" json:"email"`       // unique
+	PasswordHash string             `bson:"passwordHash" json:"-"`    // never exposed in JSON
 	Role         Role               `bson:"role" json:"role"`
 	CreatedAt    time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt    time.Time          `bson:"updatedAt" json:"updatedAt"`

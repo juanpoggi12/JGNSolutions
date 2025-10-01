@@ -1,40 +1,40 @@
 package dto
 
 type UserProfileCreateRequest struct {
-	UserID          string  `json:"user_id" binding:"required,hexadecimal,len=24"`
-	Nombre          string  `json:"nombre" binding:"required,min=2,max=80"`
-	FechaNacimiento string  `json:"fecha_nacimiento" binding:"required,datetime=2006-01-02"` // yyyy-mm-dd
-	PesoKg          float64 `json:"peso_kg" binding:"required,gt=0,lte=500"`
-	AlturaCm        int     `json:"altura_cm" binding:"required,gt=0,lte=300"`
-	Nivel           string  `json:"nivel" binding:"required,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Objetivo        string  `json:"objetivo" binding:"required,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+	UserID    string  `json:"user_id" binding:"required,hexadecimal,len=24"`
+	FullName  string  `json:"full_name" binding:"required,min=2,max=80"`
+	BirthDate string  `json:"birth_date" binding:"required,datetime=2006-01-02"` // yyyy-mm-dd
+	WeightKg  float64 `json:"weight_kg" binding:"required,gt=0,lte=500"`
+	HeightCm  int     `json:"height_cm" binding:"required,gt=0,lte=300"`
+	Level     string  `json:"level" binding:"required,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Goal      string  `json:"goal" binding:"required,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
 }
 
 type UserProfileUpdateRequest struct {
-	Nombre          *string  `json:"nombre" binding:"omitempty,min=2,max=80"`
-	FechaNacimiento *string  `json:"fecha_nacimiento" binding:"omitempty,datetime=2006-01-02"`
-	PesoKg          *float64 `json:"peso_kg" binding:"omitempty,gt=0,lte=500"`
-	AlturaCm        *int     `json:"altura_cm" binding:"omitempty,gt=0,lte=300"`
-	Nivel           *string  `json:"nivel" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Objetivo        *string  `json:"objetivo" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+	FullName  *string  `json:"full_name" binding:"omitempty,min=2,max=80"`
+	BirthDate *string  `json:"birth_date" binding:"omitempty,datetime=2006-01-02"`
+	WeightKg  *float64 `json:"weight_kg" binding:"omitempty,gt=0,lte=500"`
+	HeightCm  *int     `json:"height_cm" binding:"omitempty,gt=0,lte=300"`
+	Level     *string  `json:"level" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Goal      *string  `json:"goal" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
 }
 
 type UserProfileSearchRequest struct {
 	UserID string `form:"user_id" binding:"omitempty,hexadecimal,len=24"`
-	Nombre string `form:"nombre"`
-	Nivel  string `form:"nivel" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Objetivo string `form:"objetivo" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+	Name   string `form:"name"`
+	Level  string `form:"level" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Goal   string `form:"goal" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
 	PageQuery
 }
 
 type UserProfileResponse struct {
-	ID              string  `json:"id"`
-	UserID          string  `json:"user_id"`
-	Nombre          string  `json:"nombre"`
-	FechaNacimiento string  `json:"fecha_nacimiento"` // yyyy-mm-dd en mapper
-	PesoKg          float64 `json:"peso_kg"`
-	AlturaCm        int     `json:"altura_cm"`
-	Nivel           string  `json:"nivel"`
-	Objetivo        string  `json:"objetivo"`
-	UpdatedAt       string  `json:"updated_at"` // RFC3339
+	ID        string  `json:"id"`
+	UserID    string  `json:"user_id"`
+	FullName  string  `json:"full_name"`
+	BirthDate string  `json:"birth_date"` // yyyy-mm-dd in mapper
+	WeightKg  float64 `json:"weight_kg"`
+	HeightCm  int     `json:"height_cm"`
+	Level     string  `json:"level"`
+	Goal      string  `json:"goal"`
+	UpdatedAt string  `json:"updated_at"` // RFC3339
 }

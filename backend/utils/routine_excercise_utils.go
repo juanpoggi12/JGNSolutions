@@ -1,35 +1,35 @@
 ﻿package utils
 
 import (
-	"github.com/juanpoggi12/JGNSolutions/backend/dto"
-	"github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/dto"
+	"github.com/juanpoggi12/JGNSolutions/models"
 )
 
 // Convierte DTO de creación a modelo (Request -> Model)
 func ConvertRoutineExerciseCreateRequestToModel(req dto.RoutineExerciseCreateRequest) models.RoutineExercise {
 	return models.RoutineExercise{
-		RoutineID:    ToObjectID(req.RoutineID),
-		ExerciseID:   ToObjectID(req.ExerciseID),
-		Orden:        req.Orden,
-		Series:       req.Series,
-		Repeticiones: req.Repeticiones,
-		PesoObjetivo: req.PesoObjetivo,
-		TiempoObjSeg: req.TiempoObjSeg,
-		Notas:        req.Notas,
+		RoutineID:     ToObjectID(req.RoutineID),
+		ExerciseID:    ToObjectID(req.ExerciseID),
+		Order:         req.Order,
+		Sets:          req.Sets,
+		Reps:          req.Reps,
+		TargetWeight:  req.TargetWeight,
+		TargetTimeSec: req.TargetTimeSec,
+		Notes:         req.Notes,
 	}
 }
 
 // Convierte modelo a DTO de respuesta (Model -> Response)
 func ConvertRoutineExerciseModelToResponse(re models.RoutineExercise) dto.RoutineExerciseResponse {
 	return dto.RoutineExerciseResponse{
-		ID:           re.ID.Hex(),
-		RoutineID:    re.RoutineID.Hex(),
-		ExerciseID:   re.ExerciseID.Hex(),
-		Orden:        re.Orden,
-		Series:       re.Series,
-		Repeticiones: re.Repeticiones,
-		PesoObjetivo: re.PesoObjetivo,
-		TiempoObjSeg: re.TiempoObjSeg,
-		Notas:        re.Notas,
+		ID:            re.ID.Hex(),
+		RoutineID:     re.RoutineID.Hex(),
+		ExerciseID:    re.ExerciseID.Hex(),
+		Order:         re.Order,
+		Sets:          re.Sets,
+		Reps:          re.Reps,
+		TargetWeight:  re.TargetWeight,
+		TargetTimeSec: re.TargetTimeSec,
+		Notes:         re.Notes,
 	}
 }

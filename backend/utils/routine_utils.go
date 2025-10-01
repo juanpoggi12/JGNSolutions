@@ -1,16 +1,16 @@
 ﻿package utils
 
 import (
-	"JGNSolutions/backend/dto"
-	"JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/dto"
+	"github.com/juanpoggi12/JGNSolutions/models"
 )
 
-func ConvertRoutineRequestToModel(req dto.RoutineRequest) models.Routine {
+func ConvertRoutineCreateRequestToModel(req dto.RoutineCreateRequest) models.Routine {
 	return models.Routine{
 		Name:        req.Name,
 		Description: req.Description,
 		UserID:      ToObjectID(req.UserID),
-		Exercises:   []models.RoutineExercise{}, // se cargan aparte
+		// Exercises loaded separately
 	}
 }
 

@@ -1,24 +1,24 @@
 ﻿package dto
 
 type RoutineExerciseCreateRequest struct {
-	RoutineID    string   `json:"routine_id" binding:"required,hexadecimal,len=24"`
-	ExerciseID   string   `json:"exercise_id" binding:"required,hexadecimal,len=24"`
-	Orden        int      `json:"orden" binding:"required,min=1"`
-	Series       int      `json:"series" binding:"required,min=1,max=50"`
-	Repeticiones int      `json:"repeticiones" binding:"required,min=0,max=1000"`
-	PesoObjetivo *float64 `json:"peso_objetivo,omitempty" binding:"omitempty,gte=0"`
-	TiempoObjSeg *int     `json:"tiempo_objetivo_seg,omitempty" binding:"omitempty,gte=0"`
-	Notas        string   `json:"notas,omitempty" binding:"omitempty,max=1000"`
+	RoutineID     string   `json:"routine_id" binding:"required,hexadecimal,len=24"`
+	ExerciseID    string   `json:"exercise_id" binding:"required,hexadecimal,len=24"`
+	Order         int      `json:"order" binding:"required,min=1"`
+	Sets          int      `json:"sets" binding:"required,min=1,max=50"`
+	Reps          int      `json:"reps" binding:"required,min=0,max=1000"`
+	TargetWeight  *float64 `json:"target_weight,omitempty" binding:"omitempty,gte=0"`
+	TargetTimeSec *int     `json:"target_time_sec,omitempty" binding:"omitempty,gte=0"`
+	Notes         string   `json:"notes,omitempty" binding:"omitempty,max=1000"`
 }
 
 type RoutineExerciseUpdateRequest struct {
-	Orden        *int     `json:"orden" binding:"omitempty,min=1"`
-	Series       *int     `json:"series" binding:"omitempty,min=1,max=50"`
-	Repeticiones *int     `json:"repeticiones" binding:"omitempty,min=0,max=1000"`
-	PesoObjetivo *float64 `json:"peso_objetivo,omitempty" binding:"omitempty,gte=0"`
-	TiempoObjSeg *int     `json:"tiempo_objetivo_seg,omitempty" binding:"omitempty,gte=0"`
-	Notas        *string  `json:"notas,omitempty" binding:"omitempty,max=1000"`
-	// routine_id y exercise_id no se tocan en update
+	Order         *int     `json:"order" binding:"omitempty,min=1"`
+	Sets          *int     `json:"sets" binding:"omitempty,min=1,max=50"`
+	Reps          *int     `json:"reps" binding:"omitempty,min=0,max=1000"`
+	TargetWeight  *float64 `json:"target_weight,omitempty" binding:"omitempty,gte=0"`
+	TargetTimeSec *int     `json:"target_time_sec,omitempty" binding:"omitempty,gte=0"`
+	Notes         *string  `json:"notes,omitempty" binding:"omitempty,max=1000"`
+	// routine_id and exercise_id are not changed in update
 }
 
 type RoutineExerciseSearchRequest struct {
@@ -27,13 +27,13 @@ type RoutineExerciseSearchRequest struct {
 }
 
 type RoutineExerciseResponse struct {
-	ID           string   `json:"id"`
-	RoutineID    string   `json:"routine_id"`
-	ExerciseID   string   `json:"exercise_id"`
-	Orden        int      `json:"orden"`
-	Series       int      `json:"series"`
-	Repeticiones int      `json:"repeticiones"`
-	PesoObjetivo *float64 `json:"peso_objetivo,omitempty"`
-	TiempoObjSeg *int     `json:"tiempo_objetivo_seg,omitempty"`
-	Notas        string   `json:"notas,omitempty"`
+	ID            string   `json:"id"`
+	RoutineID     string   `json:"routine_id"`
+	ExerciseID    string   `json:"exercise_id"`
+	Order         int      `json:"order"`
+	Sets          int      `json:"sets"`
+	Reps          int      `json:"reps"`
+	TargetWeight  *float64 `json:"target_weight,omitempty"`
+	TargetTimeSec *int     `json:"target_time_sec,omitempty"`
+	Notes         string   `json:"notes,omitempty"`
 }

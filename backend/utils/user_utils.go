@@ -1,31 +1,57 @@
 ﻿package utils
 
 import (
-	"JGNSolutions/backend/dto"
-	"JGNSolutions/backend/models"
+	"time"
+
+	"github.com/juanpoggi12/JGNSolutions/dto"
+	"github.com/juanpoggi12/JGNSolutions/models"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Request -> Model
-func ConvertUserRequestToModel(req dto.UserRequest) models.User {
+// ConvertUserCreateRequestToModel converts DTO to model for creating a user
+func ConvertUserCreateRequestToModel(req dto.UserCreateRequest) models.User {
 	return models.User{
-		Email:    req.Email,
-		Password: req.Password, // ojo: en el service deberÃ­as hashearla antes de guardar
-		Role:     req.Role,
+		Username:     req.Username,
+		Email:        req.Email,
+		PasswordHash: req.Password, // service should hash before saving
+		Role:         models.Role(req.Role),
+		IsActive:     req.IsActive != nil && *req.IsActive,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 }
 
-// Model -> Response
+// ConvertUserRequestToModel converts general DTO to model (used in some handlers)
+func ConvertUserRequestToModel(req dto.UserUpdateRequest) models.User {
+	// partial update mapping; caller should apply non-nil fields
+	u := models.User{}
+	if req.Email != nil {
+		u.Email = *req.Email
+	}
+	if req.Password != nil {
+		u.PasswordHash = *req.Password
+	}
+	if req.Role != nil {
+		u.Role = models.Role(*req.Role)
+	}
+	return u
+}
+
+// ConvertUserModelToResponse maps model -> DTO response
 func ConvertUserModelToResponse(u models.User) dto.UserResponse {
 	return dto.UserResponse{
-		ID:    u.ID.Hex(),
-		Email: u.Email,
-		Role:  u.Role,
+		ID:        u.ID.Hex(),
+		Username:  u.Username,
+		Email:     u.Email,
+		Role:      string(u.Role),
+		CreatedAt: u.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: u.UpdatedAt.Format(time.RFC3339),
+		IsActive:  u.IsActive,
 	}
 }
 
-// Helper para convertir string a ObjectID
+// ToObjectID converts hex string to primitive.ObjectID, returns NilObjectID on error
 func ToObjectID(id string) primitive.ObjectID {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

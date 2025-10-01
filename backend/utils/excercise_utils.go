@@ -1,38 +1,38 @@
 ﻿package utils
 
 import (
-	"JGNSolutions/backend/dto"
-	"JGNSolutions/backend/models"
 	"strings"
+
+	"github.com/juanpoggi12/JGNSolutions/dto"
+	"github.com/juanpoggi12/JGNSolutions/models"
 )
 
 //model -> response
 
-func ConvertExcersiceToModelResponse(e models.Excercise) dto.ExerciseResponse {
-
-	return dto.ExcerciseResponse{
-		ID:          e.ID.Hex(),
+func ConvertExerciseToModelResponse(e models.Exercise) dto.ExerciseResponse {
+	return dto.ExerciseResponse{
+		ID:          e.ID.Hex(), // si e.ID es string, cambiá a: ID: e.ID,
 		Name:        e.Name,
 		Description: e.Description,
 		Category:    e.Category,
 		MuscleGroup: e.MuscleGroup,
 		Difficulty:  e.Difficulty,
 		MediaURL:    e.MediaURL,
-		Steps:       e.Steps,
-		CreatedBy:   e.CreatedBy.Hex(),
+		Steps:       e.Instructions,
+		CreatedBy:   e.CreatedByUserID.Hex(),
 	}
 }
 
 // Request -> Model
 func ConvertExerciseRequestToModel(req dto.ExerciseRequest) models.Exercise {
 	return models.Exercise{
-		Name:        req.Name,
-		Description: req.Description,
-		Category:    req.Category,
-		MuscleGroup: req.MuscleGroup,
-		Difficulty:  req.Difficulty,
-		MediaURL:    req.MediaURL,
-		Steps:       req.Steps,
+		Name:         req.Name,
+		Description:  req.Description,
+		Category:     req.Category,
+		MuscleGroup:  req.MuscleGroup,
+		Difficulty:   req.Difficulty,
+		MediaURL:     req.MediaURL,
+		Instructions: req.Instructions,
 	}
 }
 

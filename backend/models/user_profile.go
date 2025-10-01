@@ -20,13 +20,13 @@ const (
 )
 
 type UserProfile struct {
-	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID          primitive.ObjectID `bson:"userId" json:"userId"`
-	Nombre          string             `bson:"nombre" json:"nombre"`
-	FechaNacimiento time.Time          `bson:"fechaNacimiento" json:"fechaNacimiento"`
-	PesoKg          float64            `bson:"pesoKg" json:"pesoKg"`
-	AlturaCm        int                `bson:"alturaCm" json:"alturaCm"`
-	Nivel           Nivel              `bson:"nivel" json:"nivel"`
-	Objetivo        Objetivo           `bson:"objetivo" json:"objetivo"`
-	UpdatedAt       time.Time          `bson:"updatedAt" json:"updatedAt"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID    primitive.ObjectID `bson:"userId" json:"userId"`
+	FullName  string             `bson:"fullName" json:"fullName"`
+	BirthDate time.Time          `bson:"birthDate" json:"birthDate"`
+	WeightKg  float64            `bson:"weightKg" json:"weightKg"`
+	HeightCm  int                `bson:"heightCm" json:"heightCm"`
+	Level     Nivel              `bson:"level" json:"level"`
+	Goal      Objetivo           `bson:"goal" json:"goal"`
+	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
 }

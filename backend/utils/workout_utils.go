@@ -1,8 +1,8 @@
 ﻿package utils
 
 import (
-	"JGNSolutions/backend/dto"
-	"JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/dto"
+	"github.com/juanpoggi12/JGNSolutions/models"
 )
 
 func ConvertWorkoutRequestToModel(req dto.WorkoutRequest) models.Workout {

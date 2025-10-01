@@ -7,8 +7,8 @@ import (
 )
 
 type ExerciseCategory string
-type GrupoMuscular string
-type Dificultad string
+type MuscleGroup string
+type Difficulty string
 
 const (
 	CategoriaFuerza       ExerciseCategory = "FUERZA"
@@ -16,27 +16,27 @@ const (
 	CategoriaFlexibilidad ExerciseCategory = "FLEXIBILIDAD"
 	CategoriaOtra         ExerciseCategory = "OTRA"
 
-	GrupoPecho    GrupoMuscular = "PECHO"
-	GrupoEspalda  GrupoMuscular = "ESPALDA"
-	GrupoPierna   GrupoMuscular = "PIERNA"
-	GrupoHombro   GrupoMuscular = "HOMBRO"
-	GrupoBrazo    GrupoMuscular = "BRAZO"
-	GrupoCore     GrupoMuscular = "CORE"
+	MuscleChest    MuscleGroup = "PECHO"
+	MuscleBack     MuscleGroup = "ESPALDA"
+	MuscleLegs     MuscleGroup = "PIERNA"
+	MuscleShoulder MuscleGroup = "HOMBRO"
+	MuscleArm      MuscleGroup = "BRAZO"
+	MuscleCore     MuscleGroup = "CORE"
 
-	DifBaja  Dificultad = "BAJA"
-	DifMedia Dificultad = "MEDIA"
-	DifAlta  Dificultad = "ALTA"
+	DiffLow  Difficulty = "BAJA"
+	DiffMed  Difficulty = "MEDIA"
+	DiffHigh Difficulty = "ALTA"
 )
 
 type Exercise struct {
 	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Nombre          string             `bson:"nombre" json:"nombre"`
-	Descripcion     string             `bson:"descripcion,omitempty" json:"descripcion,omitempty"`
-	Categoria       ExerciseCategory   `bson:"categoria" json:"categoria"`
-	GrupoMuscular   GrupoMuscular      `bson:"grupoMuscular" json:"grupoMuscular"`
-	Dificultad      Dificultad         `bson:"dificultad" json:"dificultad"`
+	Name            string             `bson:"name" json:"name"`
+	Description     string             `bson:"description,omitempty" json:"description,omitempty"`
+	Category        ExerciseCategory   `bson:"category" json:"category"`
+	MuscleGroup     MuscleGroup        `bson:"muscleGroup" json:"muscleGroup"`
+	Difficulty      Difficulty         `bson:"difficulty" json:"difficulty"`
 	MediaURL        string             `bson:"mediaUrl,omitempty" json:"mediaUrl,omitempty"`
-	Instrucciones   []string           `bson:"instrucciones,omitempty" json:"instrucciones,omitempty"`
+	Instructions    []string           `bson:"instructions,omitempty" json:"instructions,omitempty"`
 	CreatedByUserID primitive.ObjectID `bson:"createdByUserId" json:"createdByUserId"`
 	CreatedAt       time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt       time.Time          `bson:"updatedAt" json:"updatedAt"`

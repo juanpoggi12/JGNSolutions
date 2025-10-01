@@ -1,11 +1,11 @@
 ﻿package utils
 
 import (
-	"JGNSolutions/backend/dto"
-	"JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/dto"
+	"github.com/juanpoggi12/JGNSolutions/models"
 )
 
-func ConvertUserProfileRequestToModel(req dto.UserProfileRequest) models.UserProfile {
+func ConvertUserProfileRequestToModel(req dto.UserSearchRequest) models.UserProfile {
 	return models.UserProfile{
 		UserID:     ToObjectID(req.UserID),
 		Name:       req.Name,
