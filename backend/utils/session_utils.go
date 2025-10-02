@@ -1,8 +1,8 @@
 ﻿package utils
 
 import (
-	"github.com/juanpoggi12/JGNSolutions/dto"
-	"github.com/juanpoggi12/JGNSolutions/models"
+	"JGNSolutions/dto"
+	"JGNSolutions/models"
 )
 
 func ConvertSessionRequestToModel(req dto.SessionRequest) models.Session {

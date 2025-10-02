@@ -1,4 +1,5 @@
-module github.com/juanpoggi12/JGNSolutions
+module github.com/juanpoggi12/JGNSolutions/backend
+
 
 go 1.23.0
 

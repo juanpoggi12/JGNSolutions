@@ -1,48 +1,54 @@
 ﻿package dto
 
+import (
+	"time"
+
+	"JGNSolutions/backend/models"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
 type ExerciseCreateRequest struct {
-	Name            string   `json:"name" binding:"required,min=2,max=120"`
-	Description     string   `json:"description" binding:"omitempty,max=2000"`
-	Category        string   `json:"category" binding:"required,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
-	MuscleGroup     string   `json:"muscle_group" binding:"required,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
-	Difficulty      string   `json:"difficulty" binding:"required,oneof=BAJA MEDIA ALTA"`
-	MediaURL        string   `json:"media_url" binding:"omitempty,url"`
-	Instructions    []string `json:"instructions" binding:"omitempty,max=100"`
-	CreatedByUserID string   `json:"created_by_user_id" binding:"required,hexadecimal,len=24"`
+	Name            string                  `json:"name" binding:"required,min=2,max=120"`
+	Description     string                  `json:"description" binding:"omitempty,max=2000"`
+	Category        models.ExerciseCategory `json:"category" binding:"required,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
+	MuscleGroup     models.MuscleGroup      `json:"muscle_group" binding:"required,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
+	Difficulty      models.Difficulty       `json:"difficulty" binding:"required,oneof=BAJA MEDIA ALTA"`
+	MediaURL        string                  `json:"media_url" binding:"omitempty,url"`
+	Instructions    []string                `json:"instructions" binding:"omitempty,max=100"`
+	CreatedByUserID primitive.ObjectID      `json:"created_by_user_id" binding:"required"`
 }
 
 type ExerciseUpdateRequest struct {
-	// PATCH: use pointers to distinguish "not sent" from zero values
-	Name         *string   `json:"name" binding:"omitempty,min=2,max=120"`
-	Description  *string   `json:"description" binding:"omitempty,max=2000"`
-	Category     *string   `json:"category" binding:"omitempty,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
-	MuscleGroup  *string   `json:"muscle_group" binding:"omitempty,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
-	Difficulty   *string   `json:"difficulty" binding:"omitempty,oneof=BAJA MEDIA ALTA"`
-	MediaURL     *string   `json:"media_url" binding:"omitempty,url"`
-	Instructions *[]string `json:"instructions" binding:"omitempty,max=100"`
-	// created_by_user_id should not normally be changed
+	Name         *string                  `json:"name" binding:"omitempty,min=2,max=120"`
+	Description  *string                  `json:"description" binding:"omitempty,max=2000"`
+	Category     *models.ExerciseCategory `json:"category" binding:"omitempty,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
+	MuscleGroup  *models.MuscleGroup      `json:"muscle_group" binding:"omitempty,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
+	Difficulty   *models.Difficulty       `json:"difficulty" binding:"omitempty,oneof=BAJA MEDIA ALTA"`
+	MediaURL     *string                  `json:"media_url" binding:"omitempty,url"`
+	Instructions *[]string                `json:"instructions" binding:"omitempty,max=100"`
 }
 
 type ExerciseSearchRequest struct {
-	Name        string `form:"name"`
-	Category    string `form:"category" binding:"omitempty,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
-	MuscleGroup string `form:"muscle_group" binding:"omitempty,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
-	Difficulty  string `form:"difficulty" binding:"omitempty,oneof=BAJA MEDIA ALTA"`
-	CreatedBy   string `form:"created_by_user_id" binding:"omitempty,hexadecimal,len=24"`
-	IncludeDel  bool   `form:"include_deleted"`
+	Name        string                  `form:"name"`
+	Category    models.ExerciseCategory `form:"category" binding:"omitempty,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
+	MuscleGroup models.MuscleGroup      `form:"muscle_group" binding:"omitempty,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
+	Difficulty  models.Difficulty       `form:"difficulty" binding:"omitempty,oneof=BAJA MEDIA ALTA"`
+	CreatedBy   primitive.ObjectID      `form:"created_by_user_id" binding:"omitempty"`
+	IncludeDel  bool                    `form:"include_deleted"`
 }
 
 type ExerciseResponse struct {
-	ID              string   `json:"id"`
-	Name            string   `json:"name"`
-	Description     string   `json:"description,omitempty"`
-	Category        string   `json:"category"`
-	MuscleGroup     string   `json:"muscle_group"`
-	Difficulty      string   `json:"difficulty"`
-	MediaURL        string   `json:"media_url,omitempty"`
-	Instructions    []string `json:"instructions,omitempty"`
-	CreatedByUserID string   `json:"created_by_user_id"`
-	CreatedAt       string   `json:"created_at"` // RFC3339 en el mapper
-	UpdatedAt       string   `json:"updated_at"`
-	IsDeleted       bool     `json:"is_deleted"`
+	ID              primitive.ObjectID      `json:"id"`
+	Name            string                  `json:"name"`
+	Description     string                  `json:"description,omitempty"`
+	Category        models.ExerciseCategory `json:"category"`
+	MuscleGroup     models.MuscleGroup      `json:"muscle_group"`
+	Difficulty      models.Difficulty       `json:"difficulty"`
+	MediaURL        string                  `json:"media_url,omitempty"`
+	Instructions    []string                `json:"instructions,omitempty"`
+	CreatedByUserID primitive.ObjectID      `json:"created_by_user_id"`
+	CreatedAt       time.Time               `json:"created_at"`
+	UpdatedAt       time.Time               `json:"updated_at"`
+	IsDeleted       bool                    `json:"is_deleted"`
 }
