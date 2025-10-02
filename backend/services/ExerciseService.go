@@ -1,8 +1,8 @@
 package services
 
 import (
-	"JGNSolutions/backend/models"
-	"JGNSolutions/backend/repositories"
+    "github.com/juanpoggi12/JGNSolutions/backend/models"
+    "github.com/juanpoggi12/JGNSolutions/backend/repositories"
 	"context"
 )
 

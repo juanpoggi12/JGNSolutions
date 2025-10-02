@@ -3,42 +3,58 @@
 import (
 	"time"
 
-	"github.com/juanpoggi12/JGNSolutions/dto"
-	"github.com/juanpoggi12/JGNSolutions/models"
+    "github.com/juanpoggi12/JGNSolutions/backend/dto"
+    "github.com/juanpoggi12/JGNSolutions/backend/models"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 )
 
-// ConvertUserCreateRequestToModel converts DTO to model for creating a user
-func ConvertUserCreateRequestToModel(req dto.UserCreateRequest) models.User {
+// CreateRequest → Model (con hash de password)
+func ConvertUserCreateRequestToModel(req dto.UserCreateRequest) (models.User, error) {
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return models.User{}, err
+	}
+
 	return models.User{
 		Username:     req.Username,
 		Email:        req.Email,
-		PasswordHash: req.Password, // service should hash before saving
+		PasswordHash: string(hashed),
 		Role:         models.Role(req.Role),
-		IsActive:     req.IsActive != nil && *req.IsActive,
+		IsActive:     req.IsActive != nil && *req.IsActive, // default false si no viene
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
-	}
+	}, nil
 }
 
-// ConvertUserRequestToModel converts general DTO to model (used in some handlers)
-func ConvertUserRequestToModel(req dto.UserUpdateRequest) models.User {
-	// partial update mapping; caller should apply non-nil fields
-	u := models.User{}
+// UpdateRequest → aplica cambios sobre el modelo existente
+func ApplyUserUpdateToModel(u *models.User, req dto.UserUpdateRequest) error {
+	if req.Username != nil {
+		u.Username = *req.Username
+	}
 	if req.Email != nil {
 		u.Email = *req.Email
 	}
 	if req.Password != nil {
-		u.PasswordHash = *req.Password
+		hashed, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return err
+		}
+		u.PasswordHash = string(hashed)
 	}
 	if req.Role != nil {
 		u.Role = models.Role(*req.Role)
 	}
-	return u
+	if req.IsActive != nil {
+		u.IsActive = *req.IsActive
+	}
+	u.UpdatedAt = time.Now()
+	return nil
 }
 
-// ConvertUserModelToResponse maps model -> DTO response
+// Model → Response
 func ConvertUserModelToResponse(u models.User) dto.UserResponse {
 	return dto.UserResponse{
 		ID:        u.ID.Hex(),
@@ -51,7 +67,25 @@ func ConvertUserModelToResponse(u models.User) dto.UserResponse {
 	}
 }
 
-// ToObjectID converts hex string to primitive.ObjectID, returns NilObjectID on error
+// SearchRequest → filtro Mongo
+func BuildUserSearchFilter(search dto.UserSearchRequest) bson.M {
+	filter := bson.M{}
+	if search.Username != "" {
+		filter["username"] = bson.M{"$regex": search.Username, "$options": "i"}
+	}
+	if search.Email != "" {
+		filter["email"] = bson.M{"$regex": search.Email, "$options": "i"}
+	}
+	if search.Role != "" {
+		filter["role"] = search.Role
+	}
+	if search.IsActive != nil {
+		filter["isActive"] = *search.IsActive
+	}
+	return filter
+}
+
+// ToObjectID helper (ya lo tenías)
 func ToObjectID(id string) primitive.ObjectID {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

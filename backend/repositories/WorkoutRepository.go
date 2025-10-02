@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"JGNSolutions/backend/models"
+    "github.com/juanpoggi12/JGNSolutions/backend/models"
 	"context"
 
 	"go.mongodb.org/mongo-driver/bson"
