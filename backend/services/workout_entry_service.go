@@ -1,31 +1,40 @@
 package services
 
 import (
-    "github.com/juanpoggi12/JGNSolutions/backend/models"
-    "github.com/juanpoggi12/JGNSolutions/backend/repositories"
 	"context"
+
+	"github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type WorkoutService struct {
-	repo *repositories.WorkoutRepository
+type WorkoutEntryService struct {
+	repo *repositories.WorkoutEntryRepository
 }
 
-func NewWorkoutService(r *repositories.WorkoutRepository) *WorkoutService {
-	return &WorkoutService{repo: r}
+func NewWorkoutEntryService(repo *repositories.WorkoutEntryRepository) *WorkoutEntryService {
+	return &WorkoutEntryService{repo: repo}
 }
 
-func (s *WorkoutService) Create(ctx context.Context, workout *models.Workout) error {
-	return s.repo.Create(ctx, workout)
+func (s *WorkoutEntryService) Create(ctx context.Context, entry *models.WorkoutEntry) error {
+	return s.repo.Create(ctx, entry)
 }
 
-func (s *WorkoutService) GetByID(ctx context.Context, id string) (*models.Workout, error) {
+func (s *WorkoutEntryService) GetByID(ctx context.Context, id primitive.ObjectID) (*models.WorkoutEntry, error) {
 	return s.repo.FindByID(ctx, id)
 }
 
-func (s *WorkoutService) Update(ctx context.Context, workout *models.Workout) error {
-	return s.repo.Update(ctx, workout)
+func (s *WorkoutEntryService) Update(ctx context.Context, entry *models.WorkoutEntry) error {
+	return s.repo.Update(ctx, entry)
 }
 
-func (s *WorkoutService) Delete(ctx context.Context, id string) error {
+func (s *WorkoutEntryService) Delete(ctx context.Context, id primitive.ObjectID) error {
 	return s.repo.Delete(ctx, id)
+}
+
+func (s *WorkoutEntryService) Search(ctx context.Context, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error) {
+	return s.repo.Search(ctx, filter, opts...)
 }

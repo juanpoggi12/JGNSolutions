@@ -1,41 +1,80 @@
 package repositories
 
 import (
-    "github.com/juanpoggi12/JGNSolutions/backend/models"
 	"context"
 
+	"github.com/juanpoggi12/JGNSolutions/backend/models"
+
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type UserRepositoryInterface interface {
+	InsertarUsuario(usuario models.User) (*mongo.InsertOneResult, error)
+	ObtenerUsuarioPorID(id string) (models.User, error)
+	ModificarUsuario(usuario models.User) (*mongo.UpdateResult, error)
+	EliminarUsuario(id primitive.ObjectID) (*mongo.DeleteResult, error)
+	ContarUsuarios() (int64, error)
+}
+
 type UserRepository struct {
-	collection *mongo.Collection
+	db *mongo.Database
 }
 
 func NewUserRepository(db *mongo.Database) *UserRepository {
-	return &UserRepository{collection: db.Collection("users")}
+	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Create(ctx context.Context, user *models.User) error {
-	_, err := r.collection.InsertOne(ctx, user)
-	return err
+func (repository UserRepository) collection() *mongo.Collection {
+	return repository.db.Collection("users")
 }
 
-func (r *UserRepository) FindByID(ctx context.Context, id string) (*models.User, error) {
-	var user models.User
-	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user)
+func (repository UserRepository) InsertarUsuario(usuario models.User) (*mongo.InsertOneResult, error) {
+	collection := repository.collection()
+	resultado, err := collection.InsertOne(context.TODO(), usuario)
+	return resultado, err
+}
+
+func (repository UserRepository) ObtenerUsuarioPorID(id string) (models.User, error) {
+	collection := repository.collection()
+	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, err
+		return models.User{}, err
 	}
-	return &user, nil
+
+	filtro := bson.M{"_id": objectID}
+	var usuario models.User
+
+	err = collection.FindOne(context.TODO(), filtro).Decode(&usuario)
+	return usuario, err
 }
 
-func (r *UserRepository) Update(ctx context.Context, user *models.User) error {
-	_, err := r.collection.UpdateOne(ctx, bson.M{"_id": user.ID}, bson.M{"$set": user})
-	return err
+func (repository UserRepository) ModificarUsuario(usuario models.User) (*mongo.UpdateResult, error) {
+	collection := repository.collection()
+
+	filtro := bson.M{"_id": usuario.ID}
+	actualizacion := bson.M{"$set": bson.M{
+		"username":     usuario.Username,
+		"email":        usuario.Email,
+		"passwordHash": usuario.PasswordHash,
+		"role":         usuario.Role,
+		"createdAt":    usuario.CreatedAt,
+		"updatedAt":    usuario.UpdatedAt,
+		"isActive":     usuario.IsActive,
+	}}
+
+	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)
+	return resultado, err
 }
 
-func (r *UserRepository) Delete(ctx context.Context, id string) error {
-	_, err := r.collection.DeleteOne(ctx, bson.M{"_id": id})
-	return err
+func (repository UserRepository) EliminarUsuario(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+	collection := repository.collection()
+	resultado, err := collection.DeleteOne(context.TODO(), bson.M{"_id": id})
+	return resultado, err
+}
+
+func (repository UserRepository) ContarUsuarios() (int64, error) {
+	collection := repository.collection()
+	return collection.CountDocuments(context.TODO(), bson.M{})
 }

@@ -24,7 +24,6 @@ type UserProfileSearchRequest struct {
 	Name   string `form:"name"`
 	Level  string `form:"level" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
 	Goal   string `form:"goal" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
-	PageQuery
 }
 
 type UserProfileResponse struct {
