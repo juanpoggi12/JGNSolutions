@@ -3,8 +3,8 @@
 import (
 	"time"
 
-    "github.com/juanpoggi12/JGNSolutions/backend/dto"
-    "github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
+	"github.com/juanpoggi12/JGNSolutions/backend/models"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -14,18 +14,18 @@ import (
 
 func ConvertExerciseModelToResponse(e models.Exercise) dto.ExerciseResponse {
 	return dto.ExerciseResponse{
-		ID:              e.ID.Hex(),
-		Name:            e.Name,
-		Description:     e.Description,
-		Category:        string(e.Category),
-		MuscleGroup:     string(e.MuscleGroup),
-		Difficulty:      string(e.Difficulty),
-		MediaURL:        e.MediaURL,
-		Instructions:    e.Instructions,
-		CreatedByUserID: e.CreatedByUserID.Hex(),
-		CreatedAt:       e.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:       e.UpdatedAt.Format(time.RFC3339),
-		IsDeleted:       e.IsDeleted,
+		ID:           e.ID.Hex(),
+		Name:         e.Name,
+		Description:  e.Description,
+		Category:     string(e.Category),
+		MuscleGroup:  string(e.MuscleGroup),
+		Difficulty:   string(e.Difficulty),
+		MediaURL:     e.MediaURL,
+		Instructions: e.Instructions,
+		CreatedBy:    e.CreatedBy.Hex(),
+		CreatedAt:    e.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    e.UpdatedAt.Format(time.RFC3339),
+		IsDeleted:    e.IsDeleted,
 	}
 }
 
@@ -37,17 +37,17 @@ func ConvertExerciseCreateRequestToModel(req dto.ExerciseCreateRequest) (models.
 		return models.Exercise{}, err
 	}
 	return models.Exercise{
-		Name:            req.Name,
-		Description:     req.Description,
-		Category:        models.ExerciseCategory(req.Category),
-		MuscleGroup:     models.MuscleGroup(req.MuscleGroup),
-		Difficulty:      models.Difficulty(req.Difficulty),
-		MediaURL:        req.MediaURL,
-		Instructions:    req.Instructions,
-		CreatedByUserID: createdBy,
-		CreatedAt:       time.Now(),
-		UpdatedAt:       time.Now(),
-		IsDeleted:       false,
+		Name:         req.Name,
+		Description:  req.Description,
+		Category:     models.ExerciseCategory(req.Category),
+		MuscleGroup:  models.MuscleGroup(req.MuscleGroup),
+		Difficulty:   models.Difficulty(req.Difficulty),
+		MediaURL:     req.MediaURL,
+		Instructions: req.Instructions,
+		CreatedBy:    createdBy,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+		IsDeleted:    false,
 	}, nil
 }
 

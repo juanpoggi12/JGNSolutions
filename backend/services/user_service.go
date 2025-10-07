@@ -11,10 +11,10 @@ import (
 )
 
 type UserServiceInterface interface {
-	CreateUser(user models.User) (models.User, error)
-	GetUserByID(id string) (models.User, error)
-	UpdateUser(id string, user models.User) (models.User, error)
-	DeleteUser(id string) error
+	CreateUser(actor Actor, user models.User) (models.User, error)
+	GetUserByID(actor Actor, id string) (models.User, error)
+	UpdateUser(actor Actor, id string, user models.User) (models.User, error)
+	DeleteUser(actor Actor, id string) error
 }
 
 type UserService struct {
@@ -25,10 +25,16 @@ func NewUserService(repository repositories.UserRepositoryInterface) *UserServic
 	return &UserService{repository: repository}
 }
 
-func (service *UserService) CreateUser(user models.User) (models.User, error) {
+func (service *UserService) CreateUser(actor Actor, user models.User) (models.User, error) {
+	// Solo los administradores pueden crear nuevos usuarios
+	if actor.Role != "admin" {
+		return models.User{}, errors.New("solo los administradores pueden crear usuarios")
+	}
+
 	user.ID = primitive.NilObjectID
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
+
 	resultado, err := service.repository.InsertarUsuario(user)
 	if err != nil {
 		return models.User{}, err
@@ -42,33 +48,51 @@ func (service *UserService) CreateUser(user models.User) (models.User, error) {
 	return models.User{}, errors.New("error al crear usuario")
 }
 
-func (service *UserService) GetUserByID(id string) (models.User, error) {
+func (service *UserService) GetUserByID(actor Actor, id string) (models.User, error) {
 	usuario, err := service.repository.ObtenerUsuarioPorID(id)
 	if err != nil {
 		return models.User{}, errors.New("usuario no encontrado")
 	}
+
+	// Un usuario solo puede ver su propio perfil, excepto que sea admin
+	if actor.Role != "admin" && usuario.ID != actor.UserID {
+		return models.User{}, errors.New("no tienes permiso para acceder a este usuario")
+	}
+
 	return usuario, nil
 }
 
-func (service *UserService) UpdateUser(id string, user models.User) (models.User, error) {
+func (service *UserService) UpdateUser(actor Actor, id string, user models.User) (models.User, error) {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return models.User{}, errors.New("ID inválido")
 	}
 
+	// Solo admin o el mismo usuario puede actualizar su perfil
+	if actor.Role != "admin" && actor.UserID != objectID {
+		return models.User{}, errors.New("no tienes permiso para modificar este usuario")
+	}
+
 	user.ID = objectID
 	user.UpdatedAt = time.Now()
+
 	_, err = service.repository.ModificarUsuario(user)
 	if err != nil {
 		return models.User{}, err
 	}
+
 	return user, nil
 }
 
-func (service *UserService) DeleteUser(id string) error {
+func (service *UserService) DeleteUser(actor Actor, id string) error {
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return errors.New("ID inválido")
+	}
+
+	// Solo admin puede eliminar usuarios
+	if actor.Role != "admin" {
+		return errors.New("solo los administradores pueden eliminar usuarios")
 	}
 
 	resultado, err := service.repository.EliminarUsuario(objectID)

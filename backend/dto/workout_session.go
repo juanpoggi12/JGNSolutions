@@ -1,7 +1,6 @@
 ﻿package dto
 
 type WorkoutSessionCreateRequest struct {
-	UserID    string  `json:"user_id" binding:"required,hexadecimal,len=24"`
 	RoutineID *string `json:"routine_id" binding:"omitempty,hexadecimal,len=24"`
 	StartTime string  `json:"start_time" binding:"required,datetime=2006-01-02T15:04:05Z07:00"` // RFC3339
 	EndTime   *string `json:"end_time" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
@@ -16,7 +15,6 @@ type WorkoutSessionUpdateRequest struct {
 }
 
 type WorkoutSessionSearchRequest struct {
-	UserID        string `form:"user_id" binding:"omitempty,hexadecimal,len=24"`
 	RoutineID     string `form:"routine_id" binding:"omitempty,hexadecimal,len=24"`
 	StartedAfter  string `form:"started_after" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
 	StartedBefore string `form:"started_before" binding:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
@@ -24,7 +22,6 @@ type WorkoutSessionSearchRequest struct {
 
 type WorkoutSessionResponse struct {
 	ID              string  `json:"id"`
-	UserID          string  `json:"user_id"`
 	RoutineID       *string `json:"routine_id,omitempty"`
 	FechaHoraInicio string  `json:"fecha_hora_inicio"` // RFC3339
 	FechaHoraFin    string  `json:"fecha_hora_fin"`    // RFC3339

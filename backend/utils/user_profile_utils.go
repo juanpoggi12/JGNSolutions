@@ -7,23 +7,18 @@ import (
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // CreateRequest → Model
+// Ya no toma el UserID del DTO, se asigna externamente en el service usando actor.UserID
 func ConvertUserProfileCreateRequestToModel(req dto.UserProfileCreateRequest) (models.UserProfile, error) {
-	userID, err := primitive.ObjectIDFromHex(req.UserID)
-	if err != nil {
-		return models.UserProfile{}, err
-	}
-
 	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
 	if err != nil {
 		return models.UserProfile{}, err
 	}
 
 	return models.UserProfile{
-		UserID:    userID,
+		// UserID se asignará en el service
 		FullName:  req.FullName,
 		BirthDate: birthDate,
 		WeightKg:  req.WeightKg,
@@ -63,10 +58,10 @@ func ApplyUserProfileUpdateToModel(up *models.UserProfile, req dto.UserProfileUp
 }
 
 // Model → Response
+// Quita UserID si el DTO ya no lo tiene
 func ConvertUserProfileModelToResponse(up models.UserProfile) dto.UserProfileResponse {
 	return dto.UserProfileResponse{
 		ID:        up.ID.Hex(),
-		UserID:    up.UserID.Hex(),
 		FullName:  up.FullName,
 		BirthDate: up.BirthDate.Format("2006-01-02"),
 		WeightKg:  up.WeightKg,
@@ -78,10 +73,12 @@ func ConvertUserProfileModelToResponse(up models.UserProfile) dto.UserProfileRes
 }
 
 // SearchRequest → filtro Mongo
-func BuildUserProfileSearchFilter(search dto.UserProfileSearchRequest) bson.M {
+// Ya no usa UserID del body; el filtro por usuario lo manejará el service usando actor.UserID
+func BuildUserProfileSearchFilter(search dto.UserProfileSearchRequest, userID string) bson.M {
 	filter := bson.M{}
-	if search.UserID != "" {
-		filter["userId"] = ToObjectID(search.UserID)
+
+	if userID != "" {
+		filter["userId"] = ToObjectID(userID)
 	}
 	if search.Name != "" {
 		filter["fullName"] = bson.M{"$regex": search.Name, "$options": "i"}

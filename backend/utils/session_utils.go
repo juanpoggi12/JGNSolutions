@@ -3,21 +3,16 @@
 import (
 	"time"
 
-    "github.com/juanpoggi12/JGNSolutions/backend/dto"
-    "github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
+	"github.com/juanpoggi12/JGNSolutions/backend/models"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // CreateRequest → Model
+// Ya no toma el UserID del DTO, se asigna externamente en el service usando actor.UserID
 func ConvertSessionCreateRequestToModel(req dto.SessionCreateRequest) (models.Session, error) {
-	userID, err := primitive.ObjectIDFromHex(req.UserID)
-	if err != nil {
-		return models.Session{}, err
-	}
-
 	// Parseo de fecha (RFC3339)
 	expiresAt, err := time.Parse(time.RFC3339, req.ExpiresAt)
 	if err != nil {
@@ -31,7 +26,7 @@ func ConvertSessionCreateRequestToModel(req dto.SessionCreateRequest) (models.Se
 	}
 
 	return models.Session{
-		UserID:           userID,
+		// UserID se asignará en el service
 		RefreshTokenHash: string(hashedToken),
 		ExpiresAt:        expiresAt,
 		CreatedAt:        time.Now(),
@@ -40,6 +35,7 @@ func ConvertSessionCreateRequestToModel(req dto.SessionCreateRequest) (models.Se
 }
 
 // Model → Response
+// Quita el campo UserID porque ya no está en el DTO
 func ConvertSessionModelToResponse(s models.Session) dto.SessionResponse {
 	var revokedAt *string
 	if s.RevokedAt != nil {
@@ -49,7 +45,6 @@ func ConvertSessionModelToResponse(s models.Session) dto.SessionResponse {
 
 	return dto.SessionResponse{
 		ID:        s.ID.Hex(),
-		UserID:    s.UserID.Hex(),
 		ExpiresAt: s.ExpiresAt.Format(time.RFC3339),
 		CreatedAt: s.CreatedAt.Format(time.RFC3339),
 		RevokedAt: revokedAt,
@@ -57,15 +52,18 @@ func ConvertSessionModelToResponse(s models.Session) dto.SessionResponse {
 }
 
 // SearchRequest → filtro Mongo
-func BuildSessionSearchFilter(search dto.SessionSearchRequest) bson.M {
+// Ya no usa UserID del body; el filtro por usuario lo manejará el service usando actor.UserID
+func BuildSessionSearchFilter(search dto.SessionSearchRequest, userID string) bson.M {
 	filter := bson.M{}
-	if search.UserID != "" {
-		filter["userId"] = ToObjectID(search.UserID)
+
+	if userID != "" {
+		filter["userId"] = ToObjectID(userID)
 	}
 	if search.ActiveOnly != nil && *search.ActiveOnly {
 		now := time.Now()
 		filter["revokedAt"] = bson.M{"$exists": false}
 		filter["expiresAt"] = bson.M{"$gt": now}
 	}
+
 	return filter
 }

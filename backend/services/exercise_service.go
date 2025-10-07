@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
-
 	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
 	"github.com/juanpoggi12/JGNSolutions/backend/utils"
 
@@ -14,11 +13,11 @@ import (
 )
 
 type ExerciseServiceInterface interface {
-	CreateExercise(req dto.ExerciseCreateRequest) (dto.ExerciseResponse, error)
-	GetExerciseByID(id string) (dto.ExerciseResponse, error)
-	UpdateExercise(id string, req dto.ExerciseUpdateRequest) (dto.ExerciseResponse, error)
-	DeleteExercise(id string) error
-	SearchExercises(search dto.ExerciseSearchRequest) ([]dto.ExerciseResponse, error)
+	CreateExercise(actor Actor, req dto.ExerciseCreateRequest) (dto.ExerciseResponse, error)
+	GetExerciseByID(actor Actor, id string) (dto.ExerciseResponse, error)
+	UpdateExercise(actor Actor, id string, req dto.ExerciseUpdateRequest) (dto.ExerciseResponse, error)
+	DeleteExercise(actor Actor, id string) error
+	SearchExercises(actor Actor, search dto.ExerciseSearchRequest) ([]dto.ExerciseResponse, error)
 }
 
 type ExerciseService struct {
@@ -29,11 +28,21 @@ func NewExerciseService(repository repositories.ExerciseRepositoryInterface) *Ex
 	return &ExerciseService{repository: repository}
 }
 
-func (service *ExerciseService) CreateExercise(req dto.ExerciseCreateRequest) (dto.ExerciseResponse, error) {
+func (service *ExerciseService) CreateExercise(actor Actor, req dto.ExerciseCreateRequest) (dto.ExerciseResponse, error) {
+	// Defensa adicional: solo admin puede crear ejercicios
+	if actor.Role != "admin" {
+		return dto.ExerciseResponse{}, errors.New("solo los administradores pueden crear ejercicios")
+	}
+
 	ejercicio, err := utils.ConvertExerciseCreateRequestToModel(req)
 	if err != nil {
 		return dto.ExerciseResponse{}, err
 	}
+
+	// Asignar auditoría
+	ejercicio.CreatedBy = actor.UserID
+	ejercicio.CreatedAt = time.Now()
+	ejercicio.UpdatedAt = time.Now()
 
 	resultado, err := service.repository.InsertarEjercicio(ejercicio)
 	if err != nil {
@@ -48,7 +57,7 @@ func (service *ExerciseService) CreateExercise(req dto.ExerciseCreateRequest) (d
 	return dto.ExerciseResponse{}, errors.New("error al obtener ID del ejercicio insertado")
 }
 
-func (service *ExerciseService) GetExerciseByID(id string) (dto.ExerciseResponse, error) {
+func (service *ExerciseService) GetExerciseByID(actor Actor, id string) (dto.ExerciseResponse, error) {
 	ejercicio, err := service.repository.ObtenerEjercicioPorID(id)
 	if err != nil {
 		return dto.ExerciseResponse{}, errors.New("ejercicio no encontrado")
@@ -60,7 +69,12 @@ func (service *ExerciseService) GetExerciseByID(id string) (dto.ExerciseResponse
 	return utils.ConvertExerciseModelToResponse(ejercicio), nil
 }
 
-func (service *ExerciseService) UpdateExercise(id string, req dto.ExerciseUpdateRequest) (dto.ExerciseResponse, error) {
+func (service *ExerciseService) UpdateExercise(actor Actor, id string, req dto.ExerciseUpdateRequest) (dto.ExerciseResponse, error) {
+	// Defensa adicional: solo admin puede modificar ejercicios
+	if actor.Role != "admin" {
+		return dto.ExerciseResponse{}, errors.New("solo los administradores pueden modificar ejercicios")
+	}
+
 	ejercicio, err := service.repository.ObtenerEjercicioPorID(id)
 	if err != nil {
 		return dto.ExerciseResponse{}, errors.New("ejercicio no encontrado")
@@ -80,7 +94,12 @@ func (service *ExerciseService) UpdateExercise(id string, req dto.ExerciseUpdate
 	return utils.ConvertExerciseModelToResponse(ejercicio), nil
 }
 
-func (service *ExerciseService) DeleteExercise(id string) error {
+func (service *ExerciseService) DeleteExercise(actor Actor, id string) error {
+	// Defensa adicional: solo admin puede eliminar ejercicios
+	if actor.Role != "admin" {
+		return errors.New("solo los administradores pueden eliminar ejercicios")
+	}
+
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return errors.New("ID inválido")
@@ -97,8 +116,27 @@ func (service *ExerciseService) DeleteExercise(id string) error {
 	return nil
 }
 
-func (service *ExerciseService) SearchExercises(search dto.ExerciseSearchRequest) ([]dto.ExerciseResponse, error) {
-	ejercicios, err := service.repository.BuscarEjercicios(search.Name, search.Category, search.MuscleGroup, search.Difficulty, search.CreatedBy, search.IncludeDel)
+func (service *ExerciseService) SearchExercises(actor Actor, search dto.ExerciseSearchRequest) ([]dto.ExerciseResponse, error) {
+	// Los usuarios normales solo ven ejercicios no eliminados
+	includeDeleted := false
+	if actor.Role == "admin" {
+		includeDeleted = search.IncludeDel
+	}
+
+	// Si es user, ignoramos CreatedBy del search (no debería poder filtrar por creador)
+	createdBy := ""
+	if actor.Role == "admin" && search.CreatedBy != "" {
+		createdBy = search.CreatedBy
+	}
+
+	ejercicios, err := service.repository.BuscarEjercicios(
+		search.Name,
+		search.Category,
+		search.MuscleGroup,
+		search.Difficulty,
+		createdBy,
+		includeDeleted,
+	)
 	if err != nil {
 		return nil, err
 	}

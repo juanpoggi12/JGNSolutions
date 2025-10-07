@@ -1,7 +1,6 @@
 package dto
 
 type UserProfileCreateRequest struct {
-	UserID    string  `json:"user_id" binding:"required,hexadecimal,len=24"`
 	FullName  string  `json:"full_name" binding:"required,min=2,max=80"`
 	BirthDate string  `json:"birth_date" binding:"required,datetime=2006-01-02"` // yyyy-mm-dd
 	WeightKg  float64 `json:"weight_kg" binding:"required,gt=0,lte=500"`
@@ -20,15 +19,13 @@ type UserProfileUpdateRequest struct {
 }
 
 type UserProfileSearchRequest struct {
-	UserID string `form:"user_id" binding:"omitempty,hexadecimal,len=24"`
-	Name   string `form:"name"`
-	Level  string `form:"level" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Goal   string `form:"goal" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+	Name  string `form:"name"`
+	Level string `form:"level" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Goal  string `form:"goal" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
 }
 
 type UserProfileResponse struct {
 	ID        string  `json:"id"`
-	UserID    string  `json:"user_id"`
 	FullName  string  `json:"full_name"`
 	BirthDate string  `json:"birth_date"` // yyyy-mm-dd in mapper
 	WeightKg  float64 `json:"weight_kg"`

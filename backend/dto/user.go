@@ -32,3 +32,9 @@ type UserResponse struct {
 	UpdatedAt string `json:"updated_at"` // RFC3339
 	IsActive  bool   `json:"is_active"`
 }
+
+type UserListResponse struct {
+	ID    string `json:"id"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
+}

@@ -3,22 +3,16 @@
 import (
 	"time"
 
-    "github.com/juanpoggi12/JGNSolutions/backend/dto"
-    "github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
+	"github.com/juanpoggi12/JGNSolutions/backend/models"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 // Convierte DTO de creación a modelo (Request -> Model)
+// Ya no usa UserID del body: el userID se asigna externamente (desde el Actor)
 func ConvertRoutineCreateRequestToModel(req dto.RoutineCreateRequest) (models.Routine, error) {
-	userID, err := primitive.ObjectIDFromHex(req.UserID)
-	if err != nil {
-		return models.Routine{}, err
-	}
-
 	return models.Routine{
-		UserID:      userID,
 		Name:        req.Name,
 		Description: req.Description,
 		IsTemplate:  req.IsTemplate,
@@ -46,7 +40,6 @@ func ApplyRoutineUpdateToModel(r *models.Routine, req dto.RoutineUpdateRequest) 
 func ConvertRoutineModelToResponse(r models.Routine) dto.RoutineResponse {
 	return dto.RoutineResponse{
 		ID:          r.ID.Hex(),
-		UserID:      r.UserID.Hex(),
 		Name:        r.Name,
 		Description: r.Description,
 		IsTemplate:  r.IsTemplate,
@@ -57,10 +50,12 @@ func ConvertRoutineModelToResponse(r models.Routine) dto.RoutineResponse {
 }
 
 // Convierte RoutineSearchRequest en filtro Mongo
-func BuildRoutineSearchFilter(search dto.RoutineSearchRequest) bson.M {
+// Ya no usa UserID del body; si se necesita filtrar por usuario, se pasa externamente.
+func BuildRoutineSearchFilter(search dto.RoutineSearchRequest, userID string) bson.M {
 	filter := bson.M{}
-	if search.UserID != "" {
-		filter["userId"] = ToObjectID(search.UserID)
+
+	if userID != "" {
+		filter["userId"] = ToObjectID(userID)
 	}
 	if search.Name != "" {
 		filter["name"] = bson.M{"$regex": search.Name, "$options": "i"}
@@ -71,5 +66,6 @@ func BuildRoutineSearchFilter(search dto.RoutineSearchRequest) bson.M {
 	if !search.IncludeDel {
 		filter["isDeleted"] = false
 	}
+
 	return filter
 }

@@ -108,7 +108,7 @@ func (repository ExerciseRepository) ModificarEjercicio(ejercicio models.Exercis
 		"difficulty":      ejercicio.Difficulty,
 		"mediaUrl":        ejercicio.MediaURL,
 		"instructions":    ejercicio.Instructions,
-		"createdByUserId": ejercicio.CreatedByUserID,
+		"createdByUserId": ejercicio.CreatedBy,
 		"updatedAt":       ejercicio.UpdatedAt,
 	}}
 

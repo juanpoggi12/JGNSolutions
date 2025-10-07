@@ -31,16 +31,16 @@ type ExerciseSearchRequest struct {
 }
 
 type ExerciseResponse struct {
-	ID              string   `json:"id"`
-	Name            string   `json:"name"`
-	Description     string   `json:"description,omitempty"`
-	Category        string   `json:"category"`
-	MuscleGroup     string   `json:"muscle_group"`
-	Difficulty      string   `json:"difficulty"`
-	MediaURL        string   `json:"media_url,omitempty"`
-	Instructions    []string `json:"instructions,omitempty"`
-	CreatedByUserID string   `json:"created_by_user_id"`
-	CreatedAt       string   `json:"created_at"`
-	UpdatedAt       string   `json:"updated_at"`
-	IsDeleted       bool     `json:"is_deleted"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Description  string   `json:"description,omitempty"`
+	Category     string   `json:"category"`
+	MuscleGroup  string   `json:"muscle_group"`
+	Difficulty   string   `json:"difficulty"`
+	MediaURL     string   `json:"media_url,omitempty"`
+	Instructions []string `json:"instructions,omitempty"`
+	CreatedBy    string   `json:"created_by"`
+	CreatedAt    string   `json:"created_at"`
+	UpdatedAt    string   `json:"updated_at"`
+	IsDeleted    bool     `json:"is_deleted"`
 }

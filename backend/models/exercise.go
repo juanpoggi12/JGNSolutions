@@ -29,16 +29,16 @@ const (
 )
 
 type Exercise struct {
-	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name            string             `bson:"name" json:"name"`
-	Description     string             `bson:"description,omitempty" json:"description,omitempty"`
-	Category        ExerciseCategory   `bson:"category" json:"category"`
-	MuscleGroup     MuscleGroup        `bson:"muscleGroup" json:"muscleGroup"`
-	Difficulty      Difficulty         `bson:"difficulty" json:"difficulty"`
-	MediaURL        string             `bson:"mediaUrl,omitempty" json:"mediaUrl,omitempty"`
-	Instructions    []string           `bson:"instructions,omitempty" json:"instructions,omitempty"`
-	CreatedByUserID primitive.ObjectID `bson:"createdByUserId" json:"createdByUserId"`
-	CreatedAt       time.Time          `bson:"createdAt" json:"createdAt"`
-	UpdatedAt       time.Time          `bson:"updatedAt" json:"updatedAt"`
-	IsDeleted       bool               `bson:"isDeleted" json:"isDeleted"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name         string             `bson:"name" json:"name"`
+	Description  string             `bson:"description,omitempty" json:"description,omitempty"`
+	Category     ExerciseCategory   `bson:"category" json:"category"`
+	MuscleGroup  MuscleGroup        `bson:"muscleGroup" json:"muscleGroup"`
+	Difficulty   Difficulty         `bson:"difficulty" json:"difficulty"`
+	MediaURL     string             `bson:"mediaUrl,omitempty" json:"mediaUrl,omitempty"`
+	Instructions []string           `bson:"instructions,omitempty" json:"instructions,omitempty"`
+	CreatedBy    primitive.ObjectID `bson:"createdBy" json:"createdByUserId"`
+	CreatedAt    time.Time          `bson:"createdAt" json:"createdAt"`
+	UpdatedAt    time.Time          `bson:"updatedAt" json:"updatedAt"`
+	IsDeleted    bool               `bson:"isDeleted" json:"isDeleted"`
 }
