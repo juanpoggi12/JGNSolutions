@@ -11,9 +11,14 @@ import (
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-)
 
-// --- Config ---
+	// Importar tus propios paquetes
+	"github.com/juanpoggi12/JGNSolutions/backend/handlers"
+	"github.com/juanpoggi12/JGNSolutions/backend/middleware"
+	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
+	"github.com/juanpoggi12/JGNSolutions/backend/services"
+	"github.com/juanpoggi12/JGNSolutions/backend/utils"
+)
 
 type AppConfig struct {
 	Port     string
@@ -22,9 +27,7 @@ type AppConfig struct {
 }
 
 func loadConfig() AppConfig {
-	// En desarrollo: carga .env si existe. En producciÃ³n, las vars vienen del entorno.
 	_ = godotenv.Load()
-
 	return AppConfig{
 		Port:     getEnv("PORT", "8080"),
 		MongoURI: getEnv("MONGO_URI", "mongodb://localhost:27017"),
@@ -39,8 +42,6 @@ func getEnv(k, def string) string {
 	return def
 }
 
-// --- Mongo ---
-
 type MongoClient struct {
 	Client *mongo.Client
 	DB     *mongo.Database
@@ -48,23 +49,18 @@ type MongoClient struct {
 
 func connectMongo(ctx context.Context, uri, dbName string) (*MongoClient, error) {
 	clientOpts := options.Client().ApplyURI(uri)
-
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		return nil, err
 	}
-	// Verificamos conexiÃ³n con ping
 	if err := client.Ping(ctx, nil); err != nil {
 		return nil, err
 	}
-
 	return &MongoClient{
 		Client: client,
 		DB:     client.Database(dbName),
 	}, nil
 }
-
-// --- main ---
 
 func main() {
 	cfg := loadConfig()
@@ -72,7 +68,7 @@ func main() {
 	// Router con logger y recovery
 	r := gin.Default()
 
-	// ConexiÃ³n a Mongo con timeout
+	// Conexión a MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -88,7 +84,37 @@ func main() {
 		}
 	}()
 
-	// Health check
+	jwtCfg := utils.LoadConfig()
+
+	// --- ⚙️ INICIALIZACIÓN DE CAPAS ---
+
+	// 1️⃣ Repositorios
+	userRepo := repositories.NewUserRepository(mc.DB)
+	adminRepo := repositories.NewAdminRepository(mc.DB)
+	exerciseRepo := repositories.NewExerciseRepository(mc.DB)
+	workoutEntryRepo := repositories.NewWorkoutEntryRepository(mc.DB)
+	workoutSessionRepo := repositories.NewWorkoutSessionRepository(mc.DB)
+	routineRepo := repositories.NewRoutineRepository(mc.DB)
+	routineExerciseRepo := repositories.NewRoutineExerciseRepository(mc.DB)
+
+	// 2️⃣ Servicios
+	userService := services.NewUserService(userRepo)
+	adminService := services.NewAdminService(adminRepo, userRepo)
+	exerciseService := services.NewExerciseService(exerciseRepo)
+	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo)
+	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo)
+	routineService := services.NewRoutineService(routineRepo, routineExerciseRepo, exerciseRepo)
+
+	// 3️⃣ Handlers
+	userHandler := handlers.NewUserHandler(userService)
+	adminHandler := handlers.NewAdminHandler(adminService)
+	exerciseHandler := handlers.NewExerciseHandler(exerciseService)
+	workoutEntryHandler := handlers.NewWorkoutEntryHandler(workoutEntryService)
+	workoutSessionHandler := handlers.NewWorkoutSessionHandler(workoutSessionService)
+	routineHandler := handlers.NewRoutineHandler(routineService)
+
+	// --- 🚀 REGISTRO DE RUTAS ---
+
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"ok":   true,
@@ -97,18 +123,92 @@ func main() {
 		})
 	})
 
-	// Grupo base para tu API real
 	api := r.Group("/api")
 	{
 		api.GET("/ping", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "pong"})
 		})
-		// Ejemplos a futuro:
-		// api.POST("/auth/register", registerHandler(mc.DB))
-		// api.POST("/auth/login", loginHandler(mc.DB))
-		// api.GET("/exercises", authMiddleware(), listExercisesHandler(mc.DB))
+
+		// 👇 Aquí registrás las rutas de usuario
+		apiUser := api.Group("/users")
+		apiUser.Use(middleware.AuthMiddleware(jwtCfg)) // 🔒 Todas requieren token
+		{
+			apiUser.POST("/", userHandler.CreateUser)      // solo admin (ya lo valida el service internamente)
+			apiUser.GET("/:id", userHandler.GetUserByID)   // admin o el mismo user
+			apiUser.PUT("/:id", userHandler.UpdateUser)    // admin o el mismo user
+			apiUser.DELETE("/:id", userHandler.DeleteUser) // solo admin
+		}
+
+		// Rutas Admin (solo para usuarios con rol admin)
+		apiAdmin := api.Group("/admin")
+		apiAdmin.Use(middleware.AuthMiddleware(jwtCfg), middleware.CheckAdmin()) // 🔒 Token + Rol admin
+		{
+			apiAdmin.GET("/users/count", adminHandler.CountUsers)
+			apiAdmin.GET("/exercises/count", adminHandler.CountExercises)
+			apiAdmin.GET("/routines/count", adminHandler.CountRoutines)
+			apiAdmin.GET("/workouts/count", adminHandler.CountWorkoutSessions)
+			apiAdmin.GET("/users", adminHandler.ListUsers)
+			apiAdmin.GET("/exercises/top", adminHandler.TopExercises)
+			apiAdmin.GET("/routines/top", adminHandler.TopRoutines)
+		}
+
+		// --- Rutas de ejercicios ---
+		apiExercises := api.Group("/exercises")
+		apiExercises.Use(middleware.AuthMiddleware(jwtCfg)) // 🔒 Todas requieren token
+		{
+			apiExercises.POST("/", middleware.CheckAdmin(), exerciseHandler.CreateExercise)      // solo admin
+			apiExercises.PUT("/:id", middleware.CheckAdmin(), exerciseHandler.UpdateExercise)    // solo admin
+			apiExercises.DELETE("/:id", middleware.CheckAdmin(), exerciseHandler.DeleteExercise) // solo admin
+
+			apiExercises.GET("/:id", exerciseHandler.GetExerciseByID) // visible para todos los logueados
+			apiExercises.GET("/search", exerciseHandler.SearchExercises)
+		}
+
+		// --- Rutas de entradas de entrenamiento ---
+		apiWorkoutEntries := api.Group("/workout-entries")
+		apiWorkoutEntries.Use(middleware.AuthMiddleware(jwtCfg)) // todas requieren token
+		{
+			apiWorkoutEntries.POST("/", workoutEntryHandler.CreateEntry)        // user o admin (valida el service)
+			apiWorkoutEntries.GET("/:id", workoutEntryHandler.GetEntryByID)     // user o admin
+			apiWorkoutEntries.PUT("/:id", workoutEntryHandler.UpdateEntry)      // user o admin
+			apiWorkoutEntries.DELETE("/:id", workoutEntryHandler.DeleteEntry)   // user o admin
+			apiWorkoutEntries.GET("/search", workoutEntryHandler.SearchEntries) // búsqueda
+		}
+
+		// --- Rutas de sesiones de entrenamiento ---
+		apiWorkoutSessions := api.Group("/workout-sessions")
+		apiWorkoutSessions.Use(middleware.AuthMiddleware(jwtCfg)) // todas requieren token
+		{
+			apiWorkoutSessions.POST("/", workoutSessionHandler.CreateSession)       // user o admin
+			apiWorkoutSessions.GET("/:id", workoutSessionHandler.GetSessionByID)    // user o admin
+			apiWorkoutSessions.PUT("/:id", workoutSessionHandler.UpdateSession)     // user o admin
+			apiWorkoutSessions.DELETE("/:id", workoutSessionHandler.DeleteSession)  // user o admin
+			apiWorkoutSessions.GET("/search", workoutSessionHandler.SearchSessions) // búsqueda
+		}
+
+		// --- Rutas de rutinas ---
+		apiRoutines := api.Group("/routines")
+		apiRoutines.Use(middleware.AuthMiddleware(jwtCfg)) // todas requieren JWT válido
+		{
+			apiRoutines.POST("/", routineHandler.CreateRoutine)       // user o admin
+			apiRoutines.GET("/:id", routineHandler.GetRoutineByID)    // user o admin
+			apiRoutines.PUT("/:id", routineHandler.UpdateRoutine)     // user o admin
+			apiRoutines.DELETE("/:id", routineHandler.DeleteRoutine)  // user o admin
+			apiRoutines.GET("/search", routineHandler.SearchRoutines) // user o admin
+
+			// Ejercicios dentro de rutinas
+			apiRoutines.POST("/:id/exercises", routineHandler.AddExerciseToRoutine)
+			apiRoutines.PUT("/exercises/:id", routineHandler.UpdateRoutineExercise)
+			apiRoutines.DELETE("/exercises/:id", routineHandler.DeleteRoutineExercise)
+			apiRoutines.GET("/exercises/search", routineHandler.ListRoutineExercises)
+
+			// Duplicar rutina
+			apiRoutines.POST("/:id/duplicate", routineHandler.DuplicateRoutine)
+		}
+
 	}
 
+	// --- 🔊 Servidor HTTP ---
 	log.Printf("Servidor escuchando en :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Error al iniciar servidor: %v", err)
