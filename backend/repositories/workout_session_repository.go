@@ -15,6 +15,14 @@ type WorkoutSessionRepository struct {
 	collection *mongo.Collection
 }
 
+type WorkoutSessionRepositoryInterface interface {
+	FindByID(ctx context.Context, id primitive.ObjectID) (*models.WorkoutSession, error)
+	FindByUser(ctx context.Context, userID primitive.ObjectID) ([]models.WorkoutSession, error)
+	Create(ctx context.Context, session *models.WorkoutSession) error
+	Update(ctx context.Context, session *models.WorkoutSession) error
+	Delete(ctx context.Context, id primitive.ObjectID) error
+}
+
 func NewWorkoutSessionRepository(db *mongo.Database) *WorkoutSessionRepository {
 	return &WorkoutSessionRepository{collection: db.Collection("workoutSessions")}
 }
@@ -62,4 +70,23 @@ func (r *WorkoutSessionRepository) Search(ctx context.Context, filter bson.M, op
 		return nil, err
 	}
 	return sessions, nil
+}
+
+// Buscar sesiones por usuario
+func (r *WorkoutSessionRepository) FindByUser(ctx context.Context, userID primitive.ObjectID) ([]models.WorkoutSession, error) {
+	var sessions []models.WorkoutSession
+
+	cursor, err := r.collection.Find(ctx, bson.M{"userId": userID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var s models.WorkoutSession
+		if err := cursor.Decode(&s); err == nil {
+			sessions = append(sessions, s)
+		}
+	}
+	return sessions, cursor.Err()
 }
