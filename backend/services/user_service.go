@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ type UserServiceInterface interface {
 	GetUserByID(actor Actor, id string) (models.User, error)
 	UpdateUser(actor Actor, id string, user models.User) (models.User, error)
 	DeleteUser(actor Actor, id string) error
+	ChangePassword(ctx context.Context, userID primitive.ObjectID, req dto.ChangePasswordRequest) error
 }
 
 type UserService struct {
@@ -34,15 +36,33 @@ func (service *UserService) CreateUser(actor Actor, user models.User) (models.Us
 		return models.User{}, errors.New("solo los administradores pueden crear usuarios")
 	}
 
+	// Validar que venga una contraseña
+	if user.PasswordHash == "" {
+		return models.User{}, errors.New("la contraseña es obligatoria")
+	}
+
+	// Hashear la contraseña antes de guardar
+	hash, err := utils.HashPassword(user.PasswordHash)
+	if err != nil {
+		return models.User{}, errors.New("error al hashear la contraseña")
+	}
+	user.PasswordHash = hash
+
+	// Normalizar el rol a minúsculas (por coherencia con el resto del código)
+	user.Role = models.Role(strings.ToLower(string(user.Role)))
+
+	// Inicializar metadatos
 	user.ID = primitive.NilObjectID
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
+	// Insertar en la base de datos
 	resultado, err := service.repository.InsertarUsuario(user)
 	if err != nil {
 		return models.User{}, err
 	}
 
+	// Si la inserción fue correcta, asignar el ObjectID generado
 	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
 		user.ID = oid
 		return user, nil
@@ -129,4 +149,27 @@ func (service *UserService) DeleteUser(actor Actor, id string) error {
 	}
 
 	return nil
+}
+
+func (s *UserService) ChangePassword(ctx context.Context, userID primitive.ObjectID, req dto.ChangePasswordRequest) error {
+	// Buscar el usuario en la base de datos
+	user, err := s.repository.ObtenerUsuarioPorID(userID.Hex()) // 🔹 Convertimos ObjectID a string
+	if err != nil {
+		return err
+	}
+
+	// Verificar la contraseña actual
+	if !utils.VerifyPassword(req.OldPassword, user.PasswordHash) {
+		return errors.New("contraseña actual incorrecta")
+	}
+
+	// Hashear la nueva contraseña
+	hashed, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	// Guardar cambios en la base (ignoramos el resultado del Update)
+	_, err = s.repository.ActualizarPassword(userID, hashed)
+	return err
 }

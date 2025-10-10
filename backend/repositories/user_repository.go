@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 
@@ -19,6 +20,7 @@ type UserRepositoryInterface interface {
 	ContarUsuarios() (int64, error)
 	ListarUsuariosBasico() ([]models.User, error)
 	FindByEmailOrUsername(identifier string) (*models.User, error)
+	ActualizarPassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error)
 }
 
 type UserRepository struct {
@@ -121,4 +123,16 @@ func (r *UserRepository) FindByEmailOrUsername(identifier string) (*models.User,
 		return nil, err
 	}
 	return &user, nil
+}
+
+func (repository UserRepository) ActualizarPassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error) {
+	collection := repository.collection()
+	filtro := bson.M{"_id": id}
+	actualizacion := bson.M{
+		"$set": bson.M{
+			"passwordHash": hashed,
+			"updatedAt":    time.Now(),
+		},
+	}
+	return collection.UpdateOne(context.TODO(), filtro, actualizacion)
 }

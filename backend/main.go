@@ -96,6 +96,7 @@ func main() {
 	workoutSessionRepo := repositories.NewWorkoutSessionRepository(mc.DB)
 	routineRepo := repositories.NewRoutineRepository(mc.DB)
 	routineExerciseRepo := repositories.NewRoutineExerciseRepository(mc.DB)
+	logRepo := repositories.NewLogRepository(mc.DB)
 
 	// 2️⃣ Servicios
 	userService := services.NewUserService(userRepo)
@@ -104,6 +105,7 @@ func main() {
 	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo)
 	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo)
 	routineService := services.NewRoutineService(routineRepo, routineExerciseRepo, exerciseRepo)
+	logService := services.NewLogService(logRepo)
 
 	// 3️⃣ Handlers
 	userHandler := handlers.NewUserHandler(userService)
@@ -112,6 +114,7 @@ func main() {
 	workoutEntryHandler := handlers.NewWorkoutEntryHandler(workoutEntryService)
 	workoutSessionHandler := handlers.NewWorkoutSessionHandler(workoutSessionService)
 	routineHandler := handlers.NewRoutineHandler(routineService)
+	adminLogsHandler := handlers.NewAdminLogsHandler(logService)
 
 	// --- 🚀 REGISTRO DE RUTAS ---
 
@@ -137,6 +140,7 @@ func main() {
 			apiUser.GET("/:id", userHandler.GetUserByID)   // admin o el mismo user
 			apiUser.PUT("/:id", userHandler.UpdateUser)    // admin o el mismo user
 			apiUser.DELETE("/:id", userHandler.DeleteUser) // solo admin
+			apiUser.PUT("/change-password", userHandler.ChangePassword)
 		}
 
 		// Rutas Admin (solo para usuarios con rol admin)
@@ -150,6 +154,7 @@ func main() {
 			apiAdmin.GET("/users", adminHandler.ListUsers)
 			apiAdmin.GET("/exercises/top", adminHandler.TopExercises)
 			apiAdmin.GET("/routines/top", adminHandler.TopRoutines)
+			apiAdmin.GET("/logs", adminLogsHandler.GetLogs)
 		}
 
 		// --- Rutas de ejercicios ---
@@ -205,7 +210,6 @@ func main() {
 			// Duplicar rutina
 			apiRoutines.POST("/:id/duplicate", routineHandler.DuplicateRoutine)
 		}
-
 	}
 
 	// --- 🔊 Servidor HTTP ---
