@@ -3,7 +3,10 @@ package services
 import (
 	"errors"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
+	"github.com/juanpoggi12/JGNSolutions/backend/models"
 	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
 )
 
@@ -18,12 +21,21 @@ type AdminServiceInterface interface {
 }
 
 type AdminService struct {
-	adminRepository repositories.AdminRepositoryInterface
-	userRepository  repositories.UserRepositoryInterface
+	adminRepository       repositories.AdminRepositoryInterface
+	userRepository        repositories.UserRepositoryInterface
+	userProfileRepository repositories.UserProfileRepositoryInterface // 👈 nuevo
 }
 
-func NewAdminService(adminRepo repositories.AdminRepositoryInterface, userRepo repositories.UserRepositoryInterface) *AdminService {
-	return &AdminService{adminRepository: adminRepo, userRepository: userRepo}
+func NewAdminService(
+	adminRepo repositories.AdminRepositoryInterface,
+	userRepo repositories.UserRepositoryInterface,
+	profileRepo repositories.UserProfileRepositoryInterface,
+) *AdminService {
+	return &AdminService{
+		adminRepository:       adminRepo,
+		userRepository:        userRepo,
+		userProfileRepository: profileRepo,
+	}
 }
 
 func (service *AdminService) CountUsers(actor Actor) (int64, error) {
@@ -112,4 +124,31 @@ func (s *AdminService) TopRoutines(actor Actor, limit int) ([]dto.RoutineStatRes
 		})
 	}
 	return out, nil
+}
+
+// --- Nuevos métodos para gestionar perfiles ---
+func (s *AdminService) ListProfiles(actor Actor) ([]models.UserProfile, error) {
+	if actor.Role != "admin" {
+		return nil, errors.New("no tienes permiso para ver perfiles")
+	}
+	return s.userProfileRepository.ListarPerfiles()
+}
+
+func (s *AdminService) GetProfileByID(actor Actor, id string) (models.UserProfile, error) {
+	if actor.Role != "admin" {
+		return models.UserProfile{}, errors.New("no tienes permiso para ver este perfil")
+	}
+	return s.userProfileRepository.ObtenerPerfilPorID(id)
+}
+
+func (s *AdminService) DeleteProfile(actor Actor, id string) error {
+	if actor.Role != "admin" {
+		return errors.New("no tienes permiso para eliminar perfiles")
+	}
+	objectID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return errors.New("ID inválido")
+	}
+	_, err = s.userProfileRepository.EliminarPerfil(objectID)
+	return err
 }

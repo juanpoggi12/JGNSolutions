@@ -152,3 +152,63 @@ func (h *AdminHandler) TopRoutines(c *gin.Context) {
 
 	c.JSON(http.StatusOK, stats)
 }
+
+// --- 📋 GESTIÓN DE PERFILES (solo admin) ---
+
+// GET /api/admin/user-profiles → Listar todos los perfiles
+func (h *AdminHandler) ListProfiles(c *gin.Context) {
+	role := c.GetString("role")
+	userID := c.GetString("userId")
+
+	actor := services.Actor{
+		UserID: parseObjectID(userID),
+		Role:   role,
+	}
+
+	profiles, err := h.adminService.ListProfiles(actor)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, profiles)
+}
+
+// GET /api/admin/user-profiles/:id → Obtener perfil específico
+func (h *AdminHandler) GetProfileByID(c *gin.Context) {
+	role := c.GetString("role")
+	userID := c.GetString("userId")
+	id := c.Param("id")
+
+	actor := services.Actor{
+		UserID: parseObjectID(userID),
+		Role:   role,
+	}
+
+	profile, err := h.adminService.GetProfileByID(actor, id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, profile)
+}
+
+// DELETE /api/admin/user-profiles/:id → Eliminar perfil de usuario
+func (h *AdminHandler) DeleteProfile(c *gin.Context) {
+	role := c.GetString("role")
+	userID := c.GetString("userId")
+	id := c.Param("id")
+
+	actor := services.Actor{
+		UserID: parseObjectID(userID),
+		Role:   role,
+	}
+
+	if err := h.adminService.DeleteProfile(actor, id); err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Perfil eliminado correctamente"})
+}

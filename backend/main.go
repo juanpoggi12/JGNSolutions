@@ -97,6 +97,7 @@ func main() {
 	routineRepo := repositories.NewRoutineRepository(mc.DB)
 	routineExerciseRepo := repositories.NewRoutineExerciseRepository(mc.DB)
 	logRepo := repositories.NewLogRepository(mc.DB)
+	userProfileRepo := repositories.NewUserProfileRepository(mc.DB)
 
 	// 2️⃣ Servicios
 	userService := services.NewUserService(userRepo)
@@ -106,6 +107,7 @@ func main() {
 	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo)
 	routineService := services.NewRoutineService(routineRepo, routineExerciseRepo, exerciseRepo)
 	logService := services.NewLogService(logRepo)
+	userProfileService := services.NewUserProfileService(userProfileRepo)
 
 	// 3️⃣ Handlers
 	userHandler := handlers.NewUserHandler(userService)
@@ -115,6 +117,7 @@ func main() {
 	workoutSessionHandler := handlers.NewWorkoutSessionHandler(workoutSessionService)
 	routineHandler := handlers.NewRoutineHandler(routineService)
 	adminLogsHandler := handlers.NewAdminLogsHandler(logService)
+	userProfileHandler := handlers.NewUserProfileHandler(userProfileService)
 
 	// --- 🚀 REGISTRO DE RUTAS ---
 
@@ -155,6 +158,9 @@ func main() {
 			apiAdmin.GET("/exercises/top", adminHandler.TopExercises)
 			apiAdmin.GET("/routines/top", adminHandler.TopRoutines)
 			apiAdmin.GET("/logs", adminLogsHandler.GetLogs)
+			apiAdmin.GET("/user-profiles", adminHandler.ListProfiles)
+			apiAdmin.GET("/user-profiles/:id", adminHandler.GetProfileByID)
+			apiAdmin.DELETE("/user-profiles/:id", adminHandler.DeleteProfile)
 		}
 
 		// --- Rutas de ejercicios ---
@@ -209,6 +215,16 @@ func main() {
 
 			// Duplicar rutina
 			apiRoutines.POST("/:id/duplicate", routineHandler.DuplicateRoutine)
+		}
+
+		// --- Rutas de perfil ---
+		apiProfile := api.Group("/profile")
+		apiProfile.Use(middleware.AuthMiddleware(jwtCfg)) // solo usuarios logueados
+		{
+			apiProfile.GET("/search", userProfileHandler.GetProfile)
+			apiProfile.PUT("/:id", userProfileHandler.UpdateProfile)
+			apiProfile.DELETE("/:id", userProfileHandler.DeleteProfile)
+			apiProfile.POST("/", userProfileHandler.CreateProfile)
 		}
 	}
 
