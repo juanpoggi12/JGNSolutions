@@ -45,7 +45,7 @@ func (r AdminRepository) TopExercisesByEntries(limit int) ([]ExerciseUsageAgg, e
 	if limit <= 0 {
 		limit = 10
 	}
-	coll := r.db.Collection("workout_entries")
+	coll := r.db.Collection("workoutEntries")
 
 	pipeline := mongo.Pipeline{
 		{{Key: "$group", Value: bson.D{
@@ -90,7 +90,7 @@ func (r AdminRepository) TopRoutinesBySessions(limit int) ([]RoutineUsageAgg, er
 	if limit <= 0 {
 		limit = 10
 	}
-	coll := r.db.Collection("workout_sessions")
+	coll := r.db.Collection("workoutSessions")
 
 	pipeline := mongo.Pipeline{
 		{{Key: "$match", Value: bson.D{{Key: "routineId", Value: bson.D{{Key: "$type", Value: "objectId"}}}}}},

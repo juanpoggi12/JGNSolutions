@@ -51,7 +51,7 @@ func (service *AdminService) CountWorkoutSessions(actor Actor) (int64, error) {
 	if actor.Role != "admin" {
 		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
 	}
-	return service.adminRepository.ContarDocumentos("workout_sessions")
+	return service.adminRepository.ContarDocumentos("workoutSessions")
 }
 
 func (s *AdminService) ListUsers(actor Actor) ([]dto.UserListResponse, error) {

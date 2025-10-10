@@ -27,7 +27,7 @@ func AuthMiddleware(cfg utils.Config) gin.HandlerFunc {
 		claims, err := utils.ParseToken(parts[1], cfg)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token inválido o expirado"})
-			c.Abort()
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": "token inválido"})
 			return
 		}
 
