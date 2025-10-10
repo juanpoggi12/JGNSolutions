@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
+
 )
 
 // UserHandler maneja las peticiones HTTP relacionadas con usuarios
@@ -73,13 +75,14 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	}
 
 	id := c.Param("id")
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	var req dto.UserUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	updated, err := h.userService.UpdateUser(actor, id, user)
+	updated, err := h.userService.UpdateUser(actor, id, req)
+
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
@@ -110,4 +113,40 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 func parseObjectID(id string) primitive.ObjectID {
 	oid, _ := primitive.ObjectIDFromHex(id)
 	return oid
+}
+
+// Cambiar contraseña del usuario autenticado
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	var req dto.ChangePasswordRequest
+
+	// 1️⃣ Validar el JSON recibido
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 2️⃣ Obtener el ID del usuario del contexto (lo setea el middleware JWT)
+	userIDHex, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
+		return
+	}
+
+	// 3️⃣ Convertir el ID de string a ObjectID
+	userID, err := primitive.ObjectIDFromHex(userIDHex.(string))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
+		return
+	}
+
+	// 4️⃣ Llamar al servicio para cambiar la contraseña
+	if err := h.userService.ChangePassword(c, userID, req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 5️⃣ Responder al cliente
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Contraseña actualizada correctamente",
+	})
 }
