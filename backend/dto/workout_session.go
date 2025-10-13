@@ -27,4 +27,5 @@ type WorkoutSessionResponse struct {
 	FechaHoraFin    string  `json:"fecha_hora_fin"`    // RFC3339
 	NotasGenerales  string  `json:"notas_generales,omitempty"`
 	CreatedAt       string  `json:"created_at"` // RFC3339
+	UpdatedAt       string  `json:"updated_at"` // RFC3339
 }

@@ -14,4 +14,5 @@ type WorkoutSession struct {
 	EndTime   time.Time           `bson:"endTime" json:"endTime"`
 	Notes     string              `bson:"notes,omitempty" json:"notes,omitempty"`
 	CreatedAt time.Time           `bson:"createdAt" json:"createdAt"`
+	UpdatedAt time.Time           `bson:"updated_at" json:"updated_at"`
 }

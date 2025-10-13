@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,11 +14,11 @@ import (
 
 // WorkoutSessionHandler maneja las operaciones sobre sesiones de entrenamiento
 type WorkoutSessionHandler struct {
-	sessionService *services.WorkoutSessionService
+	sessionService services.WorkoutSessionServiceInterface
 }
 
 // Constructor
-func NewWorkoutSessionHandler(sessionService *services.WorkoutSessionService) *WorkoutSessionHandler {
+func NewWorkoutSessionHandler(sessionService services.WorkoutSessionServiceInterface) *WorkoutSessionHandler {
 	return &WorkoutSessionHandler{sessionService: sessionService}
 }
 
@@ -27,32 +26,32 @@ func NewWorkoutSessionHandler(sessionService *services.WorkoutSessionService) *W
 func (h *WorkoutSessionHandler) CreateSession(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
 	}
 
-	var session models.WorkoutSession
-	if err := c.ShouldBindJSON(&session); err != nil {
+	var req dto.WorkoutSessionCreateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := h.sessionService.Create(ctx, actor, &session); err != nil {
+	created, err := h.sessionService.Create(actor, req)
+	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, session)
+	c.JSON(http.StatusCreated, created)
 }
 
 // GET /api/workout-sessions/:id → obtener una sesión
 func (h *WorkoutSessionHandler) GetSessionByID(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
@@ -65,10 +64,7 @@ func (h *WorkoutSessionHandler) GetSessionByID(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	session, err := h.sessionService.GetByID(ctx, actor, id)
+	session, err := h.sessionService.GetByID(actor, id)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
@@ -81,13 +77,14 @@ func (h *WorkoutSessionHandler) GetSessionByID(c *gin.Context) {
 func (h *WorkoutSessionHandler) UpdateSession(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
 	}
 
-	var session models.WorkoutSession
-	if err := c.ShouldBindJSON(&session); err != nil {
+	var req dto.WorkoutSessionUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
@@ -98,23 +95,21 @@ func (h *WorkoutSessionHandler) UpdateSession(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
 		return
 	}
-	session.ID = id
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := h.sessionService.Update(ctx, actor, &session); err != nil {
+	updated, err := h.sessionService.Update(actor, id, req)
+	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Sesión actualizada correctamente"})
+	c.JSON(http.StatusOK, updated)
 }
 
 // DELETE /api/workout-sessions/:id → eliminar sesión
 func (h *WorkoutSessionHandler) DeleteSession(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
@@ -127,10 +122,7 @@ func (h *WorkoutSessionHandler) DeleteSession(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := h.sessionService.Delete(ctx, actor, id); err != nil {
+	if err := h.sessionService.Delete(actor, id); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
@@ -142,6 +134,7 @@ func (h *WorkoutSessionHandler) DeleteSession(c *gin.Context) {
 func (h *WorkoutSessionHandler) SearchSessions(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
@@ -154,11 +147,8 @@ func (h *WorkoutSessionHandler) SearchSessions(c *gin.Context) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
 	opts := options.Find()
-	results, err := h.sessionService.Search(ctx, actor, filter, opts)
+	results, err := h.sessionService.Search(actor, filter, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

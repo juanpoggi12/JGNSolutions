@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -15,11 +14,11 @@ import (
 
 // WorkoutEntryHandler maneja las operaciones sobre las entradas de entrenamiento
 type WorkoutEntryHandler struct {
-	entryService *services.WorkoutEntryService
+	entryService services.WorkoutEntryServiceInterface
 }
 
 // Constructor
-func NewWorkoutEntryHandler(entryService *services.WorkoutEntryService) *WorkoutEntryHandler {
+func NewWorkoutEntryHandler(entryService services.WorkoutEntryServiceInterface) *WorkoutEntryHandler {
 	return &WorkoutEntryHandler{entryService: entryService}
 }
 
@@ -27,32 +26,32 @@ func NewWorkoutEntryHandler(entryService *services.WorkoutEntryService) *Workout
 func (h *WorkoutEntryHandler) CreateEntry(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
 	}
 
-	var entry models.WorkoutEntry
-	if err := c.ShouldBindJSON(&entry); err != nil {
+	var req dto.WorkoutEntryCreateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := h.entryService.Create(ctx, actor, &entry); err != nil {
+	created, err := h.entryService.Create(actor, req)
+	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusCreated, entry)
+	c.JSON(http.StatusCreated, created)
 }
 
 // GET /api/workout-entries/:id → obtener una entrada por ID
 func (h *WorkoutEntryHandler) GetEntryByID(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
@@ -65,10 +64,7 @@ func (h *WorkoutEntryHandler) GetEntryByID(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	entry, err := h.entryService.GetByID(ctx, actor, id)
+	entry, err := h.entryService.GetByID(actor, id)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
@@ -81,13 +77,14 @@ func (h *WorkoutEntryHandler) GetEntryByID(c *gin.Context) {
 func (h *WorkoutEntryHandler) UpdateEntry(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
 	}
 
-	var entry models.WorkoutEntry
-	if err := c.ShouldBindJSON(&entry); err != nil {
+	var req dto.WorkoutEntryUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
@@ -98,23 +95,21 @@ func (h *WorkoutEntryHandler) UpdateEntry(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
 		return
 	}
-	entry.ID = id
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := h.entryService.Update(ctx, actor, &entry); err != nil {
+	updated, err := h.entryService.Update(actor, id, req)
+	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Entrada actualizada correctamente"})
+	c.JSON(http.StatusOK, updated)
 }
 
 // DELETE /api/workout-entries/:id → eliminar una entrada
 func (h *WorkoutEntryHandler) DeleteEntry(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
@@ -127,10 +122,7 @@ func (h *WorkoutEntryHandler) DeleteEntry(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := h.entryService.Delete(ctx, actor, id); err != nil {
+	if err := h.entryService.Delete(actor, id); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
@@ -142,27 +134,27 @@ func (h *WorkoutEntryHandler) DeleteEntry(c *gin.Context) {
 func (h *WorkoutEntryHandler) SearchEntries(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
 	}
 
-	// Filtros opcionales
 	filter := bson.M{}
 	if sessionID := c.Query("session_id"); sessionID != "" {
 		if oid, err := primitive.ObjectIDFromHex(sessionID); err == nil {
 			filter["workoutSessionId"] = oid
 		}
 	}
-	if exerciseName := c.Query("exercise_name"); exerciseName != "" {
-		filter["exerciseName"] = bson.M{"$regex": exerciseName, "$options": "i"}
+
+	if exerciseID := c.Query("exercise_id"); exerciseID != "" {
+		if oid, err := primitive.ObjectIDFromHex(exerciseID); err == nil {
+			filter["exerciseId"] = oid
+		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
 	opts := options.Find()
-	results, err := h.entryService.Search(ctx, actor, filter, opts)
+	results, err := h.entryService.Search(actor, filter, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

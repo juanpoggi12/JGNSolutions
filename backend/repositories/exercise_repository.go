@@ -52,7 +52,7 @@ func (repository ExerciseRepository) BuscarEjercicios(nombre, categoria, grupoMu
 		if err != nil {
 			return nil, err
 		}
-		filtro["createdByUserId"] = objectID
+		filtro["createdBy"] = objectID
 	}
 	if !incluirEliminados {
 		filtro["isDeleted"] = false
@@ -101,15 +101,15 @@ func (repository ExerciseRepository) ModificarEjercicio(ejercicio models.Exercis
 
 	filtro := bson.M{"_id": ejercicio.ID}
 	actualizacion := bson.M{"$set": bson.M{
-		"name":            ejercicio.Name,
-		"description":     ejercicio.Description,
-		"category":        ejercicio.Category,
-		"muscleGroup":     ejercicio.MuscleGroup,
-		"difficulty":      ejercicio.Difficulty,
-		"mediaUrl":        ejercicio.MediaURL,
-		"instructions":    ejercicio.Instructions,
-		"createdByUserId": ejercicio.CreatedBy,
-		"updatedAt":       ejercicio.UpdatedAt,
+		"name":         ejercicio.Name,
+		"description":  ejercicio.Description,
+		"category":     ejercicio.Category,
+		"muscleGroup":  ejercicio.MuscleGroup,
+		"difficulty":   ejercicio.Difficulty,
+		"mediaUrl":     ejercicio.MediaURL,
+		"instructions": ejercicio.Instructions,
+		"createdBy":    ejercicio.CreatedBy,
+		"updatedAt":    ejercicio.UpdatedAt,
 	}}
 
 	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)

@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"errors"
 	"strings"
 	"time"
@@ -15,11 +14,11 @@ import (
 )
 
 type UserServiceInterface interface {
-	CreateUser(actor Actor, user models.User) (models.User, error)
+	CreateUser(actor Actor, req dto.UserCreateRequest) (models.User, error)
 	GetUserByID(actor Actor, id string) (models.User, error)
 	UpdateUser(actor Actor, id string, user models.User) (models.User, error)
 	DeleteUser(actor Actor, id string) error
-	ChangePassword(ctx context.Context, userID primitive.ObjectID, req dto.ChangePasswordRequest) error
+	ChangePassword(actor Actor, req dto.ChangePasswordRequest) error
 }
 
 type UserService struct {
@@ -30,39 +29,35 @@ func NewUserService(repository repositories.UserRepositoryInterface) *UserServic
 	return &UserService{repository: repository}
 }
 
-func (service *UserService) CreateUser(actor Actor, user models.User) (models.User, error) {
+func (service *UserService) CreateUser(actor Actor, req dto.UserCreateRequest) (models.User, error) {
 	// Solo los administradores pueden crear nuevos usuarios
-	if actor.Role != "admin" {
+	if strings.ToLower(actor.Role) != "admin" {
 		return models.User{}, errors.New("solo los administradores pueden crear usuarios")
 	}
 
-	// Validar que venga una contraseña
-	if user.PasswordHash == "" {
+	// Validar que venga contraseña
+	if req.Password == "" {
 		return models.User{}, errors.New("la contraseña es obligatoria")
 	}
 
-	// Hashear la contraseña antes de guardar
-	hash, err := utils.HashPassword(user.PasswordHash)
+	// Convertir DTO → Modelo (ya hashea la contraseña)
+	user, err := utils.ConvertUserCreateRequestToModel(req)
 	if err != nil {
-		return models.User{}, errors.New("error al hashear la contraseña")
+		return models.User{}, errors.New("error al crear modelo de usuario")
 	}
-	user.PasswordHash = hash
 
-	// Normalizar el rol a minúsculas (por coherencia con el resto del código)
-	user.Role = models.Role(strings.ToLower(string(user.Role)))
+	// Rol por defecto: user
+	if user.Role == "" {
+		user.Role = "user"
+	}
 
-	// Inicializar metadatos
-	user.ID = primitive.NilObjectID
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
-
-	// Insertar en la base de datos
+	// Insertar en la base
 	resultado, err := service.repository.InsertarUsuario(user)
 	if err != nil {
 		return models.User{}, err
 	}
 
-	// Si la inserción fue correcta, asignar el ObjectID generado
+	// Asignar el ID generado
 	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
 		user.ID = oid
 		return user, nil
@@ -151,11 +146,11 @@ func (service *UserService) DeleteUser(actor Actor, id string) error {
 	return nil
 }
 
-func (s *UserService) ChangePassword(ctx context.Context, userID primitive.ObjectID, req dto.ChangePasswordRequest) error {
-	// Buscar el usuario en la base de datos
-	user, err := s.repository.ObtenerUsuarioPorID(userID.Hex()) // 🔹 Convertimos ObjectID a string
+func (s *UserService) ChangePassword(actor Actor, req dto.ChangePasswordRequest) error {
+	// Buscar el usuario autenticado
+	user, err := s.repository.ObtenerUsuarioPorID(actor.UserID.Hex())
 	if err != nil {
-		return err
+		return errors.New("usuario no encontrado")
 	}
 
 	// Verificar la contraseña actual
@@ -169,7 +164,11 @@ func (s *UserService) ChangePassword(ctx context.Context, userID primitive.Objec
 		return err
 	}
 
-	// Guardar cambios en la base (ignoramos el resultado del Update)
-	_, err = s.repository.ActualizarPassword(userID, hashed)
-	return err
+	// Actualizar la contraseña en la base de datos
+	_, err = s.repository.ActualizarPassword(actor.UserID, hashed)
+	if err != nil {
+		return errors.New("error al actualizar contraseña")
+	}
+
+	return nil
 }

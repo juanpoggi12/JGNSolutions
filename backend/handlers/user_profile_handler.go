@@ -4,8 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/juanpoggi12/JGNSolutions/backend/models"
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -38,7 +39,6 @@ func (h *UserProfileHandler) GetProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, perfil)
 }
 
-// PUT /api/profile → Actualizar perfil del usuario autenticado
 func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
@@ -48,13 +48,13 @@ func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 		Role:   role,
 	}
 
-	var perfil models.UserProfile
-	if err := c.ShouldBindJSON(&perfil); err != nil {
+	var req dto.UserProfileUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	updated, err := h.userProfileService.UpdateProfile(actor, perfil)
+	updated, err := h.userProfileService.UpdateProfile(actor, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -73,13 +73,14 @@ func (h *UserProfileHandler) CreateProfile(c *gin.Context) {
 		Role:   role,
 	}
 
-	var perfil models.UserProfile
-	if err := c.ShouldBindJSON(&perfil); err != nil {
+	// ✅ Bind al DTO
+	var req dto.UserProfileCreateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	created, err := h.userProfileService.CreateProfile(actor, perfil)
+	created, err := h.userProfileService.CreateProfile(actor, req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

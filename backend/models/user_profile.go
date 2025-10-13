@@ -28,5 +28,6 @@ type UserProfile struct {
 	HeightCm  int                `bson:"heightCm" json:"heightCm"`
 	Level     Nivel              `bson:"level" json:"level"`
 	Goal      Objetivo           `bson:"goal" json:"goal"`
+	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
 }

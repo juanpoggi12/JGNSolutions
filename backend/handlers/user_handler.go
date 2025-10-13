@@ -3,12 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"github.com/gin-gonic/gin"
-	"github.com/juanpoggi12/JGNSolutions/backend/models"
-	"github.com/juanpoggi12/JGNSolutions/backend/services"
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
-
+	"github.com/juanpoggi12/JGNSolutions/backend/services"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // UserHandler maneja las peticiones HTTP relacionadas con usuarios
@@ -31,13 +29,15 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		Role:   role,
 	}
 
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	// 1️⃣ Bindeamos al DTO, no al modelo
+	var req dto.UserCreateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	created, err := h.userService.CreateUser(actor, user)
+	// 2️⃣ Llamar al servicio (él se encarga del resto)
+	created, err := h.userService.CreateUser(actor, req)
 	if err != nil {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
@@ -117,30 +117,25 @@ func parseObjectID(id string) primitive.ObjectID {
 
 // Cambiar contraseña del usuario autenticado
 func (h *UserHandler) ChangePassword(c *gin.Context) {
-	var req dto.ChangePasswordRequest
-
 	// 1️⃣ Validar el JSON recibido
+	var req dto.ChangePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	// 2️⃣ Obtener el ID del usuario del contexto (lo setea el middleware JWT)
-	userIDHex, exists := c.Get("userID")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
-		return
-	}
+	// 2️⃣ Obtener los datos del usuario autenticado (set por middleware JWT)
+	role := c.GetString("role")
+	userID := c.GetString("userId") // ⚠️ corregido: antes usabas "userID"
 
-	// 3️⃣ Convertir el ID de string a ObjectID
-	userID, err := primitive.ObjectIDFromHex(userIDHex.(string))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de usuario inválido"})
-		return
+	// 3️⃣ Crear el actor
+	actor := services.Actor{
+		UserID: parseObjectID(userID),
+		Role:   role,
 	}
 
 	// 4️⃣ Llamar al servicio para cambiar la contraseña
-	if err := h.userService.ChangePassword(c, userID, req); err != nil {
+	if err := h.userService.ChangePassword(actor, req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

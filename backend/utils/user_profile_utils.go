@@ -5,26 +5,28 @@ import (
 
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
 
 // CreateRequest → Model
 // Ya no toma el UserID del DTO, se asigna externamente en el service usando actor.UserID
-func ConvertUserProfileCreateRequestToModel(req dto.UserProfileCreateRequest) (models.UserProfile, error) {
+func ConvertUserProfileCreateRequestToModel(req dto.UserProfileCreateRequest, userID primitive.ObjectID) (models.UserProfile, error) {
 	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
 	if err != nil {
 		return models.UserProfile{}, err
 	}
 
 	return models.UserProfile{
-		// UserID se asignará en el service
+		UserID:    userID,
 		FullName:  req.FullName,
 		BirthDate: birthDate,
 		WeightKg:  req.WeightKg,
 		HeightCm:  req.HeightCm,
 		Level:     models.Nivel(req.Level),
 		Goal:      models.Objetivo(req.Goal),
+		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}, nil
 }
@@ -68,6 +70,7 @@ func ConvertUserProfileModelToResponse(up models.UserProfile) dto.UserProfileRes
 		HeightCm:  up.HeightCm,
 		Level:     string(up.Level),
 		Goal:      string(up.Goal),
+		CreatedAt: up.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: up.UpdatedAt.Format(time.RFC3339),
 	}
 }

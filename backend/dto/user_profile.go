@@ -32,5 +32,6 @@ type UserProfileResponse struct {
 	HeightCm  int     `json:"height_cm"`
 	Level     string  `json:"level"`
 	Goal      string  `json:"goal"`
+	CreatedAt string  `json:"created_at"` // 👈 nuevo campo (RFC3339)
 	UpdatedAt string  `json:"updated_at"` // RFC3339
 }

@@ -87,6 +87,7 @@ func ConvertWorkoutSessionModelToResponse(ws models.WorkoutSession) dto.WorkoutS
 		FechaHoraFin:    ws.EndTime.Format(time.RFC3339),
 		NotasGenerales:  ws.Notes,
 		CreatedAt:       ws.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:       ws.UpdatedAt.Format(time.RFC3339),
 	}
 }
 

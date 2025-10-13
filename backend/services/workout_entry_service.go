@@ -1,55 +1,72 @@
 package services
 
 import (
-	"context"
 	"errors"
-	"time"
 
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
-
+	"github.com/juanpoggi12/JGNSolutions/backend/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type WorkoutEntryService struct {
-	repo        *repositories.WorkoutEntryRepository
-	sessionRepo *repositories.WorkoutSessionRepository
+// 🧩 Interfaz del servicio
+type WorkoutEntryServiceInterface interface {
+	Create(actor Actor, req dto.WorkoutEntryCreateRequest) (models.WorkoutEntry, error)
+	GetByID(actor Actor, id primitive.ObjectID) (*models.WorkoutEntry, error)
+	Update(actor Actor, id primitive.ObjectID, req dto.WorkoutEntryUpdateRequest) (models.WorkoutEntry, error)
+	Delete(actor Actor, id primitive.ObjectID) error
+	Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error)
 }
 
-func NewWorkoutEntryService(repo *repositories.WorkoutEntryRepository, sessionRepo *repositories.WorkoutSessionRepository) *WorkoutEntryService {
+// 🧩 Implementación
+type WorkoutEntryService struct {
+	repo        repositories.WorkoutEntryRepositoryInterface
+	sessionRepo repositories.WorkoutSessionRepositoryInterface
+}
+
+func NewWorkoutEntryService(repo repositories.WorkoutEntryRepositoryInterface, sessionRepo repositories.WorkoutSessionRepositoryInterface) *WorkoutEntryService {
 	return &WorkoutEntryService{repo: repo, sessionRepo: sessionRepo}
 }
 
-// Crear una entrada de entrenamiento (verifica que la sesión pertenezca al actor)
-func (s *WorkoutEntryService) Create(ctx context.Context, actor Actor, entry *models.WorkoutEntry) error {
-	// Buscar la sesión a la que pertenece
-	session, err := s.sessionRepo.FindByID(ctx, entry.WorkoutSessionID)
+// Crear una nueva entrada
+func (s *WorkoutEntryService) Create(actor Actor, req dto.WorkoutEntryCreateRequest) (models.WorkoutEntry, error) {
+	sessionID, err := primitive.ObjectIDFromHex(req.WorkoutSessionID)
 	if err != nil {
-		return errors.New("la sesión de entrenamiento no existe")
+		return models.WorkoutEntry{}, errors.New("ID de sesión inválido")
 	}
 
-	// Validar permisos
+	session, err := s.sessionRepo.FindByID(sessionID)
+	if err != nil {
+		return models.WorkoutEntry{}, errors.New("la sesión de entrenamiento no existe")
+	}
+
 	if actor.Role != "admin" && session.UserID != actor.UserID {
-		return errors.New("no tienes permiso para agregar entradas a esta sesión")
+		return models.WorkoutEntry{}, errors.New("no tienes permiso para agregar entradas a esta sesión")
 	}
 
-	// Asignar timestamps (opcional si tu modelo los tiene)
-	_ = time.Now() // placeholder si luego agregás CreatedAt
+	entry, err := utils.ConvertWorkoutEntryCreateRequestToModel(req)
+	if err != nil {
+		return models.WorkoutEntry{}, err
+	}
 
-	return s.repo.Create(ctx, entry)
+	if err := s.repo.Create(&entry); err != nil {
+		return models.WorkoutEntry{}, err
+	}
+
+	return entry, nil
 }
 
-// Obtener una entrada por ID (solo si pertenece a una sesión del actor o si es admin)
-func (s *WorkoutEntryService) GetByID(ctx context.Context, actor Actor, id primitive.ObjectID) (*models.WorkoutEntry, error) {
-	entry, err := s.repo.FindByID(ctx, id)
+// Obtener una entrada por ID
+func (s *WorkoutEntryService) GetByID(actor Actor, id primitive.ObjectID) (*models.WorkoutEntry, error) {
+	entry, err := s.repo.FindByID(id)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("entrada no encontrada")
 	}
 
-	// Traer la sesión a la que pertenece la entrada
-	session, err := s.sessionRepo.FindByID(ctx, entry.WorkoutSessionID)
+	session, err := s.sessionRepo.FindByID(entry.WorkoutSessionID)
 	if err != nil {
 		return nil, errors.New("no se pudo validar la sesión asociada")
 	}
@@ -61,33 +78,54 @@ func (s *WorkoutEntryService) GetByID(ctx context.Context, actor Actor, id primi
 	return entry, nil
 }
 
-// Actualizar una entrada (solo si pertenece a una sesión del actor o si es admin)
-func (s *WorkoutEntryService) Update(ctx context.Context, actor Actor, entry *models.WorkoutEntry) error {
-	existing, err := s.repo.FindByID(ctx, entry.ID)
+// Actualizar una entrada
+func (s *WorkoutEntryService) Update(actor Actor, id primitive.ObjectID, req dto.WorkoutEntryUpdateRequest) (models.WorkoutEntry, error) {
+	existing, err := s.repo.FindByID(id)
 	if err != nil {
-		return errors.New("entrada no encontrada")
+		return models.WorkoutEntry{}, errors.New("entrada no encontrada")
 	}
 
-	session, err := s.sessionRepo.FindByID(ctx, existing.WorkoutSessionID)
+	session, err := s.sessionRepo.FindByID(existing.WorkoutSessionID)
 	if err != nil {
-		return errors.New("no se pudo validar la sesión asociada")
+		return models.WorkoutEntry{}, errors.New("no se pudo validar la sesión asociada")
 	}
 
 	if actor.Role != "admin" && session.UserID != actor.UserID {
-		return errors.New("no tienes permiso para modificar esta entrada")
+		return models.WorkoutEntry{}, errors.New("no tienes permiso para modificar esta entrada")
 	}
 
-	return s.repo.Update(ctx, entry)
+	// Aplicar campos enviados
+	if req.SetNumber != nil {
+		existing.SetNumber = *req.SetNumber
+	}
+	if req.RepsDone != nil {
+		existing.RepsDone = req.RepsDone
+	}
+	if req.WeightUsed != nil {
+		existing.WeightUsed = req.WeightUsed
+	}
+	if req.TimeSec != nil {
+		existing.TimeSec = req.TimeSec
+	}
+	if req.PerceivedEffort != nil {
+		existing.PerceivedEffort = req.PerceivedEffort
+	}
+
+	if err := s.repo.Update(existing); err != nil {
+		return models.WorkoutEntry{}, err
+	}
+
+	return *existing, nil
 }
 
-// Eliminar una entrada (solo si pertenece a una sesión del actor o si es admin)
-func (s *WorkoutEntryService) Delete(ctx context.Context, actor Actor, id primitive.ObjectID) error {
-	entry, err := s.repo.FindByID(ctx, id)
+// Eliminar una entrada
+func (s *WorkoutEntryService) Delete(actor Actor, id primitive.ObjectID) error {
+	entry, err := s.repo.FindByID(id)
 	if err != nil {
 		return errors.New("entrada no encontrada")
 	}
 
-	session, err := s.sessionRepo.FindByID(ctx, entry.WorkoutSessionID)
+	session, err := s.sessionRepo.FindByID(entry.WorkoutSessionID)
 	if err != nil {
 		return errors.New("no se pudo validar la sesión asociada")
 	}
@@ -96,14 +134,13 @@ func (s *WorkoutEntryService) Delete(ctx context.Context, actor Actor, id primit
 		return errors.New("no tienes permiso para eliminar esta entrada")
 	}
 
-	return s.repo.Delete(ctx, id)
+	return s.repo.Delete(id)
 }
 
-// Buscar entradas (solo las que pertenecen a sesiones del actor, salvo que sea admin)
-func (s *WorkoutEntryService) Search(ctx context.Context, actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error) {
+// Buscar entradas
+func (s *WorkoutEntryService) Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error) {
 	if actor.Role != "admin" {
-		// Filtramos por sesiones del usuario autenticado
-		userSessions, err := s.sessionRepo.FindByUser(ctx, actor.UserID)
+		userSessions, err := s.sessionRepo.FindByUser(actor.UserID)
 		if err != nil {
 			return nil, errors.New("no se pudieron obtener las sesiones del usuario")
 		}
@@ -116,5 +153,5 @@ func (s *WorkoutEntryService) Search(ctx context.Context, actor Actor, filter bs
 		filter["workoutSessionId"] = bson.M{"$in": sessionIDs}
 	}
 
-	return s.repo.Search(ctx, filter, opts...)
+	return s.repo.Search(filter, opts...)
 }

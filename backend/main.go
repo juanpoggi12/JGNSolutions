@@ -101,7 +101,7 @@ func main() {
 
 	// 2️⃣ Servicios
 	userService := services.NewUserService(userRepo)
-	adminService := services.NewAdminService(adminRepo, userRepo)
+	adminService := services.NewAdminService(adminRepo, userRepo, userProfileRepo)
 	exerciseService := services.NewExerciseService(exerciseRepo)
 	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo)
 	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo)

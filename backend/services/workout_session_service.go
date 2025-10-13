@@ -1,45 +1,65 @@
 package services
 
 import (
-	"context"
 	"errors"
 	"time"
 
+	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
+	"github.com/juanpoggi12/JGNSolutions/backend/utils"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type WorkoutSessionService struct {
-	repo *repositories.WorkoutSessionRepository
+// 🧩 Interfaz del servicio
+type WorkoutSessionServiceInterface interface {
+	Create(actor Actor, req dto.WorkoutSessionCreateRequest) (models.WorkoutSession, error)
+	GetByID(actor Actor, id primitive.ObjectID) (*models.WorkoutSession, error)
+	Update(actor Actor, id primitive.ObjectID, req dto.WorkoutSessionUpdateRequest) (models.WorkoutSession, error)
+	Delete(actor Actor, id primitive.ObjectID) error
+	Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutSession, error)
 }
 
-func NewWorkoutSessionService(repo *repositories.WorkoutSessionRepository) *WorkoutSessionService {
+// 🧩 Implementación
+type WorkoutSessionService struct {
+	repo repositories.WorkoutSessionRepositoryInterface
+}
+
+func NewWorkoutSessionService(repo repositories.WorkoutSessionRepositoryInterface) *WorkoutSessionService {
 	return &WorkoutSessionService{repo: repo}
 }
 
-// Crear una nueva sesión de entrenamiento para el usuario autenticado
-func (s *WorkoutSessionService) Create(ctx context.Context, actor Actor, session *models.WorkoutSession) error {
+// Crear una nueva sesión
+func (s *WorkoutSessionService) Create(actor Actor, req dto.WorkoutSessionCreateRequest) (models.WorkoutSession, error) {
 	if actor.Role != "user" && actor.Role != "admin" {
-		return errors.New("rol no autorizado para crear sesiones")
+		return models.WorkoutSession{}, errors.New("rol no autorizado para crear sesiones")
+	}
+
+	session, err := utils.ConvertWorkoutSessionCreateRequestToModel(req)
+	if err != nil {
+		return models.WorkoutSession{}, err
 	}
 
 	session.UserID = actor.UserID
 	session.CreatedAt = time.Now()
 
-	return s.repo.Create(ctx, session)
-}
-
-// Obtener una sesión por ID (solo si pertenece al actor o si es admin)
-func (s *WorkoutSessionService) GetByID(ctx context.Context, actor Actor, id primitive.ObjectID) (*models.WorkoutSession, error) {
-	session, err := s.repo.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
+	if err := s.repo.Create(&session); err != nil {
+		return models.WorkoutSession{}, err
 	}
 
-	// Los usuarios solo pueden ver sus propias sesiones
+	return session, nil
+}
+
+// Obtener una sesión por ID
+func (s *WorkoutSessionService) GetByID(actor Actor, id primitive.ObjectID) (*models.WorkoutSession, error) {
+	session, err := s.repo.FindByID(id)
+	if err != nil {
+		return nil, errors.New("sesión no encontrada")
+	}
+
 	if actor.Role != "admin" && session.UserID != actor.UserID {
 		return nil, errors.New("no tienes permiso para acceder a esta sesión")
 	}
@@ -47,24 +67,46 @@ func (s *WorkoutSessionService) GetByID(ctx context.Context, actor Actor, id pri
 	return session, nil
 }
 
-// Actualizar una sesión (solo si pertenece al actor o si es admin)
-func (s *WorkoutSessionService) Update(ctx context.Context, actor Actor, session *models.WorkoutSession) error {
-	existing, err := s.repo.FindByID(ctx, session.ID)
+// Actualizar una sesión
+func (s *WorkoutSessionService) Update(actor Actor, id primitive.ObjectID, req dto.WorkoutSessionUpdateRequest) (models.WorkoutSession, error) {
+	existing, err := s.repo.FindByID(id)
 	if err != nil {
-		return errors.New("sesión no encontrada")
+		return models.WorkoutSession{}, errors.New("sesión no encontrada")
 	}
 
 	if actor.Role != "admin" && existing.UserID != actor.UserID {
-		return errors.New("no tienes permiso para modificar esta sesión")
+		return models.WorkoutSession{}, errors.New("no tienes permiso para modificar esta sesión")
 	}
 
-	session.UserID = existing.UserID // evitar cambiar el propietario
-	return s.repo.Update(ctx, session)
+	// Aplicar solo los campos enviados
+	if req.RoutineID != nil {
+		if oid, err := primitive.ObjectIDFromHex(*req.RoutineID); err == nil {
+			existing.RoutineID = &oid
+		}
+	}
+	if req.StartTime != nil {
+		start, _ := time.Parse(time.RFC3339, *req.StartTime)
+		existing.StartTime = start
+	}
+	if req.EndTime != nil {
+		end, _ := time.Parse(time.RFC3339, *req.EndTime)
+		existing.EndTime = end
+	}
+	if req.Notes != nil {
+		existing.Notes = *req.Notes
+	}
+	existing.UpdatedAt = time.Now()
+
+	if err := s.repo.Update(existing); err != nil {
+		return models.WorkoutSession{}, err
+	}
+
+	return *existing, nil
 }
 
-// Eliminar una sesión (solo si pertenece al actor o si es admin)
-func (s *WorkoutSessionService) Delete(ctx context.Context, actor Actor, id primitive.ObjectID) error {
-	session, err := s.repo.FindByID(ctx, id)
+// Eliminar una sesión
+func (s *WorkoutSessionService) Delete(actor Actor, id primitive.ObjectID) error {
+	session, err := s.repo.FindByID(id)
 	if err != nil {
 		return errors.New("sesión no encontrada")
 	}
@@ -73,13 +115,13 @@ func (s *WorkoutSessionService) Delete(ctx context.Context, actor Actor, id prim
 		return errors.New("no tienes permiso para eliminar esta sesión")
 	}
 
-	return s.repo.Delete(ctx, id)
+	return s.repo.Delete(id)
 }
 
-// Buscar sesiones (solo las del actor, salvo que sea admin)
-func (s *WorkoutSessionService) Search(ctx context.Context, actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutSession, error) {
+// Buscar sesiones (solo las del actor, salvo admin)
+func (s *WorkoutSessionService) Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutSession, error) {
 	if actor.Role != "admin" {
 		filter["userId"] = actor.UserID
 	}
-	return s.repo.Search(ctx, filter, opts...)
+	return s.repo.Search(filter, opts...)
 }
