@@ -11,12 +11,9 @@ import (
 )
 
 type UserProfileRepositoryInterface interface {
-	// Usuario común
 	ObtenerPerfilPorUserID(userID primitive.ObjectID) (models.UserProfile, error)
 	InsertarPerfil(perfil models.UserProfile) (*mongo.InsertOneResult, error)
 	ModificarPerfil(perfil models.UserProfile) (*mongo.UpdateResult, error)
-
-	// Admin
 	ListarPerfiles() ([]models.UserProfile, error)
 	ObtenerPerfilPorID(id string) (models.UserProfile, error)
 	EliminarPerfil(id primitive.ObjectID) (*mongo.DeleteResult, error)
@@ -71,8 +68,6 @@ func (repository UserProfileRepository) ModificarPerfil(perfil models.UserProfil
 	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)
 	return resultado, err
 }
-
-// --- Métodos para administradores ---
 
 func (repository UserProfileRepository) ListarPerfiles() ([]models.UserProfile, error) {
 	collection := repository.collection()

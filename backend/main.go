@@ -101,12 +101,11 @@ func main() {
 
 	// 2️⃣ Servicios
 	userService := services.NewUserService(userRepo)
-	adminService := services.NewAdminService(adminRepo, userRepo, userProfileRepo)
+	adminService := services.NewAdminService(adminRepo, userRepo, userProfileRepo, logRepo)
 	exerciseService := services.NewExerciseService(exerciseRepo)
 	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo)
 	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo)
 	routineService := services.NewRoutineService(routineRepo, routineExerciseRepo, exerciseRepo)
-	logService := services.NewLogService(logRepo)
 	userProfileService := services.NewUserProfileService(userProfileRepo)
 
 	// 3️⃣ Handlers
@@ -116,7 +115,6 @@ func main() {
 	workoutEntryHandler := handlers.NewWorkoutEntryHandler(workoutEntryService)
 	workoutSessionHandler := handlers.NewWorkoutSessionHandler(workoutSessionService)
 	routineHandler := handlers.NewRoutineHandler(routineService)
-	adminLogsHandler := handlers.NewAdminLogsHandler(logService)
 	userProfileHandler := handlers.NewUserProfileHandler(userProfileService)
 
 	// --- 🚀 REGISTRO DE RUTAS ---
@@ -157,10 +155,10 @@ func main() {
 			apiAdmin.GET("/users", adminHandler.ListUsers)
 			apiAdmin.GET("/exercises/top", adminHandler.TopExercises)
 			apiAdmin.GET("/routines/top", adminHandler.TopRoutines)
-			apiAdmin.GET("/logs", adminLogsHandler.GetLogs)
+			apiAdmin.GET("/logs", adminHandler.ListLogs)
 			apiAdmin.GET("/user-profiles", adminHandler.ListProfiles)
-			apiAdmin.GET("/user-profiles/:id", adminHandler.GetProfileByID)
-			apiAdmin.DELETE("/user-profiles/:id", adminHandler.DeleteProfile)
+			apiAdmin.GET("/user-profiles/stats/levels", adminHandler.CountProfilesByLevel)
+			apiAdmin.GET("/user-profiles/stats/goals", adminHandler.CountProfilesByGoal)
 		}
 
 		// --- Rutas de ejercicios ---

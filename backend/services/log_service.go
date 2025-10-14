@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"time"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
@@ -17,17 +16,14 @@ func NewLogService(repo *repositories.LogRepository) *LogService {
 	return &LogService{repository: repo}
 }
 
-// Registrar una acción del usuario
-func (s *LogService) RecordAction(ctx context.Context, userID primitive.ObjectID, action string) {
+// RecordAction → Registra una acción realizada por un usuario
+func (s *LogService) RecordAction(userID primitive.ObjectID, action string) {
 	log := models.Log{
 		UserID:    userID,
 		Action:    action,
 		Timestamp: time.Now(),
 	}
-	_, _ = s.repository.InsertarLog(ctx, &log) // Ignora errores, no interrumpe flujo
-}
 
-// Listar todos los logs
-func (s *LogService) ListarLogs(ctx context.Context) ([]models.Log, error) {
-	return s.repository.ListarLogs(ctx)
+	// Ignoramos el error porque el logging no debe interrumpir la ejecución principal
+	_, _ = s.repository.InsertarLog(log)
 }

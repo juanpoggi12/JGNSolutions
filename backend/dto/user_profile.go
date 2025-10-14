@@ -35,3 +35,12 @@ type UserProfileResponse struct {
 	CreatedAt string  `json:"created_at"` // 👈 nuevo campo (RFC3339)
 	UpdatedAt string  `json:"updated_at"` // RFC3339
 }
+
+type UserProfileListResponse struct {
+	ID       string  `json:"id"`
+	FullName string  `json:"full_name"`
+	Level    string  `json:"level"`
+	Goal     string  `json:"goal"`
+	WeightKg float64 `json:"weight_kg"`
+	HeightCm int     `json:"height_cm"`
+}

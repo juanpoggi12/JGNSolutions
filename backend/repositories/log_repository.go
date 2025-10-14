@@ -10,6 +10,11 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type LogRepositoryInterface interface {
+	InsertarLog(log models.Log) (*mongo.InsertOneResult, error)
+	ListarLogs() ([]models.Log, error)
+}
+
 type LogRepository struct {
 	db *mongo.Database
 }
@@ -18,33 +23,40 @@ func NewLogRepository(db *mongo.Database) *LogRepository {
 	return &LogRepository{db: db}
 }
 
-func (r LogRepository) collection() *mongo.Collection {
-	return r.db.Collection("logs")
+func (repository LogRepository) collection() *mongo.Collection {
+	return repository.db.Collection("logs")
 }
 
-// Insertar un nuevo log
-func (r LogRepository) InsertarLog(ctx context.Context, log *models.Log) (*mongo.InsertOneResult, error) {
+// InsertarLog → Guarda un nuevo registro en la colección de logs
+func (repository LogRepository) InsertarLog(log models.Log) (*mongo.InsertOneResult, error) {
+	collection := repository.collection()
+
 	if log.Timestamp.IsZero() {
 		log.Timestamp = time.Now()
 	}
-	return r.collection().InsertOne(ctx, log)
+
+	resultado, err := collection.InsertOne(context.TODO(), log)
+	return resultado, err
 }
 
-// Listar todos los logs ordenados por fecha (más recientes primero)
-func (r LogRepository) ListarLogs(ctx context.Context) ([]models.Log, error) {
+// ListarLogs → Devuelve todos los logs ordenados por fecha descendente
+func (repository LogRepository) ListarLogs() ([]models.Log, error) {
+	collection := repository.collection()
+
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}})
-	cur, err := r.collection().Find(ctx, bson.M{}, opts)
+	cur, err := collection.Find(context.TODO(), bson.M{}, opts)
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx)
+	defer cur.Close(context.Background())
 
 	var logs []models.Log
-	for cur.Next(ctx) {
-		var l models.Log
-		if err := cur.Decode(&l); err == nil {
-			logs = append(logs, l)
+	for cur.Next(context.Background()) {
+		var log models.Log
+		if err := cur.Decode(&log); err == nil {
+			logs = append(logs, log)
 		}
 	}
-	return logs, cur.Err()
+
+	return logs, nil
 }

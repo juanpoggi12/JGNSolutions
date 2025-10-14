@@ -3,8 +3,6 @@ package services
 import (
 	"errors"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
@@ -18,23 +16,30 @@ type AdminServiceInterface interface {
 	ListUsers(actor Actor) ([]dto.UserListResponse, error)
 	TopExercises(actor Actor, limit int) ([]dto.ExerciseStatResponse, error)
 	TopRoutines(actor Actor, limit int) ([]dto.RoutineStatResponse, error)
+	ListProfiles(actor Actor) ([]dto.UserProfileListResponse, error)
+	CountProfilesByLevel(actor Actor) ([]dto.ProfileLevelStat, error)
+	CountProfilesByGoal(actor Actor) ([]dto.ProfileGoalStat, error)
+	ListLogs(actor Actor) ([]models.Log, error) // 👈 nuevo método
 }
 
 type AdminService struct {
 	adminRepository       repositories.AdminRepositoryInterface
 	userRepository        repositories.UserRepositoryInterface
-	userProfileRepository repositories.UserProfileRepositoryInterface // 👈 nuevo
+	userProfileRepository repositories.UserProfileRepositoryInterface
+	logRepository         *repositories.LogRepository
 }
 
 func NewAdminService(
 	adminRepo repositories.AdminRepositoryInterface,
 	userRepo repositories.UserRepositoryInterface,
 	profileRepo repositories.UserProfileRepositoryInterface,
+	logRepo *repositories.LogRepository,
 ) *AdminService {
 	return &AdminService{
 		adminRepository:       adminRepo,
 		userRepository:        userRepo,
 		userProfileRepository: profileRepo,
+		logRepository:         logRepo,
 	}
 }
 
@@ -126,29 +131,96 @@ func (s *AdminService) TopRoutines(actor Actor, limit int) ([]dto.RoutineStatRes
 	return out, nil
 }
 
-// --- Nuevos métodos para gestionar perfiles ---
-func (s *AdminService) ListProfiles(actor Actor) ([]models.UserProfile, error) {
+// --- 👤 LISTADO DE PERFILES DE USUARIO (solo admin) ---
+func (s *AdminService) ListProfiles(actor Actor) ([]dto.UserProfileListResponse, error) {
 	if actor.Role != "admin" {
-		return nil, errors.New("no tienes permiso para ver perfiles")
+		return nil, errors.New("no tienes permiso para ver perfiles de usuario")
 	}
-	return s.userProfileRepository.ListarPerfiles()
-}
 
-func (s *AdminService) GetProfileByID(actor Actor, id string) (models.UserProfile, error) {
-	if actor.Role != "admin" {
-		return models.UserProfile{}, errors.New("no tienes permiso para ver este perfil")
-	}
-	return s.userProfileRepository.ObtenerPerfilPorID(id)
-}
-
-func (s *AdminService) DeleteProfile(actor Actor, id string) error {
-	if actor.Role != "admin" {
-		return errors.New("no tienes permiso para eliminar perfiles")
-	}
-	objectID, err := primitive.ObjectIDFromHex(id)
+	perfiles, err := s.userProfileRepository.ListarPerfiles()
 	if err != nil {
-		return errors.New("ID inválido")
+		return nil, err
 	}
-	_, err = s.userProfileRepository.EliminarPerfil(objectID)
-	return err
+
+	out := make([]dto.UserProfileListResponse, 0, len(perfiles))
+	for _, p := range perfiles {
+		out = append(out, dto.UserProfileListResponse{
+			ID:       p.ID.Hex(),
+			FullName: p.FullName,
+			Level:    string(p.Level),
+			Goal:     string(p.Goal),
+			WeightKg: p.WeightKg,
+			HeightCm: p.HeightCm,
+		})
+	}
+
+	return out, nil
+}
+
+// --- 📊 ESTADÍSTICAS DE PERFILES (solo admin) ---
+
+func (s *AdminService) CountProfilesByLevel(actor Actor) ([]dto.ProfileLevelStat, error) {
+	if actor.Role != "admin" {
+		return nil, errors.New("no tienes permiso para ver estadísticas de perfiles")
+	}
+
+	perfiles, err := s.userProfileRepository.ListarPerfiles()
+	if err != nil {
+		return nil, err
+	}
+
+	stats := map[string]int{}
+	for _, p := range perfiles {
+		stats[string(p.Level)]++
+	}
+
+	out := []dto.ProfileLevelStat{}
+	for level, count := range stats {
+		out = append(out, dto.ProfileLevelStat{
+			Level: level,
+			Count: count,
+		})
+	}
+
+	return out, nil
+}
+
+func (s *AdminService) CountProfilesByGoal(actor Actor) ([]dto.ProfileGoalStat, error) {
+	if actor.Role != "admin" {
+		return nil, errors.New("no tienes permiso para ver estadísticas de perfiles")
+	}
+
+	perfiles, err := s.userProfileRepository.ListarPerfiles()
+	if err != nil {
+		return nil, err
+	}
+
+	stats := map[string]int{}
+	for _, p := range perfiles {
+		stats[string(p.Goal)]++
+	}
+
+	out := []dto.ProfileGoalStat{}
+	for goal, count := range stats {
+		out = append(out, dto.ProfileGoalStat{
+			Goal:  goal,
+			Count: count,
+		})
+	}
+
+	return out, nil
+}
+
+// --- 📜 LISTADO DE LOGS (solo admin) ---
+func (s *AdminService) ListLogs(actor Actor) ([]models.Log, error) {
+	if actor.Role != "admin" {
+		return nil, errors.New("no tienes permiso para ver los logs del sistema")
+	}
+
+	logs, err := s.logRepository.ListarLogs()
+	if err != nil {
+		return nil, err
+	}
+
+	return logs, nil
 }
