@@ -100,13 +100,15 @@ func main() {
 	userProfileRepo := repositories.NewUserProfileRepository(mc.DB)
 
 	// 2️⃣ Servicios
-	userService := services.NewUserService(userRepo)
+	logService := services.NewLogService(logRepo)
+
+	userService := services.NewUserService(userRepo, logService)
 	adminService := services.NewAdminService(adminRepo, userRepo, userProfileRepo, logRepo)
-	exerciseService := services.NewExerciseService(exerciseRepo)
-	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo)
-	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo)
-	routineService := services.NewRoutineService(routineRepo, routineExerciseRepo, exerciseRepo)
-	userProfileService := services.NewUserProfileService(userProfileRepo)
+	exerciseService := services.NewExerciseService(exerciseRepo, logService)
+	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo, logService)
+	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo, logService)
+	routineService := services.NewRoutineService(routineRepo, routineExerciseRepo, exerciseRepo, logService)
+	userProfileService := services.NewUserProfileService(userProfileRepo, logService)
 
 	// 3️⃣ Handlers
 	userHandler := handlers.NewUserHandler(userService)

@@ -25,10 +25,11 @@ type WorkoutEntryServiceInterface interface {
 type WorkoutEntryService struct {
 	repo        repositories.WorkoutEntryRepositoryInterface
 	sessionRepo repositories.WorkoutSessionRepositoryInterface
+	logService  *LogService
 }
 
-func NewWorkoutEntryService(repo repositories.WorkoutEntryRepositoryInterface, sessionRepo repositories.WorkoutSessionRepositoryInterface) *WorkoutEntryService {
-	return &WorkoutEntryService{repo: repo, sessionRepo: sessionRepo}
+func NewWorkoutEntryService(repo repositories.WorkoutEntryRepositoryInterface, sessionRepo repositories.WorkoutSessionRepositoryInterface, logService *LogService) *WorkoutEntryService {
+	return &WorkoutEntryService{repo: repo, sessionRepo: sessionRepo, logService: logService}
 }
 
 // Crear una nueva entrada
@@ -54,6 +55,10 @@ func (s *WorkoutEntryService) Create(actor Actor, req dto.WorkoutEntryCreateRequ
 
 	if err := s.repo.Create(&entry); err != nil {
 		return models.WorkoutEntry{}, err
+	}
+
+	if s.logService != nil {
+		s.logService.RecordAction(actor.UserID, "entrada_entrenamiento:creada "+entry.ID.Hex())
 	}
 
 	return entry, nil
@@ -115,6 +120,10 @@ func (s *WorkoutEntryService) Update(actor Actor, id primitive.ObjectID, req dto
 		return models.WorkoutEntry{}, err
 	}
 
+	if s.logService != nil {
+		s.logService.RecordAction(actor.UserID, "entrada_entrenamiento:modificada "+existing.ID.Hex())
+	}
+
 	return *existing, nil
 }
 
@@ -134,10 +143,18 @@ func (s *WorkoutEntryService) Delete(actor Actor, id primitive.ObjectID) error {
 		return errors.New("no tienes permiso para eliminar esta entrada")
 	}
 
-	return s.repo.Delete(id)
+	if err := s.repo.Delete(id); err != nil {
+		return err
+	}
+
+	if s.logService != nil {
+		s.logService.RecordAction(actor.UserID, "entrada_entrenamiento:eliminada "+id.Hex())
+	}
+
+	return nil
 }
 
-// Buscar entradas
+// Buscar entradas (no se registran logs)
 func (s *WorkoutEntryService) Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error) {
 	if actor.Role != "admin" {
 		userSessions, err := s.sessionRepo.FindByUser(actor.UserID)

@@ -25,11 +25,12 @@ type WorkoutSessionServiceInterface interface {
 
 // 🧩 Implementación
 type WorkoutSessionService struct {
-	repo repositories.WorkoutSessionRepositoryInterface
+	repo       repositories.WorkoutSessionRepositoryInterface
+	logService *LogService
 }
 
-func NewWorkoutSessionService(repo repositories.WorkoutSessionRepositoryInterface) *WorkoutSessionService {
-	return &WorkoutSessionService{repo: repo}
+func NewWorkoutSessionService(repo repositories.WorkoutSessionRepositoryInterface, logService *LogService) *WorkoutSessionService {
+	return &WorkoutSessionService{repo: repo, logService: logService}
 }
 
 // Crear una nueva sesión
@@ -48,6 +49,10 @@ func (s *WorkoutSessionService) Create(actor Actor, req dto.WorkoutSessionCreate
 
 	if err := s.repo.Create(&session); err != nil {
 		return models.WorkoutSession{}, err
+	}
+
+	if s.logService != nil {
+		s.logService.RecordAction(actor.UserID, "sesion_entrenamiento:creada "+session.ID.Hex())
 	}
 
 	return session, nil
@@ -101,6 +106,10 @@ func (s *WorkoutSessionService) Update(actor Actor, id primitive.ObjectID, req d
 		return models.WorkoutSession{}, err
 	}
 
+	if s.logService != nil {
+		s.logService.RecordAction(actor.UserID, "sesion_entrenamiento:modificada "+existing.ID.Hex())
+	}
+
 	return *existing, nil
 }
 
@@ -115,10 +124,18 @@ func (s *WorkoutSessionService) Delete(actor Actor, id primitive.ObjectID) error
 		return errors.New("no tienes permiso para eliminar esta sesión")
 	}
 
-	return s.repo.Delete(id)
+	if err := s.repo.Delete(id); err != nil {
+		return err
+	}
+
+	if s.logService != nil {
+		s.logService.RecordAction(actor.UserID, "sesion_entrenamiento:eliminada "+id.Hex())
+	}
+
+	return nil
 }
 
-// Buscar sesiones (solo las del actor, salvo admin)
+// Buscar sesiones (no se registran logs)
 func (s *WorkoutSessionService) Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutSession, error) {
 	if actor.Role != "admin" {
 		filter["userId"] = actor.UserID

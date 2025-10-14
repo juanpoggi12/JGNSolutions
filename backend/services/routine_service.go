@@ -31,13 +31,15 @@ type RoutineService struct {
 	routineRepository         repositories.RoutineRepositoryInterface
 	routineExerciseRepository repositories.RoutineExerciseRepositoryInterface
 	exerciseRepository        repositories.ExerciseRepositoryInterface
+	logService                *LogService
 }
 
-func NewRoutineService(r repositories.RoutineRepositoryInterface, re repositories.RoutineExerciseRepositoryInterface, e repositories.ExerciseRepositoryInterface) *RoutineService {
+func NewRoutineService(r repositories.RoutineRepositoryInterface, re repositories.RoutineExerciseRepositoryInterface, e repositories.ExerciseRepositoryInterface, logService *LogService) *RoutineService {
 	return &RoutineService{
 		routineRepository:         r,
 		routineExerciseRepository: re,
 		exerciseRepository:        e,
+		logService:                logService,
 	}
 }
 
@@ -60,6 +62,12 @@ func (service *RoutineService) CreateRoutine(actor Actor, req dto.RoutineCreateR
 
 	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
 		rutina.ID = oid
+
+		// Log de creación exitoso
+		if service.logService != nil {
+			service.logService.RecordAction(actor.UserID, "rutina:creada "+rutina.Name)
+		}
+
 		return utils.ConvertRoutineModelToResponse(rutina), nil
 	}
 
@@ -104,6 +112,11 @@ func (service *RoutineService) UpdateRoutine(actor Actor, id string, req dto.Rou
 		return dto.RoutineResponse{}, err
 	}
 
+	// Log de modificación exitosa
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "rutina:modificada "+rutina.Name)
+	}
+
 	return utils.ConvertRoutineModelToResponse(rutina), nil
 }
 
@@ -130,8 +143,14 @@ func (service *RoutineService) DeleteRoutine(actor Actor, id string) error {
 		return mongo.ErrNoDocuments
 	}
 
+	// Log de eliminación exitosa
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "rutina:eliminada "+id)
+	}
+
 	return nil
 }
+
 func (service *RoutineService) SearchRoutines(actor Actor, search dto.RoutineSearchRequest) ([]dto.RoutineResponse, error) {
 	var userID string
 
@@ -184,6 +203,12 @@ func (service *RoutineService) AddExerciseToRoutine(actor Actor, req dto.Routine
 
 	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
 		rutinaEjercicio.ID = oid
+
+		// Log de agregado exitoso
+		if service.logService != nil {
+			service.logService.RecordAction(actor.UserID, "rutina_ejercicio:agregado "+rutinaEjercicio.RoutineID.Hex())
+		}
+
 		return utils.ConvertRoutineExerciseModelToResponse(rutinaEjercicio), nil
 	}
 
@@ -210,6 +235,11 @@ func (service *RoutineService) UpdateRoutineExercise(actor Actor, id string, req
 	_, err = service.routineExerciseRepository.ModificarRutinaEjercicio(rutinaEjercicio)
 	if err != nil {
 		return dto.RoutineExerciseResponse{}, err
+	}
+
+	// Log de modificación exitosa
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "rutina_ejercicio:modificado "+rutinaEjercicio.ID.Hex())
 	}
 
 	return utils.ConvertRoutineExerciseModelToResponse(rutinaEjercicio), nil
@@ -241,6 +271,11 @@ func (service *RoutineService) DeleteRoutineExercise(actor Actor, id string) err
 	}
 	if resultado.DeletedCount == 0 {
 		return mongo.ErrNoDocuments
+	}
+
+	// Log de eliminación exitosa
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "rutina_ejercicio:eliminado "+id)
 	}
 
 	return nil
@@ -318,6 +353,11 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 		if _, err := service.routineExerciseRepository.InsertarRutinaEjercicio(rutinaEjercicio); err != nil {
 			return dto.RoutineResponse{}, err
 		}
+	}
+
+	// Log de duplicación exitosa
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "rutina:duplicada "+nuevaRutina.Name)
 	}
 
 	return utils.ConvertRoutineModelToResponse(nuevaRutina), nil

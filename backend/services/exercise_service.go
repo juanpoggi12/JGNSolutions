@@ -22,10 +22,14 @@ type ExerciseServiceInterface interface {
 
 type ExerciseService struct {
 	repository repositories.ExerciseRepositoryInterface
+	logService *LogService
 }
 
-func NewExerciseService(repository repositories.ExerciseRepositoryInterface) *ExerciseService {
-	return &ExerciseService{repository: repository}
+func NewExerciseService(repository repositories.ExerciseRepositoryInterface, logService *LogService) *ExerciseService {
+	return &ExerciseService{
+		repository: repository,
+		logService: logService,
+	}
 }
 
 func (service *ExerciseService) CreateExercise(actor Actor, req dto.ExerciseCreateRequest) (dto.ExerciseResponse, error) {
@@ -51,6 +55,11 @@ func (service *ExerciseService) CreateExercise(actor Actor, req dto.ExerciseCrea
 
 	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
 		ejercicio.ID = oid
+
+		if service.logService != nil {
+			service.logService.RecordAction(actor.UserID, "ejercicio:creado "+ejercicio.Name)
+		}
+
 		return utils.ConvertExerciseModelToResponse(ejercicio), nil
 	}
 
@@ -91,6 +100,10 @@ func (service *ExerciseService) UpdateExercise(actor Actor, id string, req dto.E
 		return dto.ExerciseResponse{}, err
 	}
 
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "ejercicio:modificado "+ejercicio.Name)
+	}
+
 	return utils.ConvertExerciseModelToResponse(ejercicio), nil
 }
 
@@ -111,6 +124,10 @@ func (service *ExerciseService) DeleteExercise(actor Actor, id string) error {
 	}
 	if resultado.ModifiedCount == 0 {
 		return mongo.ErrNoDocuments
+	}
+
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "ejercicio:eliminado "+id)
 	}
 
 	return nil

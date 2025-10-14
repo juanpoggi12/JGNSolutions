@@ -23,10 +23,11 @@ type UserServiceInterface interface {
 
 type UserService struct {
 	repository repositories.UserRepositoryInterface
+	logService *LogService
 }
 
-func NewUserService(repository repositories.UserRepositoryInterface) *UserService {
-	return &UserService{repository: repository}
+func NewUserService(repository repositories.UserRepositoryInterface, logService *LogService) *UserService {
+	return &UserService{repository: repository, logService: logService}
 }
 
 func (service *UserService) CreateUser(actor Actor, req dto.UserCreateRequest) (models.User, error) {
@@ -60,6 +61,9 @@ func (service *UserService) CreateUser(actor Actor, req dto.UserCreateRequest) (
 	// Asignar el ID generado
 	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
 		user.ID = oid
+		if service.logService != nil {
+			service.logService.RecordAction(actor.UserID, "usuario:creado "+user.Email)
+		}
 		return user, nil
 	}
 
@@ -121,6 +125,10 @@ func (service *UserService) UpdateUser(actor Actor, id string, req dto.UserUpdat
 		return models.User{}, err
 	}
 
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "usuario:modificado "+userDB.Email)
+	}
+
 	return userDB, nil
 }
 
@@ -141,6 +149,10 @@ func (service *UserService) DeleteUser(actor Actor, id string) error {
 	}
 	if resultado.DeletedCount == 0 {
 		return errors.New("usuario no encontrado")
+	}
+
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "usuario:eliminado "+id)
 	}
 
 	return nil
@@ -168,6 +180,10 @@ func (s *UserService) ChangePassword(actor Actor, req dto.ChangePasswordRequest)
 	_, err = s.repository.ActualizarPassword(actor.UserID, hashed)
 	if err != nil {
 		return errors.New("error al actualizar contraseña")
+	}
+
+	if s.logService != nil {
+		s.logService.RecordAction(actor.UserID, "usuario:cambio_contraseña "+actor.UserID.Hex())
 	}
 
 	return nil

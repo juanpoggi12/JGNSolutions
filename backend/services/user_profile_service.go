@@ -19,16 +19,16 @@ type UserProfileServiceInterface interface {
 	GetProfile(actor Actor) (models.UserProfile, error)
 	UpdateProfile(actor Actor, req dto.UserProfileUpdateRequest) (models.UserProfile, error)
 	DeleteProfile(actor Actor, id string) error
-	SearchProfiles(actor Actor, req dto.UserProfileSearchRequest) ([]models.UserProfile, error)
 }
 
 // 🧩 Implementación del servicio
 type UserProfileService struct {
 	repository repositories.UserProfileRepositoryInterface
+	logService *LogService
 }
 
-func NewUserProfileService(repo repositories.UserProfileRepositoryInterface) *UserProfileService {
-	return &UserProfileService{repository: repo}
+func NewUserProfileService(repo repositories.UserProfileRepositoryInterface, logService *LogService) *UserProfileService {
+	return &UserProfileService{repository: repo, logService: logService}
 }
 
 // Crear perfil nuevo (solo si el usuario no lo tiene aún)
@@ -52,6 +52,10 @@ func (service *UserProfileService) CreateProfile(actor Actor, req dto.UserProfil
 	_, err = service.repository.InsertarPerfil(perfil)
 	if err != nil {
 		return models.UserProfile{}, err
+	}
+
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "perfil:creado "+actor.UserID.Hex())
 	}
 
 	return perfil, nil
@@ -116,6 +120,10 @@ func (service *UserProfileService) UpdateProfile(actor Actor, req dto.UserProfil
 		return models.UserProfile{}, err
 	}
 
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "perfil:modificado "+perfilActual.UserID.Hex())
+	}
+
 	return perfilActual, nil
 }
 
@@ -129,5 +137,13 @@ func (service *UserProfileService) DeleteProfile(actor Actor, id string) error {
 		return errors.New("ID inválido")
 	}
 	_, err = service.repository.EliminarPerfil(objectID)
-	return err
+	if err != nil {
+		return err
+	}
+
+	if service.logService != nil {
+		service.logService.RecordAction(actor.UserID, "perfil:eliminado "+id)
+	}
+
+	return nil
 }
