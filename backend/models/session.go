@@ -7,10 +7,13 @@ import (
 )
 
 type Session struct {
-	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID           primitive.ObjectID `bson:"userId" json:"userId"`
-	RefreshTokenHash string             `bson:"refreshTokenHash" json:"-"`
-	ExpiresAt        time.Time          `bson:"expiresAt" json:"expiresAt"`
-	CreatedAt        time.Time          `bson:"createdAt" json:"createdAt"`
-	RevokedAt        *time.Time         `bson:"revokedAt,omitempty" json:"revokedAt,omitempty"`
+	ID           primitive.ObjectID  `bson:"_id,omitempty"`
+	UserID       primitive.ObjectID  `bson:"userId"`
+	RefreshHash  string              `bson:"refreshHash"`
+	ExpiresAt    time.Time           `bson:"expiresAt"`
+	CreatedAt    time.Time           `bson:"createdAt"`
+	RevokedAt    *time.Time          `bson:"revokedAt,omitempty"`
+	UserAgent    string              `bson:"userAgent,omitempty"`
+	IP           string              `bson:"ip,omitempty"`
+	ReplacedByID *primitive.ObjectID `bson:"replacedById,omitempty"`
 }

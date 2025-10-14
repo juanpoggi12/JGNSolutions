@@ -27,10 +27,10 @@ func ConvertSessionCreateRequestToModel(req dto.SessionCreateRequest) (models.Se
 
 	return models.Session{
 		// UserID se asignará en el service
-		RefreshTokenHash: string(hashedToken),
-		ExpiresAt:        expiresAt,
-		CreatedAt:        time.Now(),
-		RevokedAt:        nil,
+		RefreshHash: string(hashedToken),
+		ExpiresAt:   expiresAt,
+		CreatedAt:   time.Now(),
+		RevokedAt:   nil,
 	}, nil
 }
 

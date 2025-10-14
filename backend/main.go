@@ -90,6 +90,7 @@ func main() {
 
 	// 1️⃣ Repositorios
 	userRepo := repositories.NewUserRepository(mc.DB)
+	sessionRepo := repositories.NewSessionRepository(mc.DB)
 	adminRepo := repositories.NewAdminRepository(mc.DB)
 	exerciseRepo := repositories.NewExerciseRepository(mc.DB)
 	workoutEntryRepo := repositories.NewWorkoutEntryRepository(mc.DB)
@@ -103,6 +104,7 @@ func main() {
 	logService := services.NewLogService(logRepo)
 
 	userService := services.NewUserService(userRepo, logService)
+	authService := services.NewAuthService(userRepo, sessionRepo, logService, jwtCfg)
 	adminService := services.NewAdminService(adminRepo, userRepo, userProfileRepo, logRepo)
 	exerciseService := services.NewExerciseService(exerciseRepo, logService)
 	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo, logService)
@@ -112,6 +114,7 @@ func main() {
 
 	// 3️⃣ Handlers
 	userHandler := handlers.NewUserHandler(userService)
+	authHandler := handlers.NewAuthHandler(authService)
 	adminHandler := handlers.NewAdminHandler(adminService)
 	exerciseHandler := handlers.NewExerciseHandler(exerciseService)
 	workoutEntryHandler := handlers.NewWorkoutEntryHandler(workoutEntryService)
@@ -133,6 +136,20 @@ func main() {
 	{
 		api.GET("/ping", func(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "pong"})
+		})
+		apiAuth := api.Group("/auth")
+		{
+			apiAuth.POST("/register", authHandler.Register)
+			apiAuth.POST("/login", authHandler.Login)
+			apiAuth.POST("/refresh", authHandler.Refresh)
+			apiAuth.POST("/logout", authHandler.Logout)
+		}
+
+		api.GET("/me", middleware.AuthMiddleware(jwtCfg), func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{
+				"userId": c.GetString("userId"),
+				"role":   c.GetString("role"),
+			})
 		})
 
 		// 👇 Aquí registrás las rutas de usuario

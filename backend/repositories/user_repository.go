@@ -21,6 +21,10 @@ type UserRepositoryInterface interface {
 	ListarUsuariosBasico() ([]models.User, error)
 	FindByEmailOrUsername(identifier string) (*models.User, error)
 	ActualizarPassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error)
+	ExistsByEmail(ctx context.Context, email string) (bool, error)
+	Create(ctx context.Context, user *models.User) error
+	FindByEmail(ctx context.Context, email string) (*models.User, error)
+	FindByID(ctx context.Context, id primitive.ObjectID) (*models.User, error)
 }
 
 type UserRepository struct {
@@ -135,4 +139,50 @@ func (repository UserRepository) ActualizarPassword(id primitive.ObjectID, hashe
 		},
 	}
 	return collection.UpdateOne(context.TODO(), filtro, actualizacion)
+}
+func (repository *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	count, err := repository.collection().CountDocuments(ctx, bson.M{"email": email})
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (repository *UserRepository) Create(ctx context.Context, user *models.User) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	res, err := repository.collection().InsertOne(ctx, user)
+	if err != nil {
+		return err
+	}
+	if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
+		user.ID = oid
+	}
+	return nil
+}
+
+func (repository *UserRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var user models.User
+	if err := repository.collection().FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (repository *UserRepository) FindByID(ctx context.Context, id primitive.ObjectID) (*models.User, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var user models.User
+	if err := repository.collection().FindOne(ctx, bson.M{"_id": id}).Decode(&user); err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

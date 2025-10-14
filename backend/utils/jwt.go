@@ -4,43 +4,40 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Claims struct {
-	UserID string `json:"user_id"`
-	Role   string `json:"role"`
+type AccessClaims struct {
+	Role string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-// Generar un token
-func GenerateToken(userID, role string, cfg Config) (string, int64, error) {
-	expiration := time.Now().Add(time.Duration(cfg.JWTExpiresInMin) * time.Minute).Unix()
-
-	claims := &Claims{
-		UserID: userID,
-		Role:   role,
+func GenerateAccessToken(userID, role, secret string, ttl time.Duration) (string, error) {
+	now := time.Now()
+	claims := AccessClaims{
+		Role: role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Unix(expiration, 0)),
+			Subject:   userID,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+			ID:        primitiveObjectID(),
 		},
 	}
-
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(cfg.JWTSecret))
-	if err != nil {
-		return "", 0, err
-	}
-
-	return tokenString, expiration, nil
+	return token.SignedString([]byte(secret))
 }
 
-// Validar un token
-func ParseToken(tokenStr string, cfg Config) (*Claims, error) {
-	claims := &Claims{}
+func ParseAccessToken(tokenStr, secret string) (*AccessClaims, error) {
+	claims := &AccessClaims{}
 	_, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(cfg.JWTSecret), nil
-	})
+		return []byte(secret), nil
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil {
 		return nil, err
 	}
 	return claims, nil
+}
+
+func primitiveObjectID() string {
+	return primitive.NewObjectID().Hex()
 }
