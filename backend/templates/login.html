@@ -1,20 +1,84 @@
 {{define "login"}}{{template "layout" .}}{{end}}
-
 {{define "content"}}
-<div class="row justify-content-center">
-  <div class="col-md-4">
-    <h2 class="mb-3 text-center">Iniciar sesión</h2>
-    <form method="POST" action="/api/auth/login">
-      <div class="mb-3">
-        <label for="email" class="form-label">Email</label>
-        <input type="email" name="email" id="email" class="form-control" required>
-      </div>
-      <div class="mb-3">
-        <label for="password" class="form-label">Contraseña</label>
-        <input type="password" name="password" id="password" class="form-control" required>
-      </div>
-      <button type="submit" class="btn btn-success w-100">Ingresar</button>
-    </form>
-  </div>
+
+<!-- LOGO ARRIBA A LA IZQUIERDA -->
+<div class="login-header position-absolute top-0 start-0 p-4">
+  <h3 class="fw-bold mb-0">JGNSolutions</h3>
 </div>
+
+<section class="login-split">
+  <div class="login-left">
+    <div class="login-inner">
+      <h1 class="login-title">WELCOME BACK</h1>
+      <p class="login-sub">Welcome back! Please enter your details.</p>
+
+      <form id="loginForm" class="login-form" novalidate>
+        <label class="form-label mt-3">Email</label>
+        <input id="email" type="email" class="form-control form-control-lg rounded-3" placeholder="Enter your email" required>
+
+        <label class="form-label mt-3">Password</label>
+        <input id="password" type="password" class="form-control form-control-lg rounded-3" placeholder="**********" required>
+
+        <div class="d-flex align-items-center justify-content-between mt-3 small">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="remember">
+            <label class="form-check-label" for="remember">Remember me</label>
+          </div>
+          <a class="link-secondary text-decoration-none" href="/forgot">Forgot password</a>
+        </div>
+
+        <button class="btn btn-login w-100 btn-lg mt-4" type="submit">Sign in</button>
+
+        <p class="text-center mt-3 small mb-0">
+          Don’t have an account?
+          <a href="/register" class="text-decoration-none fw-semibold">Sign up for free!</a>
+        </p>
+
+        <div id="loginError" class="alert alert-danger mt-3 d-none" role="alert"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="login-right d-none d-md-block">
+    <img src="/static/img/hero-login.png" alt="Login hero" class="hero-img">
+  </div>
+</section>
+
+<!-- FOOTER ABAJO CENTRADO -->
+<footer class="login-footer text-center text-muted small py-3">
+  © 2025 JGNSolutions — Todos los derechos reservados
+</footer>
+
+<script>
+const form = document.getElementById('loginForm');
+const err  = document.getElementById('loginError');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  err.classList.add('d-none'); err.textContent = "";
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const remember = document.getElementById('remember').checked;
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ email, password })
+    });
+    if (!res.ok) {
+      let msg = "Invalid credentials";
+      try { const j = await res.json(); msg = j.error || msg } catch {}
+      throw new Error(msg);
+    }
+    const { accessToken, expiresIn } = await res.json();
+    const storage = remember ? localStorage : sessionStorage;
+    storage.setItem("accessToken", accessToken);
+    storage.setItem("accessTokenExp", (Date.now() + (expiresIn||3600)*1000).toString());
+    window.location.href = "/";
+  } catch (e2) {
+    err.textContent = e2.message || "Login failed";
+    err.classList.remove('d-none');
+  }
+});
+</script>
+
 {{end}}
