@@ -14,16 +14,31 @@
   .sidebar-item{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:.75rem;color:#111827}
   .sidebar-item.active,.sidebar-item:hover{background:#111827;color:#fff}
   .sidebar-badge{margin-left:auto;background:#111827;color:#fff;border-radius:999px;padding:.1rem .5rem;font-size:.7rem}
+  .kpi{display:flex;align-items:center;gap:.75rem}
+  .kpi .icon{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:#111827;color:#fff}
+  .kpi .label{font-size:.8rem;color:#6b7280}
+  .kpi .value{font-size:1.4rem;font-weight:700}
+  .btn-icon{display:inline-flex;align-items:center;gap:.4rem}
+  .chip{border:1px solid #e5e7eb;border-radius:999px;padding:.2rem .55rem;font-size:.75rem}
+  .chip.active,.chip:hover{background:#111827;color:#fff}
+  .table-sm td,.table-sm th{padding:.55rem .6rem;vertical-align:middle}
+  .w-28{width:28px}
+  .h-28{height:28px}
 </style>
+
 <div class="container-fluid">
-  <div class="row" style="min-height:100vh">
-    <!-- SIDEBAR estilo admin -->
-    <aside class="col-12 col-md-3 col-lg-2 border-end" style="background:#f9fafb">
-      <div class="p-3 d-flex align-items-center gap-2">
-        <img src="/static/img/logo.svg" alt="logo" width="24" height="24"/>
-        <div>
-          <div class="fw-bold">JGNSolutions</div>
-          <small class="text-muted">User Panel</small>
+  <div class="row">
+    <!-- SIDEBAR -->
+    <aside class="col-12 col-md-3 col-lg-2 border-end" style="min-height:100vh">
+      <div class="p-3">
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="w-28 h-28 rounded-circle bg-dark d-inline-flex align-items-center justify-content-center text-white">
+            <i class="bi bi-person"></i>
+          </div>
+          <div>
+            <div class="fw-semibold">Mi cuenta</div>
+            <div class="text-muted small">Usuario</div>
+          </div>
         </div>
       </div>
       <nav class="px-2 d-grid gap-1">
@@ -53,30 +68,53 @@
         <button id="btnNuevaSesion" class="btn btn-dark"><i class="bi bi-plus-lg me-1"></i> Registrar entrenamiento</button>
       </div>
 
-      <!-- KPI CARDS estilo screenshot -->
+      <!-- KPI CARDS -->
       <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
           <div class="card card-lite">
             <div class="card-body">
-              <div class="text-muted small">Sesiones (últimos 30 días)</div>
-              <div class="display-6 fw-semibold" id="kpiSesiones">—</div>
+              <div class="kpi">
+                <div class="icon"><i class="bi bi-activity"></i></div>
+                <div>
+                  <div class="label">Frecuencia (prom.)</div>
+                  <div class="value" id="kpiFrecuencia">0</div>
+                </div>
+              </div>
+              <div class="mt-2 small">
+                <span class="pill pill-blue"><span class="icon-dot dot-green"></span> Últimas 8 sem.</span>
+              </div>
             </div>
           </div>
         </div>
         <div class="col-6 col-lg-3">
           <div class="card card-lite">
             <div class="card-body">
-              <div class="text-muted small">Frecuencia promedio</div>
-              <div class="display-6 fw-semibold" id="kpiFrecuencia">—</div>
-              <div class="small text-muted">sesiones / semana</div>
+              <div class="kpi">
+                <div class="icon"><i class="bi bi-graph-up-arrow"></i></div>
+                <div>
+                  <div class="label">Mejora</div>
+                  <div class="value" id="kpiMejora">0%</div>
+                </div>
+              </div>
+              <div class="mt-2 small">
+                <span class="pill pill-green"><span class="icon-dot dot-green"></span> 30 días</span>
+              </div>
             </div>
           </div>
         </div>
         <div class="col-6 col-lg-3">
           <div class="card card-lite">
             <div class="card-body">
-              <div class="text-muted small">Rutina más usada</div>
-              <div class="h4 fw-semibold mb-0" id="kpiTopRutina">—</div>
+              <div class="kpi">
+                <div class="icon"><i class="bi bi-trophy"></i></div>
+                <div>
+                  <div class="label">Top rutina</div>
+                  <div class="value" id="kpiTop">—</div>
+                </div>
+              </div>
+              <div class="mt-2 small">
+                <span class="pill pill-amber"><span class="icon-dot dot-amber"></span> Más completada</span>
+              </div>
             </div>
           </div>
         </div>
@@ -101,7 +139,7 @@
               </div>
               <div class="input-group" style="max-width:360px">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input id="buscarHistorial" class="form-control" placeholder="Buscar por rutina, nota o fecha..."/>
+                <input id="buscarHistorial" class="form-control" placeholder="Buscar por nota o fecha..."/>
               </div>
             </div>
             <div class="row g-3">
@@ -113,330 +151,411 @@
 
         <div class="card card-lite">
           <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <div class="h5 mb-0">Historial de entrenamientos</div>
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+              <div>
+                <div class="h5 mb-0">Historial</div>
+                <small class="text-muted">Sesiones recientes</small>
+              </div>
               <div class="d-flex gap-2">
-                <select id="filtroEstado" class="form-select form-select-sm" style="width:160px">
-                  <option value="">Todos</option>
-                  <option value="completed">Completados</option>
-                  <option value="open">En curso</option>
-                </select>
-                <button id="btnRefrescarHistorial" class="btn btn-outline-secondary btn-sm">Refrescar</button>
+                <button class="chip active" data-estado="">Todos</button>
+                <button class="chip" data-estado="completed">Completados</button>
+                <button class="chip" data-estado="open">En curso</button>
               </div>
             </div>
             <div class="table-responsive">
-              <table class="table align-middle">
-                <thead class="table-light">
+              <table class="table table-sm">
+                <thead>
                   <tr>
                     <th>Entrenamiento</th>
-                    <th class="d-none d-md-table-cell">Inicio</th>
-                    <th class="d-none d-md-table-cell">Fin</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
                     <th>Estado</th>
                     <th class="text-end">Acciones</th>
                   </tr>
                 </thead>
-                <tbody id="historialBody">
-                  <tr><td colspan="5" class="text-center text-muted">Sin registros aún</td></tr>
+                <tbody id="tbHistorial">
+                  <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
         </div>
+
       </div>
 
-      <div id="tab-rutinas" class="tab-pane" hidden>
+      <div id="tab-rutinas" class="tab-pane" style="display:none">
         <div class="d-flex align-items-center justify-content-between mb-3">
-          <div>
-            <h2 class="h4 mb-0">Rutinas</h2>
-            <small class="text-muted">Gestiona tus rutinas personalizadas</small>
-          </div>
-          <button id="btnNuevaRutina" class="btn btn-dark"><i class="bi bi-plus-lg me-1"></i> Crear rutina</button>
+          <div class="h5 mb-0">Tus Rutinas</div>
+          <button id="btnCrearRutina" class="btn btn-outline-dark btn-icon"><i class="bi bi-plus-lg"></i> Nueva rutina</button>
         </div>
-        <div class="row g-3" id="rutinasList"></div>
+        <div id="gridRutinas" class="row g-3">
+          <!-- tarjetas -->
+        </div>
       </div>
 
-      <div id="tab-config" class="tab-pane" hidden>
-        <h2 class="h4">Configuración</h2>
-        <div class="card card-lite">
-          <div class="card-body">
-            <form id="formPerfil" class="row g-3">
-              <div class="col-12 col-md-6">
-                <label class="form-label">Nombre</label>
-                <input id="pfNombre" class="form-control"/>
+      <div id="tab-config" class="tab-pane" style="display:none">
+        <div class="row g-3">
+          <div class="col-12 col-lg-8">
+            <div class="card card-lite">
+              <div class="card-body">
+                <div class="h5 mb-3">Perfil</div>
+                <form id="formPerfil" class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Nombre</label>
+                    <input id="pfNombre" class="form-control"/>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label">Email</label>
+                    <input id="pfEmail" class="form-control" type="email" disabled/>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label">Peso (kg)</label>
+                    <input id="pfPeso" class="form-control" type="number" step="0.1"/>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <label class="form-label">Altura (cm)</label>
+                    <input id="pfAltura" class="form-control" type="number"/>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label">Nivel</label>
+                    <select id="pfNivel" class="form-select">
+                      <option value="">—</option>
+                      <option value="principiante">Principiante</option>
+                      <option value="intermedio">Intermedio</option>
+                      <option value="avanzado">Avanzado</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <label class="form-label">Objetivo</label>
+                    <select id="pfObjetivo" class="form-select">
+                      <option value="">—</option>
+                      <option value="perder_peso">Perder peso</option>
+                      <option value="ganar_musculo">Ganar músculo</option>
+                      <option value="mantenerse">Mantenerse</option>
+                    </select>
+                  </div>
+                  <div class="col-12">
+                    <button class="btn btn-dark" type="submit"><i class="bi bi-save me-1"></i> Guardar</button>
+                  </div>
+                </form>
               </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Email</label>
-                <input id="pfEmail" class="form-control" type="email" disabled/>
+            </div>
+            <div class="card card-lite mt-3">
+              <div class="card-body">
+                <div class="h5 mb-3">Seguridad</div>
+                <button id="btnCambiarPass" class="btn btn-outline-dark"><i class="bi bi-shield-lock me-1"></i> Cambiar contraseña</button>
               </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Peso (kg)</label>
-                <input id="pfPeso" class="form-control" type="number" step="0.1"/>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="card card-lite">
+              <div class="card-body">
+                <div class="h5 mb-3">Estado de cuenta</div>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="pill pill-green"><span class="icon-dot dot-green"></span> Activa</span>
+                </div>
+                <div class="text-muted small mt-2">Email de acceso</div>
+                <div id="userEmail" class="fw-semibold">—</div>
               </div>
-              <div class="col-6 col-md-3">
-                <label class="form-label">Altura (cm)</label>
-                <input id="pfAltura" class="form-control" type="number"/>
-              </div>
-              <div class="col-12 col-md-3">
-                <label class="form-label">Nivel</label>
-                <select id="pfNivel" class="form-select">
-                  <option value="">—</option>
-                  <option value="principiante">Principiante</option>
-                  <option value="intermedio">Intermedio</option>
-                  <option value="avanzado">Avanzado</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-3">
-                <label class="form-label">Objetivo</label>
-                <select id="pfObjetivo" class="form-select">
-                  <option value="">—</option>
-                  <option value="perder_peso">Perder peso</option>
-                  <option value="ganar_musculo">Ganar músculo</option>
-                  <option value="mantenerse">Mantenerse</option>
-                </select>
-              </div>
-              <div class="col-12 d-flex gap-2">
-                <button id="btnGuardarPerfil" class="btn btn-dark" type="submit">Guardar</button>
-                <button id="btnCambiarPass" class="btn btn-outline-secondary" type="button">Cambiar contraseña</button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       </div>
+
     </main>
   </div>
 </div>
 
-<!-- Icons + Charts -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// ======= Opción A (usa tu middleware con Bearer accessToken) =======
-const API_BASE = "/api";
-
-function getToken() {
-  // Tu login guarda "accessToken" (ver templates/login.html)
-  return localStorage.getItem("accessToken")
-      || sessionStorage.getItem("accessToken")
-      || null;
+// ======= API helper =======
+const API_BASE = '/api';
+function getToken(){
+  return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') || null;
 }
-
-async function api(path, opts = {}) {
-  const t = getToken();
+async function api(path, opts={}){
+  const token = getToken();
   const res = await fetch(API_BASE + path, {
     ...opts,
     headers: {
-      "Content-Type": "application/json",
-      ...(t ? { Authorization: "Bearer " + t } : {}), // <— usa tu middleware
-      ...(opts.headers || {})
+      'Content-Type':'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...(opts.headers||{})
     },
-    credentials: "include"
+    credentials: 'same-origin'
   });
-  if (!res.ok) {
-    // si falta token, redirigí a login
-    if (res.status === 401) {
-      console.warn("401 - falta token; redirigiendo a /login");
-      window.location.href = "/login";
-      return;
-    }
-    let msg = res.status + " " + res.statusText;
-    try { const j = await res.json(); msg = j.error || msg; } catch {}
+  if(res.status === 401){
+    // No autorizado → redirigir a login
+    window.location.href = '/login';
+    throw new Error('No autorizado');
+  }
+  if(!res.ok){
+    let msg = `HTTP ${res.status}`;
+    try{
+      const data = await res.json();
+      msg = data?.error || data?.message || msg;
+    }catch(_){}
     throw new Error(msg);
   }
-  const ct = res.headers.get("Content-Type") || "";
-  return ct.includes("application/json") ? res.json() : null;
+  const ct = res.headers.get('content-type') || '';
+  return ct.includes('application/json') ? res.json() : res.text();
 }
 
 // ======= Tabs =======
-const panes={
-  inicio:document.getElementById('tab-inicio'),
-  rutinas:document.getElementById('tab-rutinas'),
-  config:document.getElementById('tab-config')
+const panes = {
+  inicio: document.getElementById('tab-inicio'),
+  rutinas: document.getElementById('tab-rutinas'),
+  config: document.getElementById('tab-config')
 };
-document.querySelectorAll('[data-tab]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
+document.querySelectorAll('.sidebar-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
     document.querySelectorAll('.sidebar-item').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    const t=btn.getAttribute('data-tab');
-    Object.entries(panes).forEach(([k,el])=>{ el.hidden = k!==t; el.classList.toggle('active', k===t); });
+    const tab = btn.getAttribute('data-tab');
+    Object.entries(panes).forEach(([k,el])=>{ el.style.display = (k===tab)?'block':'none'; el.classList.toggle('active', k===tab); });
   });
 });
 
-// ======= Carga =======
-let chartFrecuencia, chartProgreso;
-const ENDPOINTS = {
-  me: "/me",
-  userById: (id) => `/users/${id}`,
-  profile: "/profile",
-  changePwd: "/profile/change-password"
-};
+// ======= PERFIL (carga) =======
+// Estado en memoria para mergear en el PUT
+let __PROFILE_CACHE__ = null;
 
-async function cargarPerfil() {
-  try {
-    // 1) quién soy (para obtener userId)
-    const me = await api(ENDPOINTS.me);          // { userId, role }
-    const uid = me?.userId;
-    if (!uid) throw new Error("No se obtuvo userId en /me");
+async function cargarPerfil(){
+  try{
+    const me = await api('/me');
+    const uid = me && me.userId; if(!uid) throw new Error('No se obtuvo userId en /me');
     window.__CURRENT_USER_ID__ = uid;
 
-    // 2) email/username (NO nombre de perfil)
-    const u = await api(ENDPOINTS.userById(uid));  // { email, username, ... }
-    const email = u?.email || u?.Email || "";
-    document.getElementById("userEmail").textContent = email || "—";
-    if (window.pfEmail)  pfEmail.value  = email;
+    // Traigo usuario (email) y perfil
+    const [u, p] = await Promise.all([
+      api(`/users/${uid}`).catch(()=>null),
+      api('/profile').catch(()=>null)
+    ]);
 
-    // 3) nombre real + datos físicos
-    const p = await api(ENDPOINTS.profile);        // { name, weight, height, level, goal, ... }
-    if (window.pfNombre)   pfNombre.value   = p?.name   || "";
-    if (window.pfPeso)     pfPeso.value     = p?.weight ?? "";
-    if (window.pfAltura)   pfAltura.value   = p?.height ?? "";
-    if (window.pfNivel)    pfNivel.value    = p?.level  || "";
-    if (window.pfObjetivo) pfObjetivo.value = p?.goal   || "";
-  } catch (e) {
-    console.warn("perfil:", e.message);
+    // Guardo el perfil tal cual llegó para poder mergear en el PUT
+    __PROFILE_CACHE__ = p || {};
+
+    const email = (u && (u.email || u.Email)) || '';
+
+    // SOLO nombre de profile.name (si no hay, dejo vacío)
+    const name  = (p && (p.name || p.Name)) || '';
+
+    const weight = p && (p.weight ?? p.Weight);
+    const height = p && (p.height ?? p.Height);
+    const level  = p && (p.level  ?? p.Level);
+    const goal   = p && (p.goal   ?? p.Goal);
+
+    // Pintar
+    const elUserEmail = document.getElementById('userEmail'); if(elUserEmail) elUserEmail.textContent = email || '—';
+    const fNombre = document.getElementById('pfNombre'); if(fNombre) fNombre.value = name;
+    const fEmail  = document.getElementById('pfEmail');  if(fEmail)  fEmail.value  = email || '';
+    const fPeso   = document.getElementById('pfPeso');   if(fPeso)   fPeso.value   = (weight ?? '');
+    const fAltura = document.getElementById('pfAltura'); if(fAltura) fAltura.value = (height ?? '');
+    const fNivel  = document.getElementById('pfNivel');  if(fNivel && level)  fNivel.value  = level;
+    const fObj    = document.getElementById('pfObjetivo'); if(fObj && goal) fObj.value = goal;
+  }catch(e){
+    console.warn('perfil', e.message);
   }
 }
+
+
 async function cargarStats(){
   try{
     const freq = await api('/stats/user/frequency');
     const top  = await api('/stats/user/top-routines');
-    const prog = await api('/stats/user/progress');
+    let prog = [];
+    try { prog = await api('/stats/user/progress'); } catch(_) { prog = []; }
     const sesiones = (freq?.buckets||[]).map(b=>b.count||b.total||0);
     const prom = sesiones.length? (sesiones.reduce((a,b)=>a+b,0)/sesiones.length):0;
     document.getElementById('kpiFrecuencia').textContent = prom.toFixed(1);
-    document.getElementById('kpiTopRutina').textContent = (top&&top[0]&&(top[0].name||top[0].routine||top[0].routine_name))||'—';
-    const totalSes = (prog?.series||prog||[]).reduce((a,b)=>a+(b.sessions||b.count||0),0);
-    document.getElementById('kpiSesiones').textContent = totalSes;
-    // Charts
-    const ctxF=document.getElementById('chartFrecuencia');
-    const labelsF=(freq?.buckets||[]).map(b=> b.period||b.week||b.label||'');
-    const dataF=(freq?.buckets||[]).map(b=> b.count||b.total||0);
-    if(chartFrecuencia) chartFrecuencia.destroy();
-    chartFrecuencia=new Chart(ctxF,{type:'bar',data:{labels:labelsF,datasets:[{label:'Sesiones',data:dataF}]},options:{responsive:true,maintainAspectRatio:false}});
-    const ctxP=document.getElementById('chartProgreso');
-    const labelsP=(prog?.series||prog||[]).map(p=>p.date||p.period||'');
-    const dataP=(prog?.series||prog||[]).map(p=>p.sessions||p.total||0);
-    if(chartProgreso) chartProgreso.destroy();
-    chartProgreso=new Chart(ctxP,{type:'line',data:{labels:labelsP,datasets:[{label:'Sesiones',data:dataP,tension:.35}]} ,options:{responsive:true,maintainAspectRatio:false}});
-  }catch(e){console.warn('stats',e.message)}
+
+    const topName = (top?.[0]?.name) || '—';
+    document.getElementById('kpiTop').textContent = topName;
+
+    const mejora = (prog?.length>=2)? ((prog.at(-1).score - prog[0].score)/Math.max(1,prog[0].score))*100 : 0;
+    document.getElementById('kpiMejora').textContent = `${Math.max(0,Math.round(mejora))}%`;
+
+    // charts
+    const ctx1=document.getElementById('chartFrecuencia'); if(ctx1){
+      chartFrecuencia && chartFrecuencia.destroy?.();
+      chartFrecuencia=new Chart(ctx1,{type:'bar',data:{labels:(freq?.buckets||[]).map(b=>b.week||b.label||''),datasets:[{label:'Sesiones',data:sesiones}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+    }
+    const ctx2=document.getElementById('chartProgreso'); if(ctx2){
+      chartProgreso && chartProgreso.destroy?.();
+      chartProgreso=new Chart(ctx2,{type:'line',data:{labels:(prog||[]).map(p=>p.date||p.label||''),datasets:[{label:'Puntaje',data:(prog||[]).map(p=>p.score||0),tension:.3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+    }
+  }catch(e){ console.warn('stats',e) }
 }
+
 async function cargarHistorial(){
-  const tb=document.getElementById('historialBody'); tb.innerHTML='<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
   try{
-    const res = await api('/workout-sessions/search');
-    const items = Array.isArray(res?.items)? res.items : (Array.isArray(res)? res : []);
-    const q=(buscarHistorial.value||'').toLowerCase(); const estado=filtroEstado.value||'';
-    const filtered = items.filter(s=>{
-      const inicio=s.start_time||s.started_at||s.created_at||s.fecha_hora_inicio||'';
-      const fin=s.end_time||s.fecha_hora_fin||'';
-      const name=(s.routine_name||s.routine_id||'').toString();
-      const notes=(s.notes||s.notas_generales||'').toString();
-      const status=s.status|| (fin? 'completed':'open');
-      const qok = !q || name.toLowerCase().includes(q) || notes.toLowerCase().includes(q) || (inicio && new Date(inicio).toLocaleDateString().includes(q));
+    // En tu backend: lista por /api/workout-sessions/search
+    const data = await api('/workout-sessions/search');
+    const tb = document.getElementById('tbHistorial'); if(!tb) return;
+    const estado = document.querySelector('.chip.active')?.dataset?.estado || '';
+    const q = (document.getElementById('buscarHistorial')?.value||'').trim().toLowerCase();
+
+    const filtered = (data||[]).filter(s=>{
+      const notes=(s.notas_generales||'').toLowerCase();
+      const fin = s.fecha_hora_fin;
+      const status = fin ? 'completed' : 'open';
+      const inicio=s.fecha_hora_inicio||'';
+      const qok = !q || notes.includes(q) || (inicio && new Date(inicio).toLocaleDateString().includes(q));
       const sok = !estado || status===estado; return qok && sok;
     });
     if(!filtered.length){ tb.innerHTML='<tr><td colspan="5" class="text-center text-muted">Sin registros</td></tr>'; return; }
     tb.innerHTML='';
     for(const s of filtered){
-      const inicio=s.start_time||s.started_at||s.created_at||s.fecha_hora_inicio||'';
-      const fin=s.end_time||s.fecha_hora_fin||'';
-      const status=s.status|| (fin? 'completed':'open');
+      const inicio=s.fecha_hora_inicio||'';
+      const fin=s.fecha_hora_fin||'';
+      const status= fin? 'completed':'open';
       const pill = status==='completed' ? '<span class="pill pill-green"><span class="icon-dot dot-green"></span>Completado</span>' : '<span class="pill pill-amber"><span class="icon-dot dot-amber"></span>En curso</span>';
       const tr=document.createElement('tr');
       tr.innerHTML=`
         <td>
-          <div class="fw-semibold">${s.routine_name||'Entrenamiento'}</div>
-          <div class="small text-muted">${s.notes||'—'}</div>
+          <div class="fw-semibold">Sesión</div>
+          <div class="text-muted small">${(s.notas_generales||'').slice(0,60)}</div>
         </td>
-        <td class="d-none d-md-table-cell">${inicio? new Date(inicio).toLocaleString(): '—'}</td>
-        <td class="d-none d-md-table-cell">${fin? new Date(fin).toLocaleString(): '—'}</td>
+        <td>${inicio? new Date(inicio).toLocaleString(): '—'}</td>
+        <td>${fin? new Date(fin).toLocaleString(): '—'}</td>
         <td>${pill}</td>
         <td class="text-end">
-          ${status!=='completed' ? `<button class="btn btn-sm btn-outline-secondary" data-action="cerrar" data-id="${s.id}"><i class="bi bi-check2"></i> Completar</button>`:''}
+          <button class="btn btn-sm btn-outline-dark">Ver</button>
         </td>`;
       tb.appendChild(tr);
     }
-  }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="text-center text-danger">${e.message}</td></tr>` }
+  }catch(e){
+    document.getElementById('tbHistorial').innerHTML='<tr><td colspan="5" class="text-center text-muted">No se pudo cargar</td></tr>';
+  }
 }
+document.getElementById('buscarHistorial')?.addEventListener('input', cargarHistorial);
+document.querySelectorAll('.chip').forEach(ch=>{
+  ch.addEventListener('click', ()=>{
+    document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    ch.classList.add('active');
+    cargarHistorial();
+  });
+});
 
-// Rutinas
-async function cargarRutinas() {
-  const cont = document.getElementById("rutinasList");
-  cont.innerHTML = "";
-  try {
-    // listado → /api/routines/search (tu handler RoutineHandler.SearchRoutines)
-    const res = await api("/routines/search");      // sin filtros → devuelve todas del usuario
-    const list = Array.isArray(res?.items) ? res.items : (Array.isArray(res) ? res : []);
-    if (!list.length) { cont.innerHTML = '<div class="col-12 text-center text-muted">No tienes rutinas aún</div>'; return; }
-    // ... (render cards igual que ya tenías)
-  } catch (e) {
-    cont.innerHTML = `<div class="col-12 text-danger">${e.message}</div>`;
+async function cargarRutinas(){
+  try{
+    // En tu backend: /api/routines/search (no soporta ?mine=true)
+    const arr = await api('/routines/search?is_template=false');
+    const grid = document.getElementById('gridRutinas');
+    grid.innerHTML='';
+    if(!arr?.length){
+      grid.innerHTML = '<div class="col-12 text-muted">Aún no tienes rutinas.</div>';
+      return;
+    }
+    for(const r of arr){
+      const col=document.createElement('div'); col.className='col-12 col-md-6 col-lg-4';
+      col.innerHTML=`
+        <div class="card card-lite h-100">
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="fw-semibold">${r.name||'Rutina'}</div>
+              <span class="sidebar-badge">${r.sessions_count||0}</span>
+            </div>
+            <div class="text-muted small flex-grow-1">${(r.description||'').slice(0,120)}</div>
+            <div class="mt-3 d-flex gap-2">
+              <button class="btn btn-sm btn-dark">Iniciar</button>
+              <button class="btn btn-sm btn-outline-dark">Editar</button>
+            </div>
+          </div>
+        </div>`;
+      grid.appendChild(col);
+    }
+  }catch(e){
+    document.getElementById('gridRutinas').innerHTML='<div class="col-12 text-muted">No se pudo cargar</div>';
   }
 }
 
-// Eventos
-btnRefrescarHistorial.addEventListener('click',cargarHistorial);
-buscarHistorial.addEventListener('input',cargarHistorial);
-filtroEstado.addEventListener('change',cargarHistorial);
-
-document.getElementById('btnNuevaSesion').addEventListener('click', async()=>{
-  const now=new Date().toISOString();
-  try{ await api('/workout-sessions',{method:'POST',body:JSON.stringify({start_time:now,notes:'Sesión rápida'})}); await cargarHistorial(); await cargarStats(); }
-  catch(e){ alert('Error: '+e.message) }
-});
-
-rutinasList.addEventListener('click', async e=>{
-  const btn=e.target.closest('button[data-action]'); if(!btn) return;
-  const id=btn.getAttribute('data-id'); const a=btn.getAttribute('data-action');
+document.getElementById('btnNuevaSesion')?.addEventListener('click', async()=>{
   try{
-    if(a==='eliminar'){ if(!confirm('¿Eliminar rutina?')) return; await api(`/routines/${id}`,{method:'DELETE'}); }
-    if(a==='duplicar'){ await api(`/routines/${id}/duplicate`,{method:'POST'}); }
-    if(a==='editar'){ const name=prompt('Nuevo nombre:'); if(!name) return; await api(`/routines/${id}`,{method:'PUT',body:JSON.stringify({name})}); }
-    await cargarRutinas();
+    // En tu backend: POST /api/workout-sessions requiere start_time RFC3339
+    const body = { start_time: new Date().toISOString() };
+    const r = await api('/workout-sessions', { method:'POST', body: JSON.stringify(body) });
+    if(r?.id){ alert('Sesión iniciada'); await cargarHistorial(); }
   }catch(e){ alert('Error: '+e.message) }
 });
 
-btnNuevaRutina.addEventListener('click', async()=>{
+document.getElementById('btnCrearRutina')?.addEventListener('click', async()=>{
   const name=prompt('Nombre de la rutina:'); if(!name) return;
   const description=prompt('Descripción (opcional):')||'';
   try{ await api('/routines',{method:'POST',body:JSON.stringify({name,description,is_template:false})}); await cargarRutinas(); }
   catch(e){ alert('Error: '+e.message) }
 });
+const LEVEL_MAP = {
+  'principiante': 'PRINCIPIANTE',
+  'intermedio': 'INTERMEDIO',
+  'avanzado': 'AVANZADO'
+};
 
-formPerfil.addEventListener("submit", async (e) => {
+const GOAL_MAP = {
+  'perder_peso': 'PERDER_PESO',
+  'ganar_musculo': 'GANAR_MUSCULO',
+  'mantenerse': 'MANTENERSE'
+};
+formPerfil.addEventListener('submit', async e=>{
   e.preventDefault();
-  const payload = {
-    name:   pfNombre.value || undefined,
-    weight: pfPeso.value   ? parseFloat(pfPeso.value)   : undefined,
-    height: pfAltura.value ? parseFloat(pfAltura.value) : undefined,
-    level:  pfNivel.value  || undefined,
-    goal:   pfObjetivo.value || undefined
+  const uid = window.__CURRENT_USER_ID__;
+  if(!uid){ alert('No se pudo identificar el usuario'); return; }
+
+  // Tomo el cache del perfil (puede ser {}) y lo mergeo con lo editado
+  const base = (__PROFILE_CACHE__ && typeof __PROFILE_CACHE__ === 'object') ? {...__PROFILE_CACHE__} : {};
+
+  // Armo los nuevos valores solo si están completos; si están vacíos, dejo lo previo
+  const merged = {
+    // nombre: si escribiste algo, lo uso; si lo dejaste vacío, intento borrar a "" (si tu backend lo permite) o dejo el existente
+    name: (pfNombre.value ?? '').trim() !== '' ? pfNombre.value.trim() : (base.name ?? base.Name ?? ''),
+
+    // peso/altura: número sólo si hay valor; si no hay, preservo lo que había
+    weight: (pfPeso.value ?? '').trim() !== '' ? parseFloat(pfPeso.value) : (base.weight ?? base.Weight ?? undefined),
+    height: (pfAltura.value ?? '').trim() !== '' ? parseFloat(pfAltura.value) : (base.height ?? base.Height ?? undefined),
+
+    // nivel/objetivo: si no seleccionaste, preservo
+    level:  (pfNivel.value ?? '').trim() !== '' ? pfNivel.value : (base.level ?? base.Level ?? ''),
+    goal:   (pfObjetivo.value ?? '').trim() !== '' ? pfObjetivo.value : (base.goal ?? base.Goal ?? '')
+
+    
   };
-  try {
-    await api("/profile", { method: "PUT", body: JSON.stringify(payload) });
-    alert("Perfil actualizado");
+
+  // Limpieza: si quedaron NaN, los saco
+  if (Number.isNaN(merged.weight)) delete merged.weight;
+  if (Number.isNaN(merged.height)) delete merged.height;
+
+  try{
+    await api(`/profile`, { method:'PUT', body: JSON.stringify(merged) });
+    alert('Perfil actualizado');
     await cargarPerfil();
-  } catch (err) {
-    alert("Error: " + err.message);
+  }catch(e){
+    // Si el perfil no existe aún, actualizo al menos el nombre en /users/:id
+    const msg = (e.message || '').toLowerCase();
+    if(msg.includes('perfil no encontrado') || msg.includes('404')){
+      const bodyUser = {};
+      if ((pfNombre.value ?? '').trim() !== '') bodyUser.username = pfNombre.value.trim();
+      if (Object.keys(bodyUser).length === 0) { alert('No hay cambios para guardar'); return; }
+      await api(`/users/${uid}`, { method:'PUT', body: JSON.stringify(bodyUser) });
+      alert('Nombre actualizado. Para guardar peso/altura/nivel/objetivo creá primero el perfil del usuario.');
+      await cargarPerfil();
+    }else{
+      alert('Error: '+ e.message);
+    }
   }
 });
 
-
-btnCambiarPass.addEventListener("click", async () => {
-  const oldPassword = prompt("Contraseña actual:"); if (!oldPassword) return;
-  const newPassword = prompt("Nueva contraseña:");  if (!newPassword) return;
-  try {
-    await api("/profile/change-password", {
-      method: "POST",
-      body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
-    });
-    alert("Contraseña actualizada");
-  } catch (e) {
-    alert("Error: " + e.message);
-  }
+btnCambiarPass.addEventListener('click', async()=>{
+  const oldPassword=prompt('Contraseña actual:'); if(!oldPassword) return;
+  const newPassword=prompt('Nueva contraseña:'); if(!newPassword) return;
+  try{
+    await api('/users/change-password',{method:'PUT',body:JSON.stringify({ old_password: oldPassword, new_password: newPassword })});
+    alert('Contraseña actualizada');
+  }catch(e){ alert('Error: '+e.message) }
 });
-
 
 // Init
 (async function(){ await cargarPerfil(); await Promise.all([cargarStats(),cargarHistorial(),cargarRutinas()]); })();
+
+
 </script>
 {{end}}
