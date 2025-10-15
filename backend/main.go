@@ -71,18 +71,36 @@ func main() {
 	r.Static("/static", "./static")
 	r.LoadHTMLGlob("templates/*.html")
 
+	// Rutas
+	// GET /
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(200, "index", gin.H{"Title": "Inicio"})
+		c.HTML(200, "index", gin.H{
+			"Title":     "Inicio",
+			"Content":   "content_index",
+			"FullWidth": true, // <- sin padding de container
+		})
 	})
 
 	r.GET("/login", func(c *gin.Context) {
-		c.HTML(200, "login", gin.H{"Title": "Login", "FullWidth": true})
+		c.HTML(http.StatusOK, "login", gin.H{
+			"Title":   "Iniciar sesión",
+			"Content": "content_login",
+		})
 	})
 
 	r.GET("/register", func(c *gin.Context) {
-		c.HTML(200, "register", gin.H{
-			"Title":     "Register",
-			"FullWidth": true,
+		c.HTML(http.StatusOK, "register", gin.H{
+			"Title":   "Crear cuenta",
+			"Content": "content_register",
+		})
+	})
+
+	// GET /change-password (vista)
+	r.GET("/change-password", func(c *gin.Context) {
+		c.HTML(200, "change_password", gin.H{
+			"Title":     "Cambiar contraseña",
+			"Content":   "content_change_password",
+			"FullWidth": true, // mismo layout sin padding
 		})
 	})
 

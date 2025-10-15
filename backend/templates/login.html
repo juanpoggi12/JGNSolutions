@@ -1,5 +1,5 @@
 {{define "login"}}{{template "layout" .}}{{end}}
-{{define "content"}}
+{{define "content_login"}}
 
 <!-- LOGO ARRIBA A LA IZQUIERDA -->
 <div class="login-header position-absolute top-0 start-0 p-4">
@@ -9,29 +9,29 @@
 <section class="login-split">
   <div class="login-left">
     <div class="login-inner">
-      <h1 class="login-title">WELCOME BACK</h1>
-      <p class="login-sub">Welcome back! Please enter your details.</p>
+      <h1 class="login-title">BIENVENIDO!</h1>
+      <p class="login-sub">“Entrená. Superate. Repetí.”</p>
 
       <form id="loginForm" class="login-form" novalidate>
         <label class="form-label mt-3">Email</label>
         <input id="email" type="email" class="form-control form-control-lg rounded-3" placeholder="Enter your email" required>
 
-        <label class="form-label mt-3">Password</label>
+        <label class="form-label mt-3">Contraseña</label>
         <input id="password" type="password" class="form-control form-control-lg rounded-3" placeholder="**********" required>
 
         <div class="d-flex align-items-center justify-content-between mt-3 small">
           <div class="form-check">
             <input class="form-check-input" type="checkbox" id="remember">
-            <label class="form-check-label" for="remember">Remember me</label>
+            <label class="form-check-label" for="remember">Recuerdame</label>
           </div>
-          <a class="link-secondary text-decoration-none" href="/forgot">Forgot password</a>
+          <a class="link-secondary text-decoration-none" href="/change-password">Olvidé mi contraseña</a>
         </div>
 
-        <button class="btn btn-login w-100 btn-lg mt-4" type="submit">Sign in</button>
+        <button class="btn btn-login w-100 btn-lg mt-4" type="submit">Iniciar sesion</button>
 
         <p class="text-center mt-3 small mb-0">
-          Don’t have an account?
-          <a href="/register" class="text-decoration-none fw-semibold">Sign up for free!</a>
+          No tienes una cuenta?
+          <a href="/register" class="text-decoration-none fw-semibold">Registrate!</a>
         </p>
 
         <div id="loginError" class="alert alert-danger mt-3 d-none" role="alert"></div>

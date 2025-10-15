@@ -1,33 +1,48 @@
-/* Ajuste general del grid */
+/* Ajuste general del layout */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; /* evita scroll horizontal */
+}
+
+/* Split principal */
 .login-split {
-  display: grid;
-  grid-template-columns: 55% 45%;  /* más espacio al formulario */
-  min-height: 100vh;
+  display: flex;
+  width: 100%;           /* ocupa todo el ancho de la pantalla */
+  min-height: 100vh;     /* ocupa todo el alto visible */
+  overflow: hidden;
 }
-.login-left{
-  display:flex; align-items:center; justify-content:center;
-  padding:3.5rem 3rem;
+
+/* Panel izquierdo */
+.login-left {
+  flex: 0 0 55%;
+  max-width: 55%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;   /* 💡 empuja el contenido hacia la imagen */
+  padding: 40px 200px 40px 60px; /* menos padding, especialmente a la derecha */
 }
+
 .login-inner {
-  max-width: 600px;        /* antes 520px */
-  padding: 2.5rem 2rem;    /* más espacio interno */
+  max-width: 520px;      /* antes 520px */
+  padding-right: 0; /* más espacio interno */
 }
+
 .login-title {
-  font-size: 3.5rem;       /* antes 3rem */
+  font-size: 3.5rem;     /* antes 3rem */
   font-weight: 800;
   letter-spacing: .5px;
   margin-bottom: 1rem;
 }
 
 .login-sub {
-  font-size: 1.3rem;       /* antes 1rem aprox */
+  font-size: 1.3rem;     /* antes 1rem aprox */
   color: #6b7280;
   margin-bottom: 1.75rem;
 }
 
-
-
-/* botón rojo con gradiente */
+/* Botón rojo con gradiente */
 .btn-login {
   font-size: 1.3rem;
   padding: 0.9rem;
@@ -35,7 +50,9 @@
   background: linear-gradient(180deg, #ff5a58 0%, #f53636 100%);
   box-shadow: 0 .6rem 1.4rem rgba(245,54,54,.35);
 }
-.btn-login:hover{ filter:brightness(.95) }
+.btn-login:hover {
+  filter: brightness(.95);
+}
 
 .link-secondary {
   font-size: 1rem;
@@ -44,27 +61,46 @@
 .small {
   font-size: 1rem;
 }
-/* panel derecho imagen */
-.login-right{ background:#efeff1; }
-.hero-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  
+
+/* Panel derecho - imagen */
+.login-right {
+  flex: 0 0 45%;         /* ocupa el 45% restante */
+  max-width: 45%;
+  position: relative;
+  background: #efeff1;
+  overflow: hidden;
+  padding: 0;            /* sin padding que empuje hacia adentro */
 }
 
-/* inputs grandes */
+/* Imagen - ocupa todo el panel derecho y cubre el espacio blanco */
+.hero-img {
+  position: absolute;    /* se pega al contenedor derecho */
+  inset: 0;              /* top, right, bottom, left = 0 */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;     /* cubre todo recortando si hace falta */
+ object-position: right 1%;
+  display: block;
+}
+
+/* Inputs grandes */
 .form-control-lg {
   font-size: 1.1rem;
   padding: 0.9rem 1rem;
 }
-/* responsive: una sola columna en móviles */
-@media (max-width: 991.98px){
-  .login-split{ grid-template-columns: 1fr; min-height:auto }
+
+/* Responsive: una sola columna en móviles */
+@media (max-width: 991.98px) {
+  .login-split {
+    flex-direction: column;
+    min-height: auto;
+  }
+  .login-right {
+    display: none; /* ocultar imagen en pantallas chicas */
+  }
 }
+
 /* Marca superior */
-/* Logo arriba a la izquierda */
 .login-header {
   position: fixed;
   top: 0;
@@ -88,3 +124,73 @@
   font-size: 0.9rem;
   z-index: 1000;
 }
+
+/* 🔧 Elimina cualquier padding del container Bootstrap */
+main.container,
+main.container-fluid,
+.container,
+.container-fluid {
+  max-width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 🔧 Si usás filas Bootstrap, quita gutters */
+.row.login-split {
+  --bs-gutter-x: 0;
+}
+
+hero{
+  position: relative;
+  width: 100%;
+  min-height: 100vh;         /* pantalla completa */
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background-image: url("/static/img/index-img.jpg"); /* <-- TU IMAGEN */
+  background-size: cover;    /* cubre todo, recorta si hace falta */
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* velo sutil para mejorar contraste del texto */
+.hero::before{
+  content:"";
+  position:absolute; inset:0;
+  background: linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.35));
+}
+
+.hero-content{
+  position: relative; /* encima del velo */
+  text-align: left;   /* mismo estilo que login */
+  width: min(680px, 90%);
+  margin-left: clamp(48px, 8vw, 120px); /* alinea parecido al formulario */
+  color: #fff;
+  font-family: Poppins, system-ui, Arial;
+}
+
+.hero-title{
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 800;
+  letter-spacing: .5px;
+  margin: 0 0 .5rem 0;
+}
+
+.hero-sub{
+  font-size: clamp(1.1rem, 2.2vw, 1.35rem);
+  color: rgba(255,255,255,.9);
+  margin: 0 0 1.5rem 0;
+}
+
+/* reusa tu botón rojo del login */
+.hero-btn{
+  display: inline-block;
+  padding: .9rem 1.5rem;
+  border-radius: 1rem;
+  text-decoration: none;
+  color: #fff;
+  box-shadow: 0 .6rem 1.4rem rgba(245,54,54,.35);
+}
+
+/* quitar padding del container en esta vista (por si acaso) */
+main.container, main.container-fluid { padding-left:0!important; padding-right:0!important; }
