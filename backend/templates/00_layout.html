@@ -21,6 +21,8 @@
   {{template "content_register" .}}
 {{else if eq .Content "content_index"}}
   {{template "content_index" .}}
+{{else if eq .Content "content_inicio_user"}}
+  {{template "content_inicio_user" .}}
 {{else}}
   {{/* fallback por si falta algo */}}
   {{template "content_index" .}}

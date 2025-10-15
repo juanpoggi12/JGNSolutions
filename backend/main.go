@@ -95,12 +95,10 @@ func main() {
 		})
 	})
 
-	// GET /change-password (vista)
-	r.GET("/change-password", func(c *gin.Context) {
-		c.HTML(200, "change_password", gin.H{
-			"Title":     "Cambiar contraseña",
-			"Content":   "content_change_password",
-			"FullWidth": true, // mismo layout sin padding
+	r.GET("/home", func(c *gin.Context) {
+		c.HTML(200, "inicio_user", gin.H{
+			"Title":   "Inicio",
+			"Content": "content_inicio_user",
 		})
 	})
 

@@ -73,7 +73,7 @@ form.addEventListener('submit', async (e) => {
     const storage = remember ? localStorage : sessionStorage;
     storage.setItem("accessToken", accessToken);
     storage.setItem("accessTokenExp", (Date.now() + (expiresIn||3600)*1000).toString());
-    window.location.href = "/";
+    window.location.href = "/home";
   } catch (e2) {
     err.textContent = e2.message || "Login failed";
     err.classList.remove('d-none');
