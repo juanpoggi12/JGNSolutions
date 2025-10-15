@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
@@ -9,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type ExerciseRepositoryInterface interface {
@@ -17,10 +19,21 @@ type ExerciseRepositoryInterface interface {
 	InsertarEjercicio(ejercicio models.Exercise) (*mongo.InsertOneResult, error)
 	ModificarEjercicio(ejercicio models.Exercise) (*mongo.UpdateResult, error)
 	EliminarEjercicio(id primitive.ObjectID) (*mongo.UpdateResult, error)
+	ListExercisesCatalog(ctx context.Context, params ExerciseCatalogParams) ([]models.Exercise, int64, error)
 }
 
 type ExerciseRepository struct {
 	db *mongo.Database
+}
+
+type ExerciseCatalogParams struct {
+	Query          string
+	Category       string
+	MuscleGroup    string
+	Difficulty     string
+	IncludeDeleted bool
+	Page           int
+	Limit          int
 }
 
 func NewExerciseRepository(db *mongo.Database) *ExerciseRepository {
@@ -127,4 +140,60 @@ func (repository ExerciseRepository) EliminarEjercicio(id primitive.ObjectID) (*
 
 	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)
 	return resultado, err
+}
+func (repository ExerciseRepository) ListExercisesCatalog(ctx context.Context, params ExerciseCatalogParams) ([]models.Exercise, int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{}
+	if params.Query != "" {
+		filter["name"] = bson.M{"$regex": params.Query, "$options": "i"}
+	}
+	if params.Category != "" {
+		filter["category"] = strings.ToUpper(params.Category)
+	}
+	if params.MuscleGroup != "" {
+		filter["muscleGroup"] = strings.ToUpper(params.MuscleGroup)
+	}
+	if params.Difficulty != "" {
+		filter["difficulty"] = strings.ToUpper(params.Difficulty)
+	}
+	if !params.IncludeDeleted {
+		filter["isDeleted"] = false
+	}
+
+	collection := repository.collection()
+
+	total, err := collection.CountDocuments(ctx, filter)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	page := params.Page
+	if page <= 0 {
+		page = 1
+	}
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	skip := int64((page - 1) * limit)
+	opts := options.Find().SetSkip(skip).SetLimit(int64(limit)).SetSort(bson.M{"name": 1})
+
+	cursor, err := collection.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cursor.Close(context.Background())
+
+	var ejercicios []models.Exercise
+	if err := cursor.All(context.Background(), &ejercicios); err != nil {
+		return nil, 0, err
+	}
+
+	return ejercicios, total, nil
 }

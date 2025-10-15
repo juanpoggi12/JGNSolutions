@@ -18,6 +18,27 @@ func NewExerciseHandler(exerciseService *services.ExerciseService) *ExerciseHand
 	return &ExerciseHandler{exerciseService: exerciseService}
 }
 
+func (h *ExerciseHandler) ListExercises(c *gin.Context) {
+	actor := services.Actor{
+		UserID: parseObjectID(c.GetString("userId")),
+		Role:   c.GetString("role"),
+	}
+
+	var query dto.ExerciseCatalogQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Parámetros inválidos"})
+		return
+	}
+
+	catalog, err := h.exerciseService.ListExercises(actor, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, catalog)
+}
+
 // POST /api/exercises → Crear nuevo ejercicio (solo admin)
 func (h *ExerciseHandler) CreateExercise(c *gin.Context) {
 	role := c.GetString("role")

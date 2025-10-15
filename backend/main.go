@@ -68,6 +68,14 @@ func main() {
 	// Router con logger y recovery
 	r := gin.Default()
 
+	r.Static("/static", "./static")
+	r.LoadHTMLGlob("templates/*.html")
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "layout.html", gin.H{
+			"Title": "Inicio",
+		})
+	})
+
 	// Conexión a MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -99,7 +107,7 @@ func main() {
 	routineExerciseRepo := repositories.NewRoutineExerciseRepository(mc.DB)
 	logRepo := repositories.NewLogRepository(mc.DB)
 	userProfileRepo := repositories.NewUserProfileRepository(mc.DB)
-
+	userStatsRepo := repositories.NewUserStatsRepository(mc.DB)
 	// 2️⃣ Servicios
 	logService := services.NewLogService(logRepo)
 
@@ -111,7 +119,7 @@ func main() {
 	workoutSessionService := services.NewWorkoutSessionService(workoutSessionRepo, logService)
 	routineService := services.NewRoutineService(routineRepo, routineExerciseRepo, exerciseRepo, logService)
 	userProfileService := services.NewUserProfileService(userProfileRepo, logService)
-
+	userStatsService := services.NewUserStatsService(userStatsRepo)
 	// 3️⃣ Handlers
 	userHandler := handlers.NewUserHandler(userService)
 	authHandler := handlers.NewAuthHandler(authService)
@@ -120,8 +128,8 @@ func main() {
 	workoutEntryHandler := handlers.NewWorkoutEntryHandler(workoutEntryService)
 	workoutSessionHandler := handlers.NewWorkoutSessionHandler(workoutSessionService)
 	routineHandler := handlers.NewRoutineHandler(routineService)
-	userProfileHandler := handlers.NewUserProfileHandler(userProfileService)
-
+	userProfileHandler := handlers.NewUserProfileHandler(userProfileService, userService)
+	userStatsHandler := handlers.NewUserStatsHandler(userStatsService)
 	// --- 🚀 REGISTRO DE RUTAS ---
 
 	r.GET("/health", func(c *gin.Context) {
@@ -167,6 +175,7 @@ func main() {
 		apiAdmin := api.Group("/admin")
 		apiAdmin.Use(middleware.AuthMiddleware(jwtCfg), middleware.CheckAdmin()) // 🔒 Token + Rol admin
 		{
+			apiAdmin.GET("/metrics/summary", adminHandler.MetricsSummary)
 			apiAdmin.GET("/users/count", adminHandler.CountUsers)
 			apiAdmin.GET("/exercises/count", adminHandler.CountExercises)
 			apiAdmin.GET("/routines/count", adminHandler.CountRoutines)
@@ -174,6 +183,7 @@ func main() {
 			apiAdmin.GET("/users", adminHandler.ListUsers)
 			apiAdmin.GET("/exercises/top", adminHandler.TopExercises)
 			apiAdmin.GET("/routines/top", adminHandler.TopRoutines)
+			apiAdmin.PUT("/users/:id/role", adminHandler.UpdateUserRole)
 			apiAdmin.GET("/logs", adminHandler.ListLogs)
 			apiAdmin.GET("/user-profiles", adminHandler.ListProfiles)
 			apiAdmin.GET("/user-profiles/stats/levels", adminHandler.CountProfilesByLevel)
@@ -190,6 +200,7 @@ func main() {
 
 			apiExercises.GET("/:id", exerciseHandler.GetExerciseByID) // visible para todos los logueados
 			apiExercises.GET("/search", exerciseHandler.SearchExercises)
+			apiExercises.GET("", exerciseHandler.ListExercises)
 		}
 
 		// --- Rutas de entradas de entrenamiento ---
@@ -238,10 +249,29 @@ func main() {
 		apiProfile := api.Group("/profile")
 		apiProfile.Use(middleware.AuthMiddleware(jwtCfg)) // solo usuarios logueados
 		{
+			apiProfile.GET("", userProfileHandler.GetMyProfile)
+			apiProfile.PUT("", userProfileHandler.UpdateMyProfile)
+			apiProfile.POST("/change-password", userProfileHandler.ChangePassword)
 			apiProfile.GET("/search", userProfileHandler.GetProfile)
 			apiProfile.PUT("/:id", userProfileHandler.UpdateProfile)
 			apiProfile.DELETE("/:id", userProfileHandler.DeleteProfile)
 			apiProfile.POST("/", userProfileHandler.CreateProfile)
+		}
+		apiWorkouts := api.Group("/workouts")
+		apiWorkouts.Use(middleware.AuthMiddleware(jwtCfg))
+		{
+			apiWorkouts.GET("/summary", userStatsHandler.GetWorkoutSummary)
+		}
+
+		apiStats := api.Group("/stats")
+		apiStats.Use(middleware.AuthMiddleware(jwtCfg))
+		{
+			userStatsGroup := apiStats.Group("/user")
+			{
+				userStatsGroup.GET("/frequency", userStatsHandler.GetFrequency)
+				userStatsGroup.GET("/top-routines", userStatsHandler.GetTopRoutines)
+				userStatsGroup.GET("/progress", userStatsHandler.GetProgress)
+			}
 		}
 	}
 

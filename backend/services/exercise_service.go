@@ -1,7 +1,9 @@
 package services
 
 import (
+	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
@@ -18,6 +20,7 @@ type ExerciseServiceInterface interface {
 	UpdateExercise(actor Actor, id string, req dto.ExerciseUpdateRequest) (dto.ExerciseResponse, error)
 	DeleteExercise(actor Actor, id string) error
 	SearchExercises(actor Actor, search dto.ExerciseSearchRequest) ([]dto.ExerciseResponse, error)
+	ListExercises(actor Actor, query dto.ExerciseCatalogQuery) (dto.ExerciseCatalogResponse, error)
 }
 
 type ExerciseService struct {
@@ -164,4 +167,46 @@ func (service *ExerciseService) SearchExercises(actor Actor, search dto.Exercise
 	}
 
 	return respuestas, nil
+}
+func (service *ExerciseService) ListExercises(actor Actor, query dto.ExerciseCatalogQuery) (dto.ExerciseCatalogResponse, error) {
+	page := query.Page
+	if page <= 0 {
+		page = 1
+	}
+
+	limit := query.Limit
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	params := repositories.ExerciseCatalogParams{
+		Query:          strings.TrimSpace(query.Q),
+		Category:       strings.TrimSpace(query.Category),
+		MuscleGroup:    strings.TrimSpace(query.MuscleGroup),
+		Difficulty:     strings.TrimSpace(query.Difficulty),
+		IncludeDeleted: actor.Role == "admin",
+		Page:           page,
+		Limit:          limit,
+	}
+
+	ctx := context.Background()
+	ejercicios, total, err := service.repository.ListExercisesCatalog(ctx, params)
+	if err != nil {
+		return dto.ExerciseCatalogResponse{}, err
+	}
+
+	items := make([]dto.ExerciseResponse, 0, len(ejercicios))
+	for _, ejercicio := range ejercicios {
+		items = append(items, utils.ConvertExerciseModelToResponse(ejercicio))
+	}
+
+	return dto.ExerciseCatalogResponse{
+		Items: items,
+		Total: total,
+		Page:  page,
+		Limit: limit,
+	}, nil
 }

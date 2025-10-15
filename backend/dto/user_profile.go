@@ -44,3 +44,30 @@ type UserProfileListResponse struct {
 	WeightKg float64 `json:"weight_kg"`
 	HeightCm int     `json:"height_cm"`
 }
+
+// --- DTOs para alias de perfil (/api/profile) ---
+
+type ProfileResponse struct {
+	ID        string  `json:"id"`
+	Name      string  `json:"name"`
+	BirthDate string  `json:"birthDate"`
+	Weight    float64 `json:"weight"`
+	Height    float64 `json:"height"`
+	Level     string  `json:"level"`
+	Goal      string  `json:"goal"`
+	UpdatedAt string  `json:"updatedAt"`
+}
+
+type ProfileUpdateRequest struct {
+	Name      *string  `json:"name" binding:"omitempty,min=2,max=80"`
+	BirthDate *string  `json:"birthDate" binding:"omitempty,datetime=2006-01-02"`
+	Weight    *float64 `json:"weight" binding:"omitempty,gte=0,lte=500"`
+	Height    *float64 `json:"height" binding:"omitempty,gte=0,lte=300"`
+	Level     *string  `json:"level" binding:"omitempty,oneof=beginner intermediate advanced PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Goal      *string  `json:"goal" binding:"omitempty"`
+}
+
+type ProfileChangePasswordRequest struct {
+	CurrentPassword string `json:"currentPassword" binding:"required"`
+	NewPassword     string `json:"newPassword" binding:"required,min=8"`
+}

@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
@@ -20,6 +22,8 @@ type AdminServiceInterface interface {
 	CountProfilesByLevel(actor Actor) ([]dto.ProfileLevelStat, error)
 	CountProfilesByGoal(actor Actor) ([]dto.ProfileGoalStat, error)
 	ListLogs(actor Actor) ([]models.Log, error) // 👈 nuevo método
+	UpdateUserRole(actor Actor, id string, role string) (dto.AdminUserResponse, error)
+	GetMetricsSummary(actor Actor) (dto.AdminMetricsSummaryResponse, error)
 }
 
 type AdminService struct {
@@ -223,4 +227,68 @@ func (s *AdminService) ListLogs(actor Actor) ([]models.Log, error) {
 	}
 
 	return logs, nil
+}
+func (s *AdminService) UpdateUserRole(actor Actor, id string, role string) (dto.AdminUserResponse, error) {
+	if actor.Role != "admin" {
+		return dto.AdminUserResponse{}, errors.New("no tienes permiso para modificar roles")
+	}
+
+	usuario, err := s.userRepository.ObtenerUsuarioPorID(id)
+	if err != nil {
+		return dto.AdminUserResponse{}, errors.New("usuario no encontrado")
+	}
+
+	normalized := strings.ToLower(strings.TrimSpace(role))
+	if normalized != "admin" && normalized != "user" {
+		return dto.AdminUserResponse{}, errors.New("rol inválido")
+	}
+
+	nuevoRol := models.Role(normalized)
+	usuario.Role = nuevoRol
+	usuario.UpdatedAt = time.Now()
+
+	if _, err := s.userRepository.ModificarUsuario(usuario); err != nil {
+		return dto.AdminUserResponse{}, err
+	}
+
+	return dto.AdminUserResponse{
+		ID:        usuario.ID.Hex(),
+		Email:     usuario.Email,
+		Username:  usuario.Username,
+		Role:      string(usuario.Role),
+		UpdatedAt: usuario.UpdatedAt.Format(time.RFC3339),
+	}, nil
+}
+
+func (s *AdminService) GetMetricsSummary(actor Actor) (dto.AdminMetricsSummaryResponse, error) {
+	if actor.Role != "admin" {
+		return dto.AdminMetricsSummaryResponse{}, errors.New("no tienes permiso para acceder a estas estadísticas")
+	}
+
+	usersCount, err := s.adminRepository.ContarDocumentos("users")
+	if err != nil {
+		return dto.AdminMetricsSummaryResponse{}, err
+	}
+
+	exercisesCount, err := s.adminRepository.ContarDocumentos("exercises")
+	if err != nil {
+		return dto.AdminMetricsSummaryResponse{}, err
+	}
+
+	routinesCount, err := s.adminRepository.ContarDocumentos("routines")
+	if err != nil {
+		return dto.AdminMetricsSummaryResponse{}, err
+	}
+
+	workoutSessionsCount, err := s.adminRepository.ContarDocumentos("workoutSessions")
+	if err != nil {
+		return dto.AdminMetricsSummaryResponse{}, err
+	}
+
+	return dto.AdminMetricsSummaryResponse{
+		UsersCount:           usersCount,
+		ExercisesCount:       exercisesCount,
+		RoutinesCount:        routinesCount,
+		WorkoutSessionsCount: workoutSessionsCount,
+	}, nil
 }

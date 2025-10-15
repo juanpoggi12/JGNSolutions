@@ -44,3 +44,19 @@ type ExerciseResponse struct {
 	UpdatedAt    string   `json:"updated_at"`
 	IsDeleted    bool     `json:"is_deleted"`
 }
+
+type ExerciseCatalogQuery struct {
+	Q           string `form:"q"`
+	Category    string `form:"category"`
+	MuscleGroup string `form:"muscleGroup"`
+	Difficulty  string `form:"difficulty"`
+	Page        int    `form:"page"`
+	Limit       int    `form:"limit"`
+}
+
+type ExerciseCatalogResponse struct {
+	Items []ExerciseResponse `json:"items"`
+	Total int64              `json:"total"`
+	Page  int                `json:"page"`
+	Limit int                `json:"limit"`
+}
