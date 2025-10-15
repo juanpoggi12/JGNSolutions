@@ -68,14 +68,19 @@ func main() {
 	// Router con logger y recovery
 	r := gin.Default()
 
-	r.Static("/static", "./static")
 	r.LoadHTMLGlob("templates/*.html")
+
 	r.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "layout.html", gin.H{
+		c.HTML(http.StatusOK, "index", gin.H{
 			"Title": "Inicio",
 		})
 	})
 
+	r.GET("/login", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "login", gin.H{
+			"Title": "Login",
+		})
+	})
 	// Conexión a MongoDB
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
