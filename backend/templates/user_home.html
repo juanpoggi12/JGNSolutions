@@ -270,6 +270,14 @@
 <script>
 // ======= API helper =======
 const API_BASE = '/api';
+const formPerfil = document.getElementById('formPerfil');
+const pfNombre = document.getElementById('pfNombre');
+const pfEmail = document.getElementById('pfEmail');
+const pfPeso = document.getElementById('pfPeso');
+const pfAltura = document.getElementById('pfAltura');
+const pfNivel = document.getElementById('pfNivel');
+const pfObjetivo = document.getElementById('pfObjetivo');
+const btnCambiarPass = document.getElementById('btnCambiarPass');
 function getToken(){
   return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') || null;
 }
@@ -351,9 +359,17 @@ async function cargarPerfil(){
     const fEmail  = document.getElementById('pfEmail');  if(fEmail)  fEmail.value  = email || '';
     const fPeso   = document.getElementById('pfPeso');   if(fPeso)   fPeso.value   = (weight ?? '');
     const fAltura = document.getElementById('pfAltura'); if(fAltura) fAltura.value = (height ?? '');
-    const fNivel  = document.getElementById('pfNivel');  if(fNivel && level)  fNivel.value  = level;
-    const fObj    = document.getElementById('pfObjetivo'); if(fObj && goal) fObj.value = goal;
-  }catch(e){
+    const fNivel  = document.getElementById('pfNivel');
+    if(fNivel){
+      const formLevel = mapLevelForSelect(level);
+      fNivel.value = formLevel || '';
+    }
+    const fObj    = document.getElementById('pfObjetivo');
+    if(fObj){
+      const formGoal = mapGoalForSelect(goal);
+      fObj.value = formGoal || '';
+    }
+  } catch(e) {
     console.warn('perfil', e.message);
   }
 }
@@ -485,21 +501,55 @@ document.getElementById('btnCrearRutina')?.addEventListener('click', async()=>{
   try{ await api('/routines',{method:'POST',body:JSON.stringify({name,description,is_template:false})}); await cargarRutinas(); }
   catch(e){ alert('Error: '+e.message) }
 });
-const LEVEL_MAP = {
+const LEVEL_TO_API = {
   'principiante': 'PRINCIPIANTE',
+  'beginner': 'PRINCIPIANTE',
   'intermedio': 'INTERMEDIO',
-  'avanzado': 'AVANZADO'
+  'intermediate': 'INTERMEDIO',
+  'avanzado': 'AVANZADO',
+  'advanced': 'AVANZADO'
 };
 
-const GOAL_MAP = {
+const GOAL_TO_API = {
   'perder_peso': 'PERDER_PESO',
+  'perderpeso': 'PERDER_PESO',
+  'lose_weight': 'PERDER_PESO',
+  'weight_loss': 'PERDER_PESO',
   'ganar_musculo': 'GANAR_MUSCULO',
-  'mantenerse': 'MANTENERSE'
+  'ganarmusculo': 'GANAR_MUSCULO',
+  'gain_muscle': 'GANAR_MUSCULO',
+  'muscle_gain': 'GANAR_MUSCULO',
+  'mantenerse': 'MANTENERSE',
+  'mantener': 'MANTENERSE',
+  'maintain': 'MANTENERSE',
+  'maintenance': 'MANTENERSE'
 };
-formPerfil.addEventListener('submit', async e=>{
+
+function mapLevelForSelect(level){
+  const key = (level ?? '').toString().trim().toLowerCase();
+  if(!key) return '';
+  if(key === 'beginner' || key === 'principiante') return 'principiante';
+  if(key === 'intermediate' || key === 'intermedio') return 'intermedio';
+  if(key === 'advanced' || key === 'avanzado') return 'avanzado';
+  return '';
+}
+
+function mapGoalForSelect(goal){
+  const key = (goal ?? '').toString().trim().toLowerCase();
+  if(!key) return '';
+  if(key === 'lose_weight' || key === 'perder_peso' || key === 'perderpeso' || key === 'weight_loss') return 'perder_peso';
+  if(key === 'gain_muscle' || key === 'ganar_musculo' || key === 'ganarmusculo' || key === 'muscle_gain') return 'ganar_musculo';
+  if(key === 'maintain' || key === 'mantenerse' || key === 'mantener' || key === 'maintenance') return 'mantenerse';
+  return '';
+}
+formPerfil?.addEventListener('submit', async e=>{
   e.preventDefault();
   const uid = window.__CURRENT_USER_ID__;
   if(!uid){ alert('No se pudo identificar el usuario'); return; }
+  if(!pfNombre || !pfPeso || !pfAltura || !pfNivel || !pfObjetivo){
+    alert('Formulario de perfil incompleto en la página');
+    return;
+  }
 
   // Tomo el cache del perfil (puede ser {}) y lo mergeo con lo editado
   const base = (__PROFILE_CACHE__ && typeof __PROFILE_CACHE__ === 'object') ? {...__PROFILE_CACHE__} : {};
@@ -517,15 +567,31 @@ formPerfil.addEventListener('submit', async e=>{
     level:  (pfNivel.value ?? '').trim() !== '' ? pfNivel.value : (base.level ?? base.Level ?? ''),
     goal:   (pfObjetivo.value ?? '').trim() !== '' ? pfObjetivo.value : (base.goal ?? base.Goal ?? '')
 
-    
+
   };
 
   // Limpieza: si quedaron NaN, los saco
   if (Number.isNaN(merged.weight)) delete merged.weight;
   if (Number.isNaN(merged.height)) delete merged.height;
 
+  const payload = { ...merged };
+
+  if(payload.level){
+    const lvlKey = payload.level.toString().trim().toLowerCase();
+    if(LEVEL_TO_API[lvlKey]){
+      payload.level = LEVEL_TO_API[lvlKey];
+    }
+  }
+
+  if(payload.goal){
+    const goalKey = payload.goal.toString().trim().toLowerCase();
+    if(GOAL_TO_API[goalKey]){
+      payload.goal = GOAL_TO_API[goalKey];
+    }
+  }
+
   try{
-    await api(`/profile`, { method:'PUT', body: JSON.stringify(merged) });
+    await api(`/profile`, { method:'PUT', body: JSON.stringify(payload) });
     alert('Perfil actualizado');
     await cargarPerfil();
   }catch(e){
@@ -544,7 +610,7 @@ formPerfil.addEventListener('submit', async e=>{
   }
 });
 
-btnCambiarPass.addEventListener('click', async()=>{
+btnCambiarPass?.addEventListener('click', async()=>{
   const oldPassword=prompt('Contraseña actual:'); if(!oldPassword) return;
   const newPassword=prompt('Nueva contraseña:'); if(!newPassword) return;
   try{

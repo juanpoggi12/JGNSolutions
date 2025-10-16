@@ -138,7 +138,7 @@ func main() {
 	logService := services.NewLogService(logRepo)
 
 	userService := services.NewUserService(userRepo, logService)
-	authService := services.NewAuthService(userRepo, sessionRepo, logService, jwtCfg)
+	authService := services.NewAuthService(userRepo, sessionRepo, userProfileRepo, logService, jwtCfg)
 	adminService := services.NewAdminService(adminRepo, userRepo, userProfileRepo, logRepo)
 	exerciseService := services.NewExerciseService(exerciseRepo, logService)
 	workoutEntryService := services.NewWorkoutEntryService(workoutEntryRepo, workoutSessionRepo, logService)

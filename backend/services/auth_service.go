@@ -27,15 +27,27 @@ type sessionAuthRepository interface {
 	MarkRevoked(ctx context.Context, id primitive.ObjectID, revokedAt time.Time, replacedByID *primitive.ObjectID) error
 }
 
+// Define the userProfileRepository interface
+type userProfileRepository interface {
+	Create(ctx context.Context, profile *models.UserProfile) error
+}
+
 type AuthService struct {
 	users      userAuthRepository
 	sessions   sessionAuthRepository
+	profiles   userProfileRepository // 👈 NUEVO campo
 	logService *LogService
 	cfg        utils.Config
 }
 
-func NewAuthService(users userAuthRepository, sessions sessionAuthRepository, logService *LogService, cfg utils.Config) *AuthService {
-	return &AuthService{users: users, sessions: sessions, logService: logService, cfg: cfg}
+func NewAuthService(users userAuthRepository, sessions sessionAuthRepository, profiles userProfileRepository, logService *LogService, cfg utils.Config) *AuthService {
+	return &AuthService{
+		users:      users,
+		sessions:   sessions,
+		profiles:   profiles, // 👈 agregado
+		logService: logService,
+		cfg:        cfg,
+	}
 }
 
 var (
@@ -46,6 +58,7 @@ var (
 )
 
 func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
+	// 1) Validaciones básicas
 	exists, err := s.users.ExistsByEmail(ctx, req.Email)
 	if err != nil {
 		return err
@@ -54,6 +67,7 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 		return ErrEmailExists
 	}
 
+	// 2) Hash de contraseña
 	hashed, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return err
@@ -70,7 +84,26 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 		IsActive:     true,
 	}
 
-	return s.users.Create(ctx, &user)
+	// 3) Guardar usuario en base de datos
+	if err := s.users.Create(ctx, &user); err != nil {
+		return err
+	}
+
+	// 4) Crear perfil por defecto (opcional)
+	if s.profiles != nil {
+		profile := models.UserProfile{
+			UserID:    user.ID,
+			Goal:      "Sin definir",
+			Level:     "Principiante",
+			CreatedAt: now,
+			UpdatedAt: now,
+		}
+
+		// No interrumpe el registro si falla la creación del perfil
+		_ = s.profiles.Create(ctx, &profile)
+	}
+
+	return nil
 }
 
 func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip string) (string, int64, func(http.ResponseWriter), error) {

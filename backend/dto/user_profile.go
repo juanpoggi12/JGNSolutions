@@ -5,8 +5,8 @@ type UserProfileCreateRequest struct {
 	BirthDate string  `json:"birth_date" binding:"required,datetime=2006-01-02"` // yyyy-mm-dd
 	WeightKg  float64 `json:"weight_kg" binding:"required,gt=0,lte=500"`
 	HeightCm  int     `json:"height_cm" binding:"required,gt=0,lte=300"`
-	Level     string  `json:"level" binding:"required,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Goal      string  `json:"goal" binding:"required,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+	Level     string  `json:"level" binding:"required,oneof=beginner intermediate advanced principiante intermedio avanzado PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Goal      string  `json:"goal" binding:"required,oneof=lose_weight gain_muscle maintain PERDER_PESO GANAR_MUSCULO MANTENERSE perder_peso ganar_musculo mantenerse"`
 }
 
 type UserProfileUpdateRequest struct {
@@ -14,8 +14,8 @@ type UserProfileUpdateRequest struct {
 	BirthDate *string  `json:"birth_date" binding:"omitempty,datetime=2006-01-02"`
 	WeightKg  *float64 `json:"weight_kg" binding:"omitempty,gt=0,lte=500"`
 	HeightCm  *int     `json:"height_cm" binding:"omitempty,gt=0,lte=300"`
-	Level     *string  `json:"level" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Goal      *string  `json:"goal" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
+	Level     *string  `json:"level" binding:"omitempty,oneof=beginner intermediate advanced principiante intermedio avanzado PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Goal      *string  `json:"goal" binding:"omitempty,oneof=lose_weight gain_muscle maintain PERDER_PESO GANAR_MUSCULO MANTENERSE perder_peso ganar_musculo mantenerse"`
 }
 
 type UserProfileSearchRequest struct {
@@ -63,7 +63,7 @@ type ProfileUpdateRequest struct {
 	BirthDate *string  `json:"birthDate" binding:"omitempty,datetime=2006-01-02"`
 	Weight    *float64 `json:"weight" binding:"omitempty,gte=0,lte=500"`
 	Height    *float64 `json:"height" binding:"omitempty,gte=0,lte=300"`
-	Level     *string  `json:"level" binding:"omitempty,oneof=beginner intermediate advanced PRINCIPIANTE INTERMEDIO AVANZADO"`
+	Level     *string  `json:"level" binding:"omitempty,oneof=beginner intermediate advanced principiante intermedio avanzado PRINCIPIANTE INTERMEDIO AVANZADO"`
 	Goal      *string  `json:"goal" binding:"omitempty"`
 }
 
