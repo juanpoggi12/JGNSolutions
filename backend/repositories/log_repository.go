@@ -11,8 +11,8 @@ import (
 )
 
 type LogRepositoryInterface interface {
-	InsertarLog(log models.Log) (*mongo.InsertOneResult, error)
-	ListarLogs() ([]models.Log, error)
+	InsertLog(log models.Log) (*mongo.InsertOneResult, error)
+	ListLogs() ([]models.Log, error)
 }
 
 type LogRepository struct {
@@ -28,7 +28,7 @@ func (repository LogRepository) collection() *mongo.Collection {
 }
 
 // InsertarLog → Guarda un nuevo registro en la colección de logs
-func (repository LogRepository) InsertarLog(log models.Log) (*mongo.InsertOneResult, error) {
+func (repository LogRepository) InsertLog(log models.Log) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
 
 	if log.Timestamp.IsZero() {
@@ -39,8 +39,8 @@ func (repository LogRepository) InsertarLog(log models.Log) (*mongo.InsertOneRes
 	return resultado, err
 }
 
-// ListarLogs → Devuelve todos los logs ordenados por fecha descendente
-func (repository LogRepository) ListarLogs() ([]models.Log, error) {
+// ListLogs -> Returns all logs ordered by timestamp desc
+func (repository LogRepository) ListLogs() ([]models.Log, error) {
 	collection := repository.collection()
 
 	opts := options.Find().SetSort(bson.D{{Key: "timestamp", Value: -1}})

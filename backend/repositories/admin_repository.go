@@ -23,7 +23,7 @@ type RoutineUsageAgg struct {
 }
 
 type AdminRepositoryInterface interface {
-	ContarDocumentos(nombreColeccion string) (int64, error)
+	CountDocuments(collectionName string) (int64, error)
 	TopExercisesByEntries(limit int) ([]ExerciseUsageAgg, error)
 	TopRoutinesBySessions(limit int) ([]RoutineUsageAgg, error)
 }
@@ -36,8 +36,8 @@ func NewAdminRepository(db *mongo.Database) *AdminRepository {
 	return &AdminRepository{db: db}
 }
 
-func (repository AdminRepository) ContarDocumentos(nombreColeccion string) (int64, error) {
-	collection := repository.db.Collection(nombreColeccion)
+func (repository AdminRepository) CountDocuments(collectionName string) (int64, error) {
+	collection := repository.db.Collection(collectionName)
 	return collection.CountDocuments(context.TODO(), map[string]interface{}{})
 }
 

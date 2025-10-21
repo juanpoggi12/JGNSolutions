@@ -53,7 +53,7 @@ func (service *UserService) CreateUser(actor Actor, req dto.UserCreateRequest) (
 	}
 
 	// Insertar en la base
-	resultado, err := service.repository.InsertarUsuario(user)
+	resultado, err := service.repository.InsertUser(user)
 	if err != nil {
 		return models.User{}, err
 	}
@@ -71,7 +71,7 @@ func (service *UserService) CreateUser(actor Actor, req dto.UserCreateRequest) (
 }
 
 func (service *UserService) GetUserByID(actor Actor, id string) (models.User, error) {
-	usuario, err := service.repository.ObtenerUsuarioPorID(id)
+	usuario, err := service.repository.GetUserByID(id)
 	if err != nil {
 		return models.User{}, errors.New("usuario no encontrado")
 	}
@@ -90,7 +90,7 @@ func (service *UserService) UpdateUser(actor Actor, id string, req dto.UserUpdat
 		return models.User{}, errors.New("ID inválido")
 	}
 
-	userDB, err := service.repository.ObtenerUsuarioPorID(id)
+	userDB, err := service.repository.GetUserByID(id)
 	if err != nil {
 		return models.User{}, errors.New("usuario no encontrado")
 	}
@@ -120,7 +120,7 @@ func (service *UserService) UpdateUser(actor Actor, id string, req dto.UserUpdat
 
 	userDB.UpdatedAt = time.Now()
 
-	_, err = service.repository.ModificarUsuario(userDB)
+	_, err = service.repository.UpdateUser(userDB)
 	if err != nil {
 		return models.User{}, err
 	}
@@ -143,7 +143,7 @@ func (service *UserService) DeleteUser(actor Actor, id string) error {
 		return errors.New("solo los administradores pueden eliminar usuarios")
 	}
 
-	resultado, err := service.repository.EliminarUsuario(objectID)
+	resultado, err := service.repository.DeleteUser(objectID)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func (service *UserService) DeleteUser(actor Actor, id string) error {
 
 func (s *UserService) ChangePassword(actor Actor, req dto.ChangePasswordRequest) error {
 	// Buscar el usuario autenticado
-	user, err := s.repository.ObtenerUsuarioPorID(actor.UserID.Hex())
+	user, err := s.repository.GetUserByID(actor.UserID.Hex())
 	if err != nil {
 		return errors.New("usuario no encontrado")
 	}
@@ -177,7 +177,7 @@ func (s *UserService) ChangePassword(actor Actor, req dto.ChangePasswordRequest)
 	}
 
 	// Actualizar la contraseña en la base de datos
-	_, err = s.repository.ActualizarPassword(actor.UserID, hashed)
+	_, err = s.repository.UpdatePassword(actor.UserID, hashed)
 	if err != nil {
 		return errors.New("error al actualizar contraseña")
 	}

@@ -55,7 +55,7 @@ func (service *RoutineService) CreateRoutine(actor Actor, req dto.RoutineCreateR
 	rutina.UpdatedAt = time.Now()
 	rutina.IsDeleted = false
 
-	resultado, err := service.routineRepository.InsertarRutina(rutina)
+	resultado, err := service.routineRepository.InsertRoutine(rutina)
 	if err != nil {
 		return dto.RoutineResponse{}, err
 	}
@@ -75,7 +75,7 @@ func (service *RoutineService) CreateRoutine(actor Actor, req dto.RoutineCreateR
 }
 
 func (service *RoutineService) GetRoutineByID(actor Actor, id string) (dto.RoutineResponse, error) {
-	rutina, err := service.routineRepository.ObtenerRutinaPorID(id)
+	rutina, err := service.routineRepository.GetRoutineByID(id)
 	if err != nil {
 		return dto.RoutineResponse{}, errors.New("rutina no encontrada")
 	}
@@ -92,7 +92,7 @@ func (service *RoutineService) GetRoutineByID(actor Actor, id string) (dto.Routi
 }
 
 func (service *RoutineService) UpdateRoutine(actor Actor, id string, req dto.RoutineUpdateRequest) (dto.RoutineResponse, error) {
-	rutina, err := service.routineRepository.ObtenerRutinaPorID(id)
+	rutina, err := service.routineRepository.GetRoutineByID(id)
 	if err != nil {
 		return dto.RoutineResponse{}, errors.New("rutina no encontrada")
 	}
@@ -107,7 +107,7 @@ func (service *RoutineService) UpdateRoutine(actor Actor, id string, req dto.Rou
 	utils.ApplyRoutineUpdateToModel(&rutina, req)
 	rutina.UpdatedAt = time.Now()
 
-	_, err = service.routineRepository.ModificarRutina(rutina)
+	_, err = service.routineRepository.UpdateRoutine(rutina)
 	if err != nil {
 		return dto.RoutineResponse{}, err
 	}
@@ -126,7 +126,7 @@ func (service *RoutineService) DeleteRoutine(actor Actor, id string) error {
 		return errors.New("ID inválido")
 	}
 
-	rutina, err := service.routineRepository.ObtenerRutinaPorID(id)
+	rutina, err := service.routineRepository.GetRoutineByID(id)
 	if err != nil {
 		return errors.New("rutina no encontrada")
 	}
@@ -135,7 +135,7 @@ func (service *RoutineService) DeleteRoutine(actor Actor, id string) error {
 		return errors.New("no tienes permiso para eliminar esta rutina")
 	}
 
-	resultado, err := service.routineRepository.EliminarRutina(objectID)
+	resultado, err := service.routineRepository.DeleteRoutine(objectID)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func (service *RoutineService) SearchRoutines(actor Actor, search dto.RoutineSea
 		userID = actor.UserID.Hex()
 	}
 
-	rutinas, err := service.routineRepository.BuscarRutinas(
+	rutinas, err := service.routineRepository.SearchRoutines(
 		search.Name,
 		userID, // usamos el userID derivado del actor, no del DTO
 		search.IsTemplate,
@@ -196,7 +196,7 @@ func (service *RoutineService) AddExerciseToRoutine(actor Actor, req dto.Routine
 		return dto.RoutineExerciseResponse{}, err
 	}
 
-	resultado, err := service.routineExerciseRepository.InsertarRutinaEjercicio(rutinaEjercicio)
+	resultado, err := service.routineExerciseRepository.InsertRoutineExercise(rutinaEjercicio)
 	if err != nil {
 		return dto.RoutineExerciseResponse{}, err
 	}
@@ -216,12 +216,12 @@ func (service *RoutineService) AddExerciseToRoutine(actor Actor, req dto.Routine
 }
 
 func (service *RoutineService) UpdateRoutineExercise(actor Actor, id string, req dto.RoutineExerciseUpdateRequest) (dto.RoutineExerciseResponse, error) {
-	rutinaEjercicio, err := service.routineExerciseRepository.ObtenerRutinaEjercicioPorID(id)
+	rutinaEjercicio, err := service.routineExerciseRepository.GetRoutineExerciseByID(id)
 	if err != nil {
 		return dto.RoutineExerciseResponse{}, errors.New("asociación rutina-ejercicio no encontrada")
 	}
 
-	rutina, err := service.routineRepository.ObtenerRutinaPorID(rutinaEjercicio.RoutineID.Hex())
+	rutina, err := service.routineRepository.GetRoutineByID(rutinaEjercicio.RoutineID.Hex())
 	if err != nil {
 		return dto.RoutineExerciseResponse{}, errors.New("rutina no encontrada")
 	}
@@ -232,7 +232,7 @@ func (service *RoutineService) UpdateRoutineExercise(actor Actor, id string, req
 
 	utils.ApplyRoutineExerciseUpdateToModel(&rutinaEjercicio, req)
 
-	_, err = service.routineExerciseRepository.ModificarRutinaEjercicio(rutinaEjercicio)
+	_, err = service.routineExerciseRepository.UpdateRoutineExercise(rutinaEjercicio)
 	if err != nil {
 		return dto.RoutineExerciseResponse{}, err
 	}
@@ -251,12 +251,12 @@ func (service *RoutineService) DeleteRoutineExercise(actor Actor, id string) err
 		return errors.New("ID inválido")
 	}
 
-	rutinaEjercicio, err := service.routineExerciseRepository.ObtenerRutinaEjercicioPorID(id)
+	rutinaEjercicio, err := service.routineExerciseRepository.GetRoutineExerciseByID(id)
 	if err != nil {
 		return errors.New("asociación rutina-ejercicio no encontrada")
 	}
 
-	rutina, err := service.routineRepository.ObtenerRutinaPorID(rutinaEjercicio.RoutineID.Hex())
+	rutina, err := service.routineRepository.GetRoutineByID(rutinaEjercicio.RoutineID.Hex())
 	if err != nil {
 		return errors.New("rutina no encontrada")
 	}
@@ -265,7 +265,7 @@ func (service *RoutineService) DeleteRoutineExercise(actor Actor, id string) err
 		return errors.New("no tienes permiso para eliminar ejercicios de esta rutina")
 	}
 
-	resultado, err := service.routineExerciseRepository.EliminarRutinaEjercicio(objectID)
+	resultado, err := service.routineExerciseRepository.DeleteRoutineExercise(objectID)
 	if err != nil {
 		return err
 	}
@@ -291,7 +291,7 @@ func (service *RoutineService) ListRoutineExercises(actor Actor, search dto.Rout
 		return nil, errors.New("no tienes permiso para ver los ejercicios de esta rutina")
 	}
 
-	rutinasEjercicio, err := service.routineExerciseRepository.BuscarRutinaEjercicios(search.RoutineID, search.ExerciseID)
+	rutinasEjercicio, err := service.routineExerciseRepository.SearchRoutineExercises(search.RoutineID, search.ExerciseID)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +331,7 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 		nuevaRutina.Name = fmt.Sprintf("%s (Copia)", original.Name)
 	}
 
-	resultado, err := service.routineRepository.InsertarRutina(nuevaRutina)
+	resultado, err := service.routineRepository.InsertRoutine(nuevaRutina)
 	if err != nil {
 		return dto.RoutineResponse{}, err
 	}
@@ -342,7 +342,7 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 		return dto.RoutineResponse{}, errors.New("error al duplicar rutina")
 	}
 
-	ejerciciosOriginales, err := service.routineExerciseRepository.ObtenerRutinaEjerciciosPorRutinaID(original.ID)
+	ejerciciosOriginales, err := service.routineExerciseRepository.GetRoutineExercisesByRoutineID(original.ID)
 	if err != nil {
 		return dto.RoutineResponse{}, err
 	}
@@ -350,7 +350,7 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 	for _, rutinaEjercicio := range ejerciciosOriginales {
 		rutinaEjercicio.ID = primitive.NilObjectID
 		rutinaEjercicio.RoutineID = nuevaRutina.ID
-		if _, err := service.routineExerciseRepository.InsertarRutinaEjercicio(rutinaEjercicio); err != nil {
+		if _, err := service.routineExerciseRepository.InsertRoutineExercise(rutinaEjercicio); err != nil {
 			return dto.RoutineResponse{}, err
 		}
 	}
@@ -365,7 +365,7 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 
 // --- Funciones privadas (no cambian) ---
 func (service *RoutineService) cargarRutinaActiva(id string) (models.Routine, error) {
-	rutina, err := service.routineRepository.ObtenerRutinaPorID(id)
+	rutina, err := service.routineRepository.GetRoutineByID(id)
 	if err != nil {
 		return models.Routine{}, errors.New("rutina no encontrada")
 	}
@@ -376,7 +376,7 @@ func (service *RoutineService) cargarRutinaActiva(id string) (models.Routine, er
 }
 
 func (service *RoutineService) cargarEjercicioActivo(id string) (models.Exercise, error) {
-	ejercicio, err := service.exerciseRepository.ObtenerEjercicioPorID(id)
+	ejercicio, err := service.exerciseRepository.GetExerciseByID(id)
 	if err != nil {
 		return models.Exercise{}, errors.New("ejercicio no encontrado")
 	}

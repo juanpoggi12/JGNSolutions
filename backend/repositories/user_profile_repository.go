@@ -11,12 +11,12 @@ import (
 )
 
 type UserProfileRepositoryInterface interface {
-	ObtenerPerfilPorUserID(userID primitive.ObjectID) (models.UserProfile, error)
-	InsertarPerfil(perfil models.UserProfile) (*mongo.InsertOneResult, error)
-	ModificarPerfil(perfil models.UserProfile) (*mongo.UpdateResult, error)
-	ListarPerfiles() ([]models.UserProfile, error)
-	ObtenerPerfilPorID(id string) (models.UserProfile, error)
-	EliminarPerfil(id primitive.ObjectID) (*mongo.DeleteResult, error)
+	GetProfileByUserID(userID primitive.ObjectID) (models.UserProfile, error)
+	InsertProfile(profile models.UserProfile) (*mongo.InsertOneResult, error)
+	UpdateProfile(profile models.UserProfile) (*mongo.UpdateResult, error)
+	ListProfiles() ([]models.UserProfile, error)
+	GetProfileByID(id string) (models.UserProfile, error)
+	DeleteProfile(id primitive.ObjectID) (*mongo.DeleteResult, error)
 }
 
 type UserProfileRepository struct {
@@ -31,37 +31,56 @@ func (repository UserProfileRepository) collection() *mongo.Collection {
 	return repository.db.Collection("user_profiles")
 }
 
+// Create inserts a new user profile (used by AuthService to create default profiles)
+func (repository *UserProfileRepository) Create(ctx context.Context, profile *models.UserProfile) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if profile.UpdatedAt.IsZero() {
+		profile.UpdatedAt = time.Now()
+	}
+
+	res, err := repository.collection().InsertOne(ctx, profile)
+	if err != nil {
+		return err
+	}
+	if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
+		profile.ID = oid
+	}
+	return nil
+}
+
 // --- Métodos para usuarios ---
 
-func (repository UserProfileRepository) ObtenerPerfilPorUserID(userID primitive.ObjectID) (models.UserProfile, error) {
+func (repository UserProfileRepository) GetProfileByUserID(userID primitive.ObjectID) (models.UserProfile, error) {
 	collection := repository.collection()
 	filtro := bson.M{"userId": userID}
 
-	var perfil models.UserProfile
-	err := collection.FindOne(context.TODO(), filtro).Decode(&perfil)
-	return perfil, err
+	var profile models.UserProfile
+	err := collection.FindOne(context.TODO(), filtro).Decode(&profile)
+	return profile, err
 }
 
-func (repository UserProfileRepository) InsertarPerfil(perfil models.UserProfile) (*mongo.InsertOneResult, error) {
+func (repository UserProfileRepository) InsertProfile(profile models.UserProfile) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
-	if perfil.UpdatedAt.IsZero() {
-		perfil.UpdatedAt = time.Now()
+	if profile.UpdatedAt.IsZero() {
+		profile.UpdatedAt = time.Now()
 	}
-	resultado, err := collection.InsertOne(context.TODO(), perfil)
+	resultado, err := collection.InsertOne(context.TODO(), profile)
 	return resultado, err
 }
 
-func (repository UserProfileRepository) ModificarPerfil(perfil models.UserProfile) (*mongo.UpdateResult, error) {
+func (repository UserProfileRepository) UpdateProfile(profile models.UserProfile) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 
-	filtro := bson.M{"userId": perfil.UserID}
+	filtro := bson.M{"userId": profile.UserID}
 	actualizacion := bson.M{"$set": bson.M{
-		"fullName":  perfil.FullName,
-		"birthDate": perfil.BirthDate,
-		"weightKg":  perfil.WeightKg,
-		"heightCm":  perfil.HeightCm,
-		"level":     perfil.Level,
-		"goal":      perfil.Goal,
+		"fullName":  profile.FullName,
+		"birthDate": profile.BirthDate,
+		"weightKg":  profile.WeightKg,
+		"heightCm":  profile.HeightCm,
+		"level":     profile.Level,
+		"goal":      profile.Goal,
 		"updatedAt": time.Now(),
 	}}
 
@@ -69,7 +88,7 @@ func (repository UserProfileRepository) ModificarPerfil(perfil models.UserProfil
 	return resultado, err
 }
 
-func (repository UserProfileRepository) ListarPerfiles() ([]models.UserProfile, error) {
+func (repository UserProfileRepository) ListProfiles() ([]models.UserProfile, error) {
 	collection := repository.collection()
 	cursor, err := collection.Find(context.TODO(), bson.M{})
 	if err != nil {
@@ -77,17 +96,17 @@ func (repository UserProfileRepository) ListarPerfiles() ([]models.UserProfile, 
 	}
 	defer cursor.Close(context.Background())
 
-	var perfiles []models.UserProfile
+	var profiles []models.UserProfile
 	for cursor.Next(context.Background()) {
-		var perfil models.UserProfile
-		if err := cursor.Decode(&perfil); err == nil {
-			perfiles = append(perfiles, perfil)
+		var profile models.UserProfile
+		if err := cursor.Decode(&profile); err == nil {
+			profiles = append(profiles, profile)
 		}
 	}
-	return perfiles, nil
+	return profiles, nil
 }
 
-func (repository UserProfileRepository) ObtenerPerfilPorID(id string) (models.UserProfile, error) {
+func (repository UserProfileRepository) GetProfileByID(id string) (models.UserProfile, error) {
 	collection := repository.collection()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -95,13 +114,13 @@ func (repository UserProfileRepository) ObtenerPerfilPorID(id string) (models.Us
 	}
 
 	filtro := bson.M{"_id": objectID}
-	var perfil models.UserProfile
+	var profile models.UserProfile
 
-	err = collection.FindOne(context.TODO(), filtro).Decode(&perfil)
-	return perfil, err
+	err = collection.FindOne(context.TODO(), filtro).Decode(&profile)
+	return profile, err
 }
 
-func (repository UserProfileRepository) EliminarPerfil(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+func (repository UserProfileRepository) DeleteProfile(id primitive.ObjectID) (*mongo.DeleteResult, error) {
 	collection := repository.collection()
 	resultado, err := collection.DeleteOne(context.TODO(), bson.M{"_id": id})
 	return resultado, err

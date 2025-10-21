@@ -11,12 +11,12 @@ import (
 )
 
 type RoutineExerciseRepositoryInterface interface {
-	BuscarRutinaEjercicios(routineID, exerciseID string) ([]models.RoutineExercise, error)
-	ObtenerRutinaEjercicioPorID(id string) (models.RoutineExercise, error)
-	InsertarRutinaEjercicio(rutinaEjercicio models.RoutineExercise) (*mongo.InsertOneResult, error)
-	ModificarRutinaEjercicio(rutinaEjercicio models.RoutineExercise) (*mongo.UpdateResult, error)
-	EliminarRutinaEjercicio(id primitive.ObjectID) (*mongo.DeleteResult, error)
-	ObtenerRutinaEjerciciosPorRutinaID(routineID primitive.ObjectID) ([]models.RoutineExercise, error)
+	SearchRoutineExercises(routineID, exerciseID string) ([]models.RoutineExercise, error)
+	GetRoutineExerciseByID(id string) (models.RoutineExercise, error)
+	InsertRoutineExercise(re models.RoutineExercise) (*mongo.InsertOneResult, error)
+	UpdateRoutineExercise(re models.RoutineExercise) (*mongo.UpdateResult, error)
+	DeleteRoutineExercise(id primitive.ObjectID) (*mongo.DeleteResult, error)
+	GetRoutineExercisesByRoutineID(routineID primitive.ObjectID) ([]models.RoutineExercise, error)
 }
 
 type RoutineExerciseRepository struct {
@@ -31,7 +31,7 @@ func (repository RoutineExerciseRepository) collection() *mongo.Collection {
 	return repository.db.Collection("routine_exercises")
 }
 
-func (repository RoutineExerciseRepository) BuscarRutinaEjercicios(routineID, exerciseID string) ([]models.RoutineExercise, error) {
+func (repository RoutineExerciseRepository) SearchRoutineExercises(routineID, exerciseID string) ([]models.RoutineExercise, error) {
 	collection := repository.collection()
 
 	filtro := bson.M{}
@@ -56,19 +56,19 @@ func (repository RoutineExerciseRepository) BuscarRutinaEjercicios(routineID, ex
 	}
 	defer cursor.Close(context.Background())
 
-	var rutinasEjercicio []models.RoutineExercise
+	var routineExercises []models.RoutineExercise
 	for cursor.Next(context.Background()) {
-		var rutina models.RoutineExercise
-		if err := cursor.Decode(&rutina); err != nil {
+		var re models.RoutineExercise
+		if err := cursor.Decode(&re); err != nil {
 			continue
 		}
-		rutinasEjercicio = append(rutinasEjercicio, rutina)
+		routineExercises = append(routineExercises, re)
 	}
 
-	return rutinasEjercicio, nil
+	return routineExercises, nil
 }
 
-func (repository RoutineExerciseRepository) ObtenerRutinaEjercicioPorID(id string) (models.RoutineExercise, error) {
+func (repository RoutineExerciseRepository) GetRoutineExerciseByID(id string) (models.RoutineExercise, error) {
 	collection := repository.collection()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -76,44 +76,44 @@ func (repository RoutineExerciseRepository) ObtenerRutinaEjercicioPorID(id strin
 	}
 
 	filtro := bson.M{"_id": objectID}
-	var rutina models.RoutineExercise
+	var re models.RoutineExercise
 
-	err = collection.FindOne(context.TODO(), filtro).Decode(&rutina)
-	return rutina, err
+	err = collection.FindOne(context.TODO(), filtro).Decode(&re)
+	return re, err
 }
 
-func (repository RoutineExerciseRepository) InsertarRutinaEjercicio(rutinaEjercicio models.RoutineExercise) (*mongo.InsertOneResult, error) {
+func (repository RoutineExerciseRepository) InsertRoutineExercise(re models.RoutineExercise) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
-	resultado, err := collection.InsertOne(context.TODO(), rutinaEjercicio)
+	resultado, err := collection.InsertOne(context.TODO(), re)
 	return resultado, err
 }
 
-func (repository RoutineExerciseRepository) ModificarRutinaEjercicio(rutinaEjercicio models.RoutineExercise) (*mongo.UpdateResult, error) {
+func (repository RoutineExerciseRepository) UpdateRoutineExercise(re models.RoutineExercise) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 
-	filtro := bson.M{"_id": rutinaEjercicio.ID}
+	filtro := bson.M{"_id": re.ID}
 	actualizacion := bson.M{"$set": bson.M{
-		"routineId":     rutinaEjercicio.RoutineID,
-		"exerciseId":    rutinaEjercicio.ExerciseID,
-		"order":         rutinaEjercicio.Order,
-		"sets":          rutinaEjercicio.Sets,
-		"reps":          rutinaEjercicio.Reps,
-		"targetWeight":  rutinaEjercicio.TargetWeight,
-		"targetTimeSec": rutinaEjercicio.TargetTimeSec,
-		"notes":         rutinaEjercicio.Notes,
+		"routineId":     re.RoutineID,
+		"exerciseId":    re.ExerciseID,
+		"order":         re.Order,
+		"sets":          re.Sets,
+		"reps":          re.Reps,
+		"targetWeight":  re.TargetWeight,
+		"targetTimeSec": re.TargetTimeSec,
+		"notes":         re.Notes,
 	}}
 
 	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)
 	return resultado, err
 }
 
-func (repository RoutineExerciseRepository) EliminarRutinaEjercicio(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+func (repository RoutineExerciseRepository) DeleteRoutineExercise(id primitive.ObjectID) (*mongo.DeleteResult, error) {
 	collection := repository.collection()
 	resultado, err := collection.DeleteOne(context.TODO(), bson.M{"_id": id})
 	return resultado, err
 }
 
-func (repository RoutineExerciseRepository) ObtenerRutinaEjerciciosPorRutinaID(routineID primitive.ObjectID) ([]models.RoutineExercise, error) {
+func (repository RoutineExerciseRepository) GetRoutineExercisesByRoutineID(routineID primitive.ObjectID) ([]models.RoutineExercise, error) {
 	collection := repository.collection()
 
 	cursor, err := collection.Find(context.TODO(), bson.M{"routineId": routineID})
@@ -122,14 +122,14 @@ func (repository RoutineExerciseRepository) ObtenerRutinaEjerciciosPorRutinaID(r
 	}
 	defer cursor.Close(context.Background())
 
-	var rutinasEjercicio []models.RoutineExercise
+	var routineExercises []models.RoutineExercise
 	for cursor.Next(context.Background()) {
-		var rutina models.RoutineExercise
-		if err := cursor.Decode(&rutina); err != nil {
+		var re models.RoutineExercise
+		if err := cursor.Decode(&re); err != nil {
 			continue
 		}
-		rutinasEjercicio = append(rutinasEjercicio, rutina)
+		routineExercises = append(routineExercises, re)
 	}
 
-	return rutinasEjercicio, nil
+	return routineExercises, nil
 }

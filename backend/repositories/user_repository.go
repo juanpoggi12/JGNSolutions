@@ -13,14 +13,14 @@ import (
 )
 
 type UserRepositoryInterface interface {
-	InsertarUsuario(usuario models.User) (*mongo.InsertOneResult, error)
-	ObtenerUsuarioPorID(id string) (models.User, error)
-	ModificarUsuario(usuario models.User) (*mongo.UpdateResult, error)
-	EliminarUsuario(id primitive.ObjectID) (*mongo.DeleteResult, error)
-	ContarUsuarios() (int64, error)
-	ListarUsuariosBasico() ([]models.User, error)
+	InsertUser(user models.User) (*mongo.InsertOneResult, error)
+	GetUserByID(id string) (models.User, error)
+	UpdateUser(user models.User) (*mongo.UpdateResult, error)
+	DeleteUser(id primitive.ObjectID) (*mongo.DeleteResult, error)
+	CountUsers() (int64, error)
+	ListUsersBasic() ([]models.User, error)
 	FindByEmailOrUsername(identifier string) (*models.User, error)
-	ActualizarPassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error)
+	UpdatePassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	Create(ctx context.Context, user *models.User) error
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
@@ -39,13 +39,13 @@ func (repository UserRepository) collection() *mongo.Collection {
 	return repository.db.Collection("users")
 }
 
-func (repository UserRepository) InsertarUsuario(usuario models.User) (*mongo.InsertOneResult, error) {
+func (repository UserRepository) InsertUser(user models.User) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
-	resultado, err := collection.InsertOne(context.TODO(), usuario)
+	resultado, err := collection.InsertOne(context.TODO(), user)
 	return resultado, err
 }
 
-func (repository UserRepository) ObtenerUsuarioPorID(id string) (models.User, error) {
+func (repository UserRepository) GetUserByID(id string) (models.User, error) {
 	collection := repository.collection()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -53,43 +53,43 @@ func (repository UserRepository) ObtenerUsuarioPorID(id string) (models.User, er
 	}
 
 	filtro := bson.M{"_id": objectID}
-	var usuario models.User
+	var user models.User
 
-	err = collection.FindOne(context.TODO(), filtro).Decode(&usuario)
-	return usuario, err
+	err = collection.FindOne(context.TODO(), filtro).Decode(&user)
+	return user, err
 }
 
-func (repository UserRepository) ModificarUsuario(usuario models.User) (*mongo.UpdateResult, error) {
+func (repository UserRepository) UpdateUser(user models.User) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 
-	filtro := bson.M{"_id": usuario.ID}
+	filtro := bson.M{"_id": user.ID}
 	actualizacion := bson.M{"$set": bson.M{
-		"username":     usuario.Username,
-		"email":        usuario.Email,
-		"passwordHash": usuario.PasswordHash,
-		"role":         usuario.Role,
-		"createdAt":    usuario.CreatedAt,
-		"updatedAt":    usuario.UpdatedAt,
-		"isActive":     usuario.IsActive,
+		"username":     user.Username,
+		"email":        user.Email,
+		"passwordHash": user.PasswordHash,
+		"role":         user.Role,
+		"createdAt":    user.CreatedAt,
+		"updatedAt":    user.UpdatedAt,
+		"isActive":     user.IsActive,
 	}}
 
 	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)
 	return resultado, err
 }
 
-func (repository UserRepository) EliminarUsuario(id primitive.ObjectID) (*mongo.DeleteResult, error) {
+func (repository UserRepository) DeleteUser(id primitive.ObjectID) (*mongo.DeleteResult, error) {
 	collection := repository.collection()
 	resultado, err := collection.DeleteOne(context.TODO(), bson.M{"_id": id})
 	return resultado, err
 }
 
-func (repository UserRepository) ContarUsuarios() (int64, error) {
+func (repository UserRepository) CountUsers() (int64, error) {
 	collection := repository.collection()
 	return collection.CountDocuments(context.TODO(), bson.M{})
 }
 
 // en el archivo (agregar implementación)
-func (r UserRepository) ListarUsuariosBasico() ([]models.User, error) {
+func (r UserRepository) ListUsersBasic() ([]models.User, error) {
 	coll := r.collection()
 
 	// Proyección: solo _id, email y role
@@ -129,7 +129,7 @@ func (r *UserRepository) FindByEmailOrUsername(identifier string) (*models.User,
 	return &user, nil
 }
 
-func (repository UserRepository) ActualizarPassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error) {
+func (repository UserRepository) UpdatePassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 	filtro := bson.M{"_id": id}
 	actualizacion := bson.M{

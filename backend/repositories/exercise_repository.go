@@ -14,11 +14,11 @@ import (
 )
 
 type ExerciseRepositoryInterface interface {
-	BuscarEjercicios(nombre, categoria, grupoMuscular, dificultad, creadoPor string, incluirEliminados bool) ([]models.Exercise, error)
-	ObtenerEjercicioPorID(id string) (models.Exercise, error)
-	InsertarEjercicio(ejercicio models.Exercise) (*mongo.InsertOneResult, error)
-	ModificarEjercicio(ejercicio models.Exercise) (*mongo.UpdateResult, error)
-	EliminarEjercicio(id primitive.ObjectID) (*mongo.UpdateResult, error)
+	SearchExercises(name, category, muscleGroup, difficulty, createdBy string, includeDeleted bool) ([]models.Exercise, error)
+	GetExerciseByID(id string) (models.Exercise, error)
+	InsertExercise(exercise models.Exercise) (*mongo.InsertOneResult, error)
+	UpdateExercise(exercise models.Exercise) (*mongo.UpdateResult, error)
+	DeleteExercise(id primitive.ObjectID) (*mongo.UpdateResult, error)
 	ListExercisesCatalog(ctx context.Context, params ExerciseCatalogParams) ([]models.Exercise, int64, error)
 }
 
@@ -44,30 +44,30 @@ func (repository ExerciseRepository) collection() *mongo.Collection {
 	return repository.db.Collection("exercises")
 }
 
-func (repository ExerciseRepository) BuscarEjercicios(nombre, categoria, grupoMuscular, dificultad, creadoPor string, incluirEliminados bool) ([]models.Exercise, error) {
+func (repository ExerciseRepository) SearchExercises(name, category, muscleGroup, difficulty, createdBy string, includeDeleted bool) ([]models.Exercise, error) {
 	collection := repository.collection()
 
 	filtro := bson.M{}
-	if nombre != "" {
-		filtro["name"] = bson.M{"$regex": nombre, "$options": "i"}
+	if name != "" {
+		filtro["name"] = bson.M{"$regex": name, "$options": "i"}
 	}
-	if categoria != "" {
-		filtro["category"] = categoria
+	if category != "" {
+		filtro["category"] = category
 	}
-	if grupoMuscular != "" {
-		filtro["muscleGroup"] = grupoMuscular
+	if muscleGroup != "" {
+		filtro["muscleGroup"] = muscleGroup
 	}
-	if dificultad != "" {
-		filtro["difficulty"] = dificultad
+	if difficulty != "" {
+		filtro["difficulty"] = difficulty
 	}
-	if creadoPor != "" {
-		objectID, err := primitive.ObjectIDFromHex(creadoPor)
+	if createdBy != "" {
+		objectID, err := primitive.ObjectIDFromHex(createdBy)
 		if err != nil {
 			return nil, err
 		}
 		filtro["createdBy"] = objectID
 	}
-	if !incluirEliminados {
+	if !includeDeleted {
 		filtro["isDeleted"] = false
 	}
 
@@ -77,19 +77,19 @@ func (repository ExerciseRepository) BuscarEjercicios(nombre, categoria, grupoMu
 	}
 	defer cursor.Close(context.Background())
 
-	var ejercicios []models.Exercise
+	var exercises []models.Exercise
 	for cursor.Next(context.Background()) {
-		var ejercicio models.Exercise
-		if err := cursor.Decode(&ejercicio); err != nil {
+		var exercise models.Exercise
+		if err := cursor.Decode(&exercise); err != nil {
 			continue
 		}
-		ejercicios = append(ejercicios, ejercicio)
+		exercises = append(exercises, exercise)
 	}
 
-	return ejercicios, nil
+	return exercises, nil
 }
 
-func (repository ExerciseRepository) ObtenerEjercicioPorID(id string) (models.Exercise, error) {
+func (repository ExerciseRepository) GetExerciseByID(id string) (models.Exercise, error) {
 	collection := repository.collection()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -97,39 +97,39 @@ func (repository ExerciseRepository) ObtenerEjercicioPorID(id string) (models.Ex
 	}
 
 	filtro := bson.M{"_id": objectID}
-	var ejercicio models.Exercise
+	var exercise models.Exercise
 
-	err = collection.FindOne(context.TODO(), filtro).Decode(&ejercicio)
-	return ejercicio, err
+	err = collection.FindOne(context.TODO(), filtro).Decode(&exercise)
+	return exercise, err
 }
 
-func (repository ExerciseRepository) InsertarEjercicio(ejercicio models.Exercise) (*mongo.InsertOneResult, error) {
+func (repository ExerciseRepository) InsertExercise(exercise models.Exercise) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
-	resultado, err := collection.InsertOne(context.TODO(), ejercicio)
+	resultado, err := collection.InsertOne(context.TODO(), exercise)
 	return resultado, err
 }
 
-func (repository ExerciseRepository) ModificarEjercicio(ejercicio models.Exercise) (*mongo.UpdateResult, error) {
+func (repository ExerciseRepository) UpdateExercise(exercise models.Exercise) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 
-	filtro := bson.M{"_id": ejercicio.ID}
+	filtro := bson.M{"_id": exercise.ID}
 	actualizacion := bson.M{"$set": bson.M{
-		"name":         ejercicio.Name,
-		"description":  ejercicio.Description,
-		"category":     ejercicio.Category,
-		"muscleGroup":  ejercicio.MuscleGroup,
-		"difficulty":   ejercicio.Difficulty,
-		"mediaUrl":     ejercicio.MediaURL,
-		"instructions": ejercicio.Instructions,
-		"createdBy":    ejercicio.CreatedBy,
-		"updatedAt":    ejercicio.UpdatedAt,
+		"name":         exercise.Name,
+		"description":  exercise.Description,
+		"category":     exercise.Category,
+		"muscleGroup":  exercise.MuscleGroup,
+		"difficulty":   exercise.Difficulty,
+		"mediaUrl":     exercise.MediaURL,
+		"instructions": exercise.Instructions,
+		"createdBy":    exercise.CreatedBy,
+		"updatedAt":    exercise.UpdatedAt,
 	}}
 
 	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)
 	return resultado, err
 }
 
-func (repository ExerciseRepository) EliminarEjercicio(id primitive.ObjectID) (*mongo.UpdateResult, error) {
+func (repository ExerciseRepository) DeleteExercise(id primitive.ObjectID) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 
 	filtro := bson.M{"_id": id}

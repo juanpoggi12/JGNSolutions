@@ -41,36 +41,36 @@ func (service *ExerciseService) CreateExercise(actor Actor, req dto.ExerciseCrea
 		return dto.ExerciseResponse{}, errors.New("solo los administradores pueden crear ejercicios")
 	}
 
-	ejercicio, err := utils.ConvertExerciseCreateRequestToModel(req)
+	exercise, err := utils.ConvertExerciseCreateRequestToModel(req)
 	if err != nil {
 		return dto.ExerciseResponse{}, err
 	}
 
 	// Asignar auditoría
-	ejercicio.CreatedBy = actor.UserID
-	ejercicio.CreatedAt = time.Now()
-	ejercicio.UpdatedAt = time.Now()
+	exercise.CreatedBy = actor.UserID
+	exercise.CreatedAt = time.Now()
+	exercise.UpdatedAt = time.Now()
 
-	resultado, err := service.repository.InsertarEjercicio(ejercicio)
+	result, err := service.repository.InsertExercise(exercise)
 	if err != nil {
 		return dto.ExerciseResponse{}, err
 	}
 
-	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
-		ejercicio.ID = oid
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		exercise.ID = oid
 
 		if service.logService != nil {
-			service.logService.RecordAction(actor.UserID, "ejercicio:creado "+ejercicio.Name)
+			service.logService.RecordAction(actor.UserID, "exercise:created "+exercise.Name)
 		}
 
-		return utils.ConvertExerciseModelToResponse(ejercicio), nil
+		return utils.ConvertExerciseModelToResponse(exercise), nil
 	}
 
 	return dto.ExerciseResponse{}, errors.New("error al obtener ID del ejercicio insertado")
 }
 
 func (service *ExerciseService) GetExerciseByID(actor Actor, id string) (dto.ExerciseResponse, error) {
-	ejercicio, err := service.repository.ObtenerEjercicioPorID(id)
+	ejercicio, err := service.repository.GetExerciseByID(id)
 	if err != nil {
 		return dto.ExerciseResponse{}, errors.New("ejercicio no encontrado")
 	}
@@ -87,7 +87,7 @@ func (service *ExerciseService) UpdateExercise(actor Actor, id string, req dto.E
 		return dto.ExerciseResponse{}, errors.New("solo los administradores pueden modificar ejercicios")
 	}
 
-	ejercicio, err := service.repository.ObtenerEjercicioPorID(id)
+	ejercicio, err := service.repository.GetExerciseByID(id)
 	if err != nil {
 		return dto.ExerciseResponse{}, errors.New("ejercicio no encontrado")
 	}
@@ -98,13 +98,13 @@ func (service *ExerciseService) UpdateExercise(actor Actor, id string, req dto.E
 	utils.ApplyExerciseUpdateToModel(&ejercicio, req)
 	ejercicio.UpdatedAt = time.Now()
 
-	_, err = service.repository.ModificarEjercicio(ejercicio)
+	_, err = service.repository.UpdateExercise(ejercicio)
 	if err != nil {
 		return dto.ExerciseResponse{}, err
 	}
 
 	if service.logService != nil {
-		service.logService.RecordAction(actor.UserID, "ejercicio:modificado "+ejercicio.Name)
+		service.logService.RecordAction(actor.UserID, "exercise:updated "+ejercicio.Name)
 	}
 
 	return utils.ConvertExerciseModelToResponse(ejercicio), nil
@@ -121,7 +121,7 @@ func (service *ExerciseService) DeleteExercise(actor Actor, id string) error {
 		return errors.New("ID inválido")
 	}
 
-	resultado, err := service.repository.EliminarEjercicio(objectID)
+	resultado, err := service.repository.DeleteExercise(objectID)
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func (service *ExerciseService) DeleteExercise(actor Actor, id string) error {
 	}
 
 	if service.logService != nil {
-		service.logService.RecordAction(actor.UserID, "ejercicio:eliminado "+id)
+		service.logService.RecordAction(actor.UserID, "exercise:deleted "+id)
 	}
 
 	return nil
@@ -149,7 +149,7 @@ func (service *ExerciseService) SearchExercises(actor Actor, search dto.Exercise
 		createdBy = search.CreatedBy
 	}
 
-	ejercicios, err := service.repository.BuscarEjercicios(
+	ejercicios, err := service.repository.SearchExercises(
 		search.Name,
 		search.Category,
 		search.MuscleGroup,

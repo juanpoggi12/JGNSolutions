@@ -51,35 +51,35 @@ func (service *AdminService) CountUsers(actor Actor) (int64, error) {
 	if actor.Role != "admin" {
 		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
 	}
-	return service.adminRepository.ContarDocumentos("users")
+	return service.adminRepository.CountDocuments("users")
 }
 
 func (service *AdminService) CountExercises(actor Actor) (int64, error) {
 	if actor.Role != "admin" {
 		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
 	}
-	return service.adminRepository.ContarDocumentos("exercises")
+	return service.adminRepository.CountDocuments("exercises")
 }
 
 func (service *AdminService) CountRoutines(actor Actor) (int64, error) {
 	if actor.Role != "admin" {
 		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
 	}
-	return service.adminRepository.ContarDocumentos("routines")
+	return service.adminRepository.CountDocuments("routines")
 }
 
 func (service *AdminService) CountWorkoutSessions(actor Actor) (int64, error) {
 	if actor.Role != "admin" {
 		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
 	}
-	return service.adminRepository.ContarDocumentos("workoutSessions")
+	return service.adminRepository.CountDocuments("workoutSessions")
 }
 
 func (s *AdminService) ListUsers(actor Actor) ([]dto.UserListResponse, error) {
 	if actor.Role != "admin" {
 		return nil, errors.New("no tienes permiso para ver usuarios")
 	}
-	users, err := s.userRepository.ListarUsuariosBasico()
+	users, err := s.userRepository.ListUsersBasic()
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (s *AdminService) ListProfiles(actor Actor) ([]dto.UserProfileListResponse,
 		return nil, errors.New("no tienes permiso para ver perfiles de usuario")
 	}
 
-	perfiles, err := s.userProfileRepository.ListarPerfiles()
+	perfiles, err := s.userProfileRepository.ListProfiles()
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (s *AdminService) CountProfilesByLevel(actor Actor) ([]dto.ProfileLevelStat
 		return nil, errors.New("no tienes permiso para ver estadísticas de perfiles")
 	}
 
-	perfiles, err := s.userProfileRepository.ListarPerfiles()
+	perfiles, err := s.userProfileRepository.ListProfiles()
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (s *AdminService) CountProfilesByGoal(actor Actor) ([]dto.ProfileGoalStat, 
 		return nil, errors.New("no tienes permiso para ver estadísticas de perfiles")
 	}
 
-	perfiles, err := s.userProfileRepository.ListarPerfiles()
+	perfiles, err := s.userProfileRepository.ListProfiles()
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +221,7 @@ func (s *AdminService) ListLogs(actor Actor) ([]models.Log, error) {
 		return nil, errors.New("no tienes permiso para ver los logs del sistema")
 	}
 
-	logs, err := s.logRepository.ListarLogs()
+	logs, err := s.logRepository.ListLogs()
 	if err != nil {
 		return nil, err
 	}
@@ -233,7 +233,7 @@ func (s *AdminService) UpdateUserRole(actor Actor, id string, role string) (dto.
 		return dto.AdminUserResponse{}, errors.New("no tienes permiso para modificar roles")
 	}
 
-	usuario, err := s.userRepository.ObtenerUsuarioPorID(id)
+	usuario, err := s.userRepository.GetUserByID(id)
 	if err != nil {
 		return dto.AdminUserResponse{}, errors.New("usuario no encontrado")
 	}
@@ -247,7 +247,7 @@ func (s *AdminService) UpdateUserRole(actor Actor, id string, role string) (dto.
 	usuario.Role = nuevoRol
 	usuario.UpdatedAt = time.Now()
 
-	if _, err := s.userRepository.ModificarUsuario(usuario); err != nil {
+	if _, err := s.userRepository.UpdateUser(usuario); err != nil {
 		return dto.AdminUserResponse{}, err
 	}
 
@@ -265,22 +265,22 @@ func (s *AdminService) GetMetricsSummary(actor Actor) (dto.AdminMetricsSummaryRe
 		return dto.AdminMetricsSummaryResponse{}, errors.New("no tienes permiso para acceder a estas estadísticas")
 	}
 
-	usersCount, err := s.adminRepository.ContarDocumentos("users")
+	usersCount, err := s.adminRepository.CountDocuments("users")
 	if err != nil {
 		return dto.AdminMetricsSummaryResponse{}, err
 	}
 
-	exercisesCount, err := s.adminRepository.ContarDocumentos("exercises")
+	exercisesCount, err := s.adminRepository.CountDocuments("exercises")
 	if err != nil {
 		return dto.AdminMetricsSummaryResponse{}, err
 	}
 
-	routinesCount, err := s.adminRepository.ContarDocumentos("routines")
+	routinesCount, err := s.adminRepository.CountDocuments("routines")
 	if err != nil {
 		return dto.AdminMetricsSummaryResponse{}, err
 	}
 
-	workoutSessionsCount, err := s.adminRepository.ContarDocumentos("workoutSessions")
+	workoutSessionsCount, err := s.adminRepository.CountDocuments("workoutSessions")
 	if err != nil {
 		return dto.AdminMetricsSummaryResponse{}, err
 	}

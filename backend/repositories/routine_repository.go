@@ -12,11 +12,11 @@ import (
 )
 
 type RoutineRepositoryInterface interface {
-	BuscarRutinas(nombre string, userID string, esPlantilla *bool, incluirEliminadas bool) ([]models.Routine, error)
-	ObtenerRutinaPorID(id string) (models.Routine, error)
-	InsertarRutina(rutina models.Routine) (*mongo.InsertOneResult, error)
-	ModificarRutina(rutina models.Routine) (*mongo.UpdateResult, error)
-	EliminarRutina(id primitive.ObjectID) (*mongo.UpdateResult, error)
+	SearchRoutines(name string, userID string, isTemplate *bool, includeDeleted bool) ([]models.Routine, error)
+	GetRoutineByID(id string) (models.Routine, error)
+	InsertRoutine(routine models.Routine) (*mongo.InsertOneResult, error)
+	UpdateRoutine(routine models.Routine) (*mongo.UpdateResult, error)
+	DeleteRoutine(id primitive.ObjectID) (*mongo.UpdateResult, error)
 }
 
 type RoutineRepository struct {
@@ -31,12 +31,12 @@ func (repository RoutineRepository) collection() *mongo.Collection {
 	return repository.db.Collection("routines")
 }
 
-func (repository RoutineRepository) BuscarRutinas(nombre string, userID string, esPlantilla *bool, incluirEliminadas bool) ([]models.Routine, error) {
+func (repository RoutineRepository) SearchRoutines(name string, userID string, isTemplate *bool, includeDeleted bool) ([]models.Routine, error) {
 	collection := repository.collection()
 
 	filtro := bson.M{}
-	if nombre != "" {
-		filtro["name"] = bson.M{"$regex": nombre, "$options": "i"}
+	if name != "" {
+		filtro["name"] = bson.M{"$regex": name, "$options": "i"}
 	}
 	if userID != "" {
 		objectID, err := primitive.ObjectIDFromHex(userID)
@@ -45,10 +45,10 @@ func (repository RoutineRepository) BuscarRutinas(nombre string, userID string, 
 		}
 		filtro["userId"] = objectID
 	}
-	if esPlantilla != nil {
-		filtro["isTemplate"] = *esPlantilla
+	if isTemplate != nil {
+		filtro["isTemplate"] = *isTemplate
 	}
-	if !incluirEliminadas {
+	if !includeDeleted {
 		filtro["isDeleted"] = false
 	}
 
@@ -58,19 +58,19 @@ func (repository RoutineRepository) BuscarRutinas(nombre string, userID string, 
 	}
 	defer cursor.Close(context.Background())
 
-	var rutinas []models.Routine
+	var routines []models.Routine
 	for cursor.Next(context.Background()) {
-		var rutina models.Routine
-		if err := cursor.Decode(&rutina); err != nil {
+		var routine models.Routine
+		if err := cursor.Decode(&routine); err != nil {
 			continue
 		}
-		rutinas = append(rutinas, rutina)
+		routines = append(routines, routine)
 	}
 
-	return rutinas, nil
+	return routines, nil
 }
 
-func (repository RoutineRepository) ObtenerRutinaPorID(id string) (models.Routine, error) {
+func (repository RoutineRepository) GetRoutineByID(id string) (models.Routine, error) {
 	collection := repository.collection()
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -78,19 +78,19 @@ func (repository RoutineRepository) ObtenerRutinaPorID(id string) (models.Routin
 	}
 
 	filtro := bson.M{"_id": objectID}
-	var rutina models.Routine
+	var routine models.Routine
 
-	err = collection.FindOne(context.TODO(), filtro).Decode(&rutina)
-	return rutina, err
+	err = collection.FindOne(context.TODO(), filtro).Decode(&routine)
+	return routine, err
 }
 
-func (repository RoutineRepository) InsertarRutina(rutina models.Routine) (*mongo.InsertOneResult, error) {
+func (repository RoutineRepository) InsertRoutine(routine models.Routine) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
-	resultado, err := collection.InsertOne(context.TODO(), rutina)
+	resultado, err := collection.InsertOne(context.TODO(), routine)
 	return resultado, err
 }
 
-func (repository RoutineRepository) ModificarRutina(rutina models.Routine) (*mongo.UpdateResult, error) {
+func (repository RoutineRepository) UpdateRoutine(rutina models.Routine) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 
 	filtro := bson.M{"_id": rutina.ID}
@@ -106,7 +106,7 @@ func (repository RoutineRepository) ModificarRutina(rutina models.Routine) (*mon
 	return resultado, err
 }
 
-func (repository RoutineRepository) EliminarRutina(id primitive.ObjectID) (*mongo.UpdateResult, error) {
+func (repository RoutineRepository) DeleteRoutine(id primitive.ObjectID) (*mongo.UpdateResult, error) {
 	collection := repository.collection()
 
 	filtro := bson.M{"_id": id}

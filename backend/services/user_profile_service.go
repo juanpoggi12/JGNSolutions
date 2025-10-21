@@ -38,7 +38,7 @@ func (service *UserProfileService) CreateProfile(actor Actor, req dto.UserProfil
 	}
 
 	// Evitar duplicados
-	existing, _ := service.repository.ObtenerPerfilPorUserID(actor.UserID)
+	existing, _ := service.repository.GetProfileByUserID(actor.UserID)
 	if existing.UserID == actor.UserID {
 		return models.UserProfile{}, errors.New("el perfil ya existe")
 	}
@@ -49,7 +49,7 @@ func (service *UserProfileService) CreateProfile(actor Actor, req dto.UserProfil
 		return models.UserProfile{}, err
 	}
 
-	_, err = service.repository.InsertarPerfil(perfil)
+	_, err = service.repository.InsertProfile(perfil)
 	if err != nil {
 		return models.UserProfile{}, err
 	}
@@ -66,7 +66,7 @@ func (service *UserProfileService) GetProfile(actor Actor) (models.UserProfile, 
 	if actor.UserID.IsZero() {
 		return models.UserProfile{}, errors.New("ID de usuario inválido")
 	}
-	perfil, err := service.repository.ObtenerPerfilPorUserID(actor.UserID)
+	perfil, err := service.repository.GetProfileByUserID(actor.UserID)
 	if err != nil {
 		return models.UserProfile{}, errors.New("perfil no encontrado")
 	}
@@ -80,7 +80,7 @@ func (service *UserProfileService) UpdateProfile(actor Actor, req dto.UserProfil
 	}
 
 	// Obtener perfil actual
-	perfilActual, err := service.repository.ObtenerPerfilPorUserID(actor.UserID)
+	perfilActual, err := service.repository.GetProfileByUserID(actor.UserID)
 	if err != nil {
 		return models.UserProfile{}, errors.New("perfil no encontrado")
 	}
@@ -115,7 +115,7 @@ func (service *UserProfileService) UpdateProfile(actor Actor, req dto.UserProfil
 
 	perfilActual.UpdatedAt = time.Now()
 
-	_, err = service.repository.ModificarPerfil(perfilActual)
+	_, err = service.repository.UpdateProfile(perfilActual)
 	if err != nil {
 		return models.UserProfile{}, err
 	}
@@ -136,7 +136,7 @@ func (service *UserProfileService) DeleteProfile(actor Actor, id string) error {
 	if err != nil {
 		return errors.New("ID inválido")
 	}
-	_, err = service.repository.EliminarPerfil(objectID)
+	_, err = service.repository.DeleteProfile(objectID)
 	if err != nil {
 		return err
 	}
