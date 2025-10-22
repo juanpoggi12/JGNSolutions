@@ -112,11 +112,35 @@
         </div>
       </div>
 
-      <div id="tab-rutinas" class="tab-pane" style="display: none;">
-        <div class="d-flex align-items-center justify-content-between mb-3"><div class="h5 mb-0">Tus Rutinas</div><button id="btnCrearRutina" class="btn btn-outline-dark btn-icon"><i class="bi bi-plus-lg"></i> Nueva rutina</button></div>
-        <div id="gridRutinas" class="row g-3"></div>
-        <div class="modal fade" id="modalEditorRutina" tabindex="-1" aria-labelledby="modalEditorRutinaLabel" aria-hidden="true"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="modalEditorRutinaLabel">Editar Rutina</h5><input type="hidden" id="editorRoutineId" value=""><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><h6>Ejercicios en esta rutina</h6><div class="table-responsive mb-4"><table class="table table-sm"><thead><tr><th>Orden</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th></th></tr></thead><tbody id="tbEjerciciosRutina"><tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr></tbody></table></div><hr><h6>Agregar ejercicio</h6><form id="formAgregarEjercicio" class="row g-3 align-items-end"><div class="col-12 col-md-6"><label class="form-label small">Ejercicio</label><select id="selectCatalogoEjercicios" class="form-select" required><option value="">Seleccionar ejercicio...</option></select></div><div class="col-6 col-md-2"><label class="form-label small">Orden</label><input id="formOrden" type="number" class="form-control" value="1" min="1" required></div><div class="col-6 col-md-2"><label class="form-label small">Series</label><input id="formSeries" type="number" class="form-control" value="3" min="1" required></div><div class="col-6 col-md-2"><label class="form-label small">Reps</label><input id="formReps" type="number" class="form-control" value="10" min="1" required></div><div class="col-12"><button type="submit" class="btn btn-dark btn-sm"><i class="bi bi-plus-lg me-1"></i> Añadir a la rutina</button></div></form></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div></div></div></div>
-      </div>
+     <div id="tab-rutinas" class="tab-pane" style="display: none;">
+    <div class="modal fade" id="modalCrearRutina" tabindex="-1" aria-labelledby="modalCrearRutinaLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalCrearRutinaLabel">Crear Nueva Rutina</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formCrearRutina">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="newRoutineName" class="form-label">Nombre de la Rutina</label>
+                            <input type="text" class="form-control" id="newRoutineName" required minlength="3">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newRoutineDescription" class="form-label">Descripción (Opcional)</label>
+                            <textarea class="form-control" id="newRoutineDescription" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-dark">Guardar Rutina</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+<div class="d-flex align-items-center justify-content-between mb-3"><div class="h5 mb-0">Tus Rutinas</div><button id="btnCrearRutina" class="btn btn-outline-dark btn-icon" data-bs-toggle="modal" data-bs-target="#modalCrearRutina"><i class="bi bi-plus-lg"></i> Nueva rutina</button></div>
 
       <div id="tab-config" class="tab-pane" style="display: none;">
         <div class="row g-3">
@@ -157,24 +181,41 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// === INICIO JS CORREGIDO ===
+// === INICIO JS CORREGIDO (Final) ===
 // ======= Globals & API Helper =======
 const API_BASE = '/api';
+
+// ------------------------------------
+// DECLARACIÓN ÚNICA Y SEGURA DE VARIABLES GLOBALES
+// ------------------------------------
 const formPerfil = document.getElementById('formPerfil');
 const btnCambiarPass = document.getElementById('btnCambiarPass');
+
+// Variables para la LÓGICA de Rutinas
 const modalEditorRutinaEl = document.getElementById('modalEditorRutina');
-// CORRECCIÓN: Asegurar que bootstrap esté disponible antes de instanciar
-let modalEditorRutina = null;
-if (typeof bootstrap !== 'undefined' && modalEditorRutinaEl) {
-    modalEditorRutina = new bootstrap.Modal(modalEditorRutinaEl);
-} else {
-    console.error("Bootstrap Modal no está disponible o el elemento del modal no se encontró.");
-}
 const modalLabel = document.getElementById('modalEditorRutinaLabel');
 const editorRoutineId = document.getElementById('editorRoutineId');
 const tbEjerciciosRutina = document.getElementById('tbEjerciciosRutina');
 const formAgregarEjercicio = document.getElementById('formAgregarEjercicio');
 const selectCatalogoEjercicios = document.getElementById('selectCatalogoEjercicios');
+const formCrearRutina = document.getElementById('formCrearRutina');
+const modalCrearRutinaEl = document.getElementById('modalCrearRutina');
+
+// ------------------------------------
+// INICIALIZACIÓN DE MODALS (Bootstrap)
+// ------------------------------------
+let modalEditorRutina = null;
+if (typeof bootstrap !== 'undefined' && modalEditorRutinaEl) {
+    modalEditorRutina = new bootstrap.Modal(modalEditorRutinaEl);
+} else {
+    console.warn("Bootstrap Modal de Edición no inicializado (Elemento no encontrado o Bootstrap no cargó).");
+}
+
+let modalCrearRutina = null;
+if (typeof bootstrap !== 'undefined' && modalCrearRutinaEl) {
+    modalCrearRutina = new bootstrap.Modal(modalCrearRutinaEl);
+}
+
 let __CATALOGO_EJERCICIOS__ = [];
 let __PROFILE_CACHE__ = null;
 let chartFrecuencia = null;
@@ -205,7 +246,7 @@ async function api(path, opts={}){
   return ct.includes('application/json') ? res.json() : res.text();
 }
 
-// ======= Tabs =======
+// ======= Tabs y Funciones de Utilidad (Sin cambios funcionales) =======
 const panes = {
   inicio: document.getElementById('tab-inicio'),
   rutinas: document.getElementById('tab-rutinas'),
@@ -273,7 +314,7 @@ async function cargarPerfil(){
   }
 }
 
-// ======= STATS / HISTORIAL =======
+// ======= STATS / HISTORIAL (Sin cambios funcionales) =======
 async function cargarStats(){
   console.log("Cargando stats...");
   try{
@@ -390,20 +431,78 @@ document.getElementById('btnNuevaSesion')?.addEventListener('click', async()=>{
   }catch(e){ alert('Error al iniciar sesión: '+e.message) }
 });
 
-// ======= RUTINAS (Sin cambios funcionales, solo logs y chequeos) =======
+// ======= RUTINAS (Lógica Consolidada) =======
 async function cargarRutinas(){
   const grid = document.getElementById('gridRutinas');
   if (!grid) return;
   grid.innerHTML='<div class="col-12 text-muted">Cargando rutinas...</div>';
-  try{ /* ... (igual que antes) ... */ } catch(e) { /* ... */ }
+  try{ 
+    const isUser = window.__CURRENT_USER_ID__ && window.__CURRENT_USER_ID__ !== 'admin';
+    const filter = isUser ? `user_id=${window.__CURRENT_USER_ID__}` : '';
+    const data = await api(`/routines/search?${filter}`);
+    grid.innerHTML = '';
+    
+    if(!data || data.length === 0){
+        grid.innerHTML = '<div class="col-12 text-muted">No hay rutinas disponibles.</div>';
+        return;
+    }
+
+    // Renderizar rutinas (este es un placeholder, debes tener la lógica de renderizado real)
+    data.forEach(r => {
+        const card = document.createElement('div');
+        card.classList.add('col-12', 'col-md-6', 'col-lg-4');
+        card.innerHTML = `
+            <div class="card card-lite h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">${r.name}</h5>
+                            <small class="text-muted">${r.description || 'Sin descripción'}</small>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item btn-editar-rutina" href="#" data-bs-toggle="modal" data-bs-target="#modalEditorRutina" data-routine-id="${r.id}" data-routine-name="${r.name}">Editar</a></li>
+                                <li><a class="dropdown-item btn-duplicar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name}">Duplicar</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger btn-eliminar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name}">Eliminar</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+  } catch(e) { 
+    console.error("Error cargando rutinas:", e);
+    grid.innerHTML='<div class="col-12 text-danger">Error al cargar rutinas: '+e.message+'</div>';
+  }
 }
 async function abrirEditorRutina(routineId, routineName) {
-  if (!modalEditorRutina || !modalLabel || !editorRoutineId || !tbEjerciciosRutina) { console.error("Modal elements not found"); return; }
+  // Las variables como modalLabel y editorRoutineId ya son globales.
+  if (!modalEditorRutinaEl || !modalLabel || !editorRoutineId || !tbEjerciciosRutina) { 
+    console.error("Faltan elementos DOM necesarios para abrir el Editor de Rutina."); 
+    return; 
+  }
+  
+  // Re-instanciar el modal SÓLO si es null (ESTA ES LA CORRECCIÓN ROBUSTA)
+  if (!modalEditorRutina && typeof bootstrap !== 'undefined') {
+    modalEditorRutina = new bootstrap.Modal(modalEditorRutinaEl);
+  }
+
   modalLabel.textContent = `Editar: ${routineName || 'Rutina'}`;
   editorRoutineId.value = routineId;
   tbEjerciciosRutina.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
-  try { const exercises = await api(`/routines/exercises/search?routine_id=${routineId}`); renderTablaEjercicios(exercises); }
-  catch (e) { console.error("Error loading routine exercises:", e); tbEjerciciosRutina.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error loading exercises</td></tr>`; }
+  try { 
+    const exercises = await api(`/routines/exercises/search?routine_id=${routineId}`); 
+    renderTablaEjercicios(exercises); 
+  }
+  catch (e) { 
+    console.error("Error loading routine exercises:", e); 
+    tbEjerciciosRutina.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error loading exercises</td></tr>`; 
+  }
 }
 function renderTablaEjercicios(exercises) {
    if (!tbEjerciciosRutina) return;
@@ -419,20 +518,16 @@ async function cargarCatalogoEjercicios() {
    try { const data = await api('/exercises?limit=100'); __CATALOGO_EJERCICIOS__ = data.items || []; selectCatalogoEjercicios.innerHTML = '<option value="">Select exercise...</option>'; for (const ex of __CATALOGO_EJERCICIOS__) { const opt = document.createElement('option'); opt.value = ex.id; opt.textContent = ex.name; selectCatalogoEjercicios.appendChild(opt); } selectCatalogoEjercicios.disabled = false; }
    catch (e) { console.error('Error loading exercise catalog:', e); selectCatalogoEjercicios.innerHTML = '<option value="">Error loading</option>'; }
 }
-document.getElementById('btnCrearRutina')?.addEventListener('click', async()=>{
-  const name = prompt('Name for the new routine:'); if (!name || !name.trim()) return;
-  const description = prompt('Description (optional):') || '';
-  try { const nuevaRutina = await api('/routines', { method: 'POST', body: JSON.stringify({ name: name.trim(), description, is_template: false }) }); await cargarRutinas(); if (nuevaRutina && nuevaRutina.id && modalEditorRutina) { abrirEditorRutina(nuevaRutina.id, nuevaRutina.name); modalEditorRutina.show(); } else if (!modalEditorRutina) { console.warn("Modal not found."); } }
-  catch(e) { alert('Error creating routine: ' + e.message); }
-});
+
 document.getElementById('gridRutinas')?.addEventListener('click', async e => {
     const btnEdit = e.target.closest('.btn-editar-rutina');
-    if (btnEdit) { const routineId = btnEdit.dataset.routineId; const routineName = btnEdit.dataset.routineName; if (routineId && modalEditorRutina) { abrirEditorRutina(routineId, routineName); /* Modal is shown via data-bs-toggle */ } else if (!modalEditorRutina) { console.error("Modal editor not initialized."); } return; }
+    if (btnEdit) { const routineId = btnEdit.dataset.routineId; const routineName = btnEdit.dataset.routineName; if (routineId && modalEditorRutina) { abrirEditorRutina(routineId, routineName); modalEditorRutina.show(); } else if (!modalEditorRutina) { console.error("Modal editor not initialized."); } return; }
     const btnDup = e.target.closest('.btn-duplicar-rutina');
     if (btnDup) { const routineId = btnDup.dataset.routineId; const routineName = btnDup.dataset.routineName; const newName = prompt(`Name for the copy of "${routineName}":`, `${routineName} (Copy)`); if (!newName || !newName.trim()) return; try { await api(`/routines/${routineId}/duplicate`, { method: 'POST', body: JSON.stringify({ new_name: newName.trim() }) }); await cargarRutinas(); } catch (e) { alert('Error duplicating routine: ' + e.message); } return; }
     const btnDel = e.target.closest('.btn-eliminar-rutina');
     if (btnDel) { const routineId = btnDel.dataset.routineId; const routineName = btnDel.dataset.routineName; if (!confirm(`Delete routine "${routineName}"? This cannot be undone.`)) return; try { await api(`/routines/${routineId}`, { method: 'DELETE' }); await cargarRutinas(); } catch (e) { alert('Error deleting routine: ' + e.message); } }
 });
+
 formAgregarEjercicio?.addEventListener('submit', async e => {
   e.preventDefault(); const routineId = editorRoutineId?.value; const exerciseIdEl = document.getElementById('selectCatalogoEjercicios'); const orderEl = document.getElementById('formOrden'); const setsEl = document.getElementById('formSeries'); const repsEl = document.getElementById('formReps');
   if (!routineId || !exerciseIdEl || !orderEl || !setsEl || !repsEl) { alert('Error: Form elements not found.'); return; }
@@ -441,10 +536,61 @@ formAgregarEjercicio?.addEventListener('submit', async e => {
   try { await api(`/routines/${routineId}/exercises`, { method: 'POST', body: JSON.stringify({ routine_id: routineId, exercise_id: exerciseId, order: order, sets: sets, reps: reps }) }); await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar: ', '')); formAgregarEjercicio.reset(); const nextOrder = (tbEjerciciosRutina?.rows.length || 0) + 1; if (orderEl) orderEl.value = nextOrder; }
   catch(e) { alert('Error adding exercise: ' + e.message); }
 });
+
 tbEjerciciosRutina?.addEventListener('click', async e => {
   const btn = e.target.closest('.btn-eliminar-ejercicio');
   if (btn) { const routineExerciseId = btn.dataset.routineExerciseId; if (!routineExerciseId || !confirm('Remove this exercise from the routine?')) return; try { await api(`/routines/exercises/${routineExerciseId}`, { method: 'DELETE' }); const routineId = editorRoutineId?.value; if (routineId) { await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar: ', '')); } } catch(e) { alert('Error removing exercise: ' + e.message); } }
 });
+
+// ======= RUTINAS (Creación con Modal - LÓGICA DE SUBMIT) =======
+formCrearRutina?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // 1. Obtener valores del formulario
+    const nameEl = document.getElementById('newRoutineName');
+    const descriptionEl = document.getElementById('newRoutineDescription');
+    
+    const name = nameEl.value.trim();
+    const description = descriptionEl.value.trim();
+    
+    if (!name) {
+        alert('El nombre de la rutina es obligatorio.');
+        return;
+    }
+
+    try {
+        // 💡 CORRECCIÓN: Usamos 'description' y 'is_template' explícitamente.
+        const payload = {
+            "name": name,
+            "description": description, // <-- Enviaremos "description"
+            "is_template": false      // <-- Aseguramos que is_template también se envíe
+        };
+        
+        // 2. Llamar a la API
+        const nuevaRutina = await api('/routines', { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        });
+
+        // 3. Cerrar el modal y limpiar
+        modalCrearRutina?.hide(); 
+        formCrearRutina.reset();
+        
+        // 4. Recargar la lista y abrir el editor (flujo original)
+       await cargarRutinas(); 
+        
+        if (nuevaRutina && nuevaRutina.id && modalEditorRutina) { // <-- Línea con error potencial
+            abrirEditorRutina(nuevaRutina.id, nuevaRutina.name);
+            modalEditorRutina.show(); // <-- Línea con error potencial
+        } else if (!modalEditorRutina) {
+            console.warn("Editor Modal no inicializado.");
+        }
+        
+    } catch(e) { 
+        alert('Error al crear rutina: ' + e.message); 
+    }
+});
+
 
 // ======= CONFIGURACIÓN (Perfil - Sin cambios funcionales) =======
 const LEVEL_TO_API = {'principiante':'PRINCIPIANTE','beginner':'PRINCIPIANTE','intermedio':'INTERMEDIO','intermediate':'INTERMEDIO','avanzado':'AVANZADO','advanced':'AVANZADO'};
@@ -452,56 +598,56 @@ const GOAL_TO_API = {'perder_peso':'PERDER_PESO','perderpeso':'PERDER_PESO','los
 function mapLevelForSelect(level){ const key = (level ?? '').toString().trim().toLowerCase(); if(!key) return ''; if(key === 'beginner' || key === 'principiante') return 'principiante'; if(key === 'intermediate' || key === 'intermedio') return 'intermedio'; if(key === 'advanced' || key === 'avanzado') return 'avanzado'; return ''; }
 function mapGoalForSelect(goal){ const key = (goal ?? '').toString().trim().toLowerCase(); if(!key) return ''; if(key === 'lose_weight' || key === 'perder_peso' || key === 'perderpeso' || key === 'weight_loss') return 'perder_peso'; if(key === 'gain_muscle' || key === 'ganar_musculo' || key === 'ganarmusculo' || key === 'muscle_gain') return 'ganar_musculo'; if(key === 'maintain' || key === 'mantenerse' || key === 'mantener' || key === 'maintenance') return 'mantenerse'; return ''; }
 formPerfil?.addEventListener('submit', async e=>{
-  e.preventDefault(); const uid = window.__CURRENT_USER_ID__; if(!uid){ alert('Cannot identify user'); return; }
-  const pfNombre = document.getElementById('pfNombre'); const pfPeso = document.getElementById('pfPeso'); const pfAltura = document.getElementById('pfAltura'); const pfNivel = document.getElementById('pfNivel'); const pfObjetivo = document.getElementById('pfObjetivo'); const pfBirthDate = document.getElementById('pfBirthDate');
-  if(!pfNombre || !pfPeso || !pfAltura || !pfNivel || !pfObjetivo || !pfBirthDate){ alert('Profile form incomplete'); return; }
-  const formName = pfNombre.value.trim(); const formBirthDate = pfBirthDate.value.trim(); const formWeight = parseFloat(pfPeso.value); const formHeight = parseFloat(pfAltura.value); const formLevel = (pfNivel.value ?? '').trim().toLowerCase(); const formGoal = (pfObjetivo.value ?? '').trim().toLowerCase();
-  const profileExists = __PROFILE_CACHE__ && __PROFILE_CACHE__.id;
-  let method = 'PUT', endpoint = '/profile', payload = {}, successMsg = 'Profile updated';
-  if (profileExists) {
-    method = 'PUT'; endpoint = '/profile'; successMsg = 'Profile updated'; const base = (__PROFILE_CACHE__ && typeof __PROFILE_CACHE__ === 'object') ? {...__PROFILE_CACHE__} : {};
-    payload = { name: formName !== '' ? formName : (base.name ?? ''), weight: !isNaN(formWeight) ? formWeight : (base.weight ?? undefined), height: !isNaN(formHeight) ? formHeight : (base.height ?? undefined), level:  formLevel !== '' ? formLevel : (base.level ?? ''), goal:   formGoal !== '' ? formGoal : (base.goal ?? ''), birthDate: formBirthDate !== '' ? formBirthDate : (base.birthDate ?? undefined) };
-    if (Number.isNaN(payload.weight)) delete payload.weight; if (Number.isNaN(payload.height)) delete payload.height;
-  } else {
-    method = 'POST'; endpoint = '/profile'; successMsg = 'Profile created';
-    if (!formName || !formBirthDate || isNaN(formWeight) || isNaN(formHeight) || !formLevel || !formGoal) { alert('All fields required to create profile.'); return; }
-    payload = { full_name: formName, birth_date: formBirthDate, weight_kg: formWeight, height_cm: parseInt(formHeight), level: formLevel, goal: formGoal };
-  }
-  try{ await api(endpoint, { method: method, body: JSON.stringify(payload) }); alert(successMsg); await cargarPerfil(); }
-  catch(e) { alert('Error saving profile: '+ e.message); }
+  e.preventDefault(); const uid = window.__CURRENT_USER_ID__; if(!uid){ alert('Cannot identify user'); return; }
+  const pfNombre = document.getElementById('pfNombre'); const pfPeso = document.getElementById('pfPeso'); const pfAltura = document.getElementById('pfAltura'); const pfNivel = document.getElementById('pfNivel'); const pfObjetivo = document.getElementById('pfObjetivo'); const pfBirthDate = document.getElementById('pfBirthDate');
+  if(!pfNombre || !pfPeso || !pfAltura || !pfNivel || !pfObjetivo || !pfBirthDate){ alert('Profile form incomplete'); return; }
+  const formName = pfNombre.value.trim(); const formBirthDate = pfBirthDate.value.trim(); const formWeight = parseFloat(pfPeso.value); const formHeight = parseFloat(pfAltura.value); const formLevel = (pfNivel.value ?? '').trim().toLowerCase(); const formGoal = (pfObjetivo.value ?? '').trim().toLowerCase();
+  const profileExists = __PROFILE_CACHE__ && __PROFILE_CACHE__.id;
+  let method = 'PUT', endpoint = '/profile', payload = {}, successMsg = 'Profile updated';
+  if (profileExists) {
+    method = 'PUT'; endpoint = '/profile'; successMsg = 'Profile updated'; const base = (__PROFILE_CACHE__ && typeof __PROFILE_CACHE__ === 'object') ? {...__PROFILE_CACHE__} : {};
+    payload = { name: formName !== '' ? formName : (base.name ?? ''), weight: !isNaN(formWeight) ? formWeight : (base.weight ?? undefined), height: !isNaN(formHeight) ? formHeight : (base.height ?? undefined), level:  formLevel !== '' ? formLevel : (base.level ?? ''), goal:   formGoal !== '' ? formGoal : (base.goal ?? ''), birthDate: formBirthDate !== '' ? formBirthDate : (base.birthDate ?? undefined) };
+    if (Number.isNaN(payload.weight)) delete payload.weight; if (Number.isNaN(payload.height)) delete payload.height;
+  } else {
+    method = 'POST'; endpoint = '/profile'; successMsg = 'Profile created';
+    if (!formName || !formBirthDate || isNaN(formWeight) || isNaN(formHeight) || !formLevel || !formGoal) { alert('All fields required to create profile.'); return; }
+    payload = { full_name: formName, birth_date: formBirthDate, weight_kg: formWeight, height_cm: parseInt(formHeight), level: formLevel, goal: formGoal };
+  }
+  try{ await api(endpoint, { method: method, body: JSON.stringify(payload) }); alert(successMsg); await cargarPerfil(); }
+  catch(e) { alert('Error saving profile: '+ e.message); }
 });
 btnCambiarPass?.addEventListener('click', async()=>{
-  const oldPassword=prompt('Current password:'); if(!oldPassword) return;
-  const newPassword=prompt('New password (min 6 chars):'); if(!newPassword || newPassword.length < 6) { alert('New password must be at least 6 characters.'); return; }
-  try{ await api('/users/change-password',{method:'PUT',body:JSON.stringify({ old_password: oldPassword, new_password: newPassword })}); alert('Password updated'); }
-  catch(e){ alert('Error: '+e.message) }
+  const oldPassword=prompt('Current password:'); if(!oldPassword) return;
+  const newPassword=prompt('New password (min 6 chars):'); if(!newPassword || newPassword.length < 6) { alert('New password must be at least 6 characters.'); return; }
+  try{ await api('/users/change-password',{method:'PUT',body:JSON.stringify({ old_password: oldPassword, new_password: newPassword })}); alert('Password updated'); }
+  catch(e){ alert('Error: '+e.message) }
 });
 
 // ======= Init =======
 (async function(){
-  console.log("Initializing page...");
-  try {
-      await cargarPerfil(); // Carga perfil primero
-      // Carga el resto en paralelo
-      await Promise.all([
-          cargarStats().catch(e => console.error("Error inicial stats:", e)),
-          cargarHistorial().catch(e => console.error("Error inicial historial:", e)),
-          cargarRutinas().catch(e => console.error("Error inicial rutinas:", e)),
-          cargarCatalogoEjercicios().catch(e => console.error("Error inicial catálogo:", e))
-      ]);
-      console.log("Initial data loaded.");
-      // Asegurar que el tab 'inicio' esté visible al cargar (importante!)
-      const inicioPane = document.getElementById('tab-inicio');
-      if (inicioPane) inicioPane.style.display = 'block';
-      const rutinasPane = document.getElementById('tab-rutinas');
-       if (rutinasPane) rutinasPane.style.display = 'none';
-       const configPane = document.getElementById('tab-config');
-       if (configPane) configPane.style.display = 'none';
+  console.log("Initializing page...");
+  try {
+      await cargarPerfil(); // Carga perfil primero
+      // Carga el resto en paralelo
+      await Promise.all([
+          cargarStats().catch(e => console.error("Error inicial stats:", e)),
+          cargarHistorial().catch(e => console.error("Error inicial historial:", e)),
+          cargarRutinas().catch(e => console.error("Error inicial rutinas:", e)),
+          cargarCatalogoEjercicios().catch(e => console.error("Error inicial catálogo:", e))
+      ]);
+      console.log("Initial data loaded.");
+      // Asegurar que el tab 'inicio' esté visible al cargar (importante!)
+      const inicioPane = document.getElementById('tab-inicio');
+      if (inicioPane) inicioPane.style.display = 'block';
+      const rutinasPane = document.getElementById('tab-rutinas');
+       if (rutinasPane) rutinasPane.style.display = 'none';
+       const configPane = document.getElementById('tab-config');
+       if (configPane) configPane.style.display = 'none';
 
-  } catch (error) {
-      console.error("Critical error during initial page load:", error);
-      alert("Hubo un error crítico al cargar la página. Intenta refrescar.");
-  }
+  } catch (error) {
+      console.error("Critical error during initial page load:", error);
+      alert("Hubo un error crítico al cargar la página. Intenta refrescar.");
+  }
 })();
 // === FIN JS CORREGIDO ===
 </script>
