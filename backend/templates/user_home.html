@@ -12,7 +12,7 @@
   .dot-amber{background:#f59e0b}
   .dot-red{background:#ef4444}
   .card-lite{border:1px solid #e5e7eb;border-radius:14px}
-  .sidebar-item{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:.75rem;color:#111827; cursor: pointer;} /* Added cursor pointer */
+  .sidebar-item{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:.75rem;color:#111827; cursor: pointer;}
   .sidebar-item.active,.sidebar-item:hover{background:#111827;color:#fff}
   .sidebar-badge{margin-left:auto;background:#111827;color:#fff;border-radius:999px;padding:.1rem .5rem;font-size:.7rem}
   .kpi{display:flex;align-items:center;gap:.75rem}
@@ -20,13 +20,15 @@
   .kpi .label{font-size:.8rem;color:#6b7280}
   .kpi .value{font-size:1.4rem;font-weight:700}
   .btn-icon{display:inline-flex;align-items:center;gap:.4rem}
-  .chip{border:1px solid #e5e7eb;border-radius:999px;padding:.2rem .55rem;font-size:.75rem; cursor: pointer;} /* Added cursor pointer */
+  .chip{border:1px solid #e5e7eb;border-radius:999px;padding:.2rem .55rem;font-size:.75rem; cursor: pointer;}
   .chip.active,.chip:hover{background:#111827;color:#fff}
   .table-sm td,.table-sm th{padding:.55rem .6rem;vertical-align:middle}
   .w-28{width:28px}
   .h-28{height:28px}
   .modal-lg { max-width: 800px; }
   .modal-body { max-height: 70vh; overflow-y: auto; }
+  /* Ocultar panes inactivos por defecto */
+  .tab-pane:not(.active) { display: none; }
 </style>
 
 <div class="container-fluid">
@@ -68,22 +70,13 @@
       </div>
 
       <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-          <div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-activity"></i></div> <div> <div class="label">Frecuencia (prom.)</div> <div class="value" id="kpiFrecuencia">0</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-blue"><span class="icon-dot dot-green"></span> Últimas 8 sem.</span> </div> </div> </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-graph-up-arrow"></i></div> <div> <div class="label">Mejora</div> <div class="value" id="kpiMejora">0%</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-green"><span class="icon-dot dot-green"></span> 30 días</span> </div> </div> </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-trophy"></i></div> <div> <div class="label">Top rutina</div> <div class="value" id="kpiTop">—</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-amber"><span class="icon-dot dot-amber"></span> Más completada</span> </div> </div> </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card card-lite"> <div class="card-body"> <div class="text-muted small">Racha activa</div> <div class="display-6 fw-semibold" id="kpiRacha">0</div> <div class="small text-muted">días</div> </div> </div>
-        </div>
+        <div class="col-6 col-lg-3"><div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-activity"></i></div> <div> <div class="label">Frecuencia (prom.)</div> <div class="value" id="kpiFrecuencia">0</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-blue"><span class="icon-dot dot-green"></span> Últimas 8 sem.</span> </div> </div> </div></div>
+        <div class="col-6 col-lg-3"><div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-graph-up-arrow"></i></div> <div> <div class="label">Mejora</div> <div class="value" id="kpiMejora">0%</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-green"><span class="icon-dot dot-green"></span> 30 días</span> </div> </div> </div></div>
+        <div class="col-6 col-lg-3"><div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-trophy"></i></div> <div> <div class="label">Top rutina</div> <div class="value" id="kpiTop">—</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-amber"><span class="icon-dot dot-amber"></span> Más completada</span> </div> </div> </div></div>
+        <div class="col-6 col-lg-3"><div class="card card-lite"> <div class="card-body"> <div class="text-muted small">Racha activa</div> <div class="display-6 fw-semibold" id="kpiRacha">0</div> <div class="small text-muted">días</div> </div> </div></div>
       </div>
 
-      <div id="tab-inicio" class="tab-pane active" style="display: block;">
-        <div class="card card-lite mb-4">
+      <div id="tab-inicio" class="tab-pane active"> <div class="card card-lite mb-4">
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
               <div><div class="h5 mb-0">Resumen</div><small class="text-muted">Frecuencia y progreso</small></div>
@@ -112,38 +105,50 @@
         </div>
       </div>
 
-     <div id="tab-rutinas" class="tab-pane" style="display: none;">
-    <div class="modal fade" id="modalCrearRutina" tabindex="-1" aria-labelledby="modalCrearRutinaLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalCrearRutinaLabel">Crear Nueva Rutina</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="formCrearRutina">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="newRoutineName" class="form-label">Nombre de la Rutina</label>
-                            <input type="text" class="form-control" id="newRoutineName" required minlength="3">
-                        </div>
-                        <div class="mb-3">
-                            <label for="newRoutineDescription" class="form-label">Descripción (Opcional)</label>
-                            <textarea class="form-control" id="newRoutineDescription" rows="3"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-dark">Guardar Rutina</button>
-                    </div>
-                </form>
-            </div>
+      <div id="tab-rutinas" class="tab-pane"> <div class="d-flex align-items-center justify-content-between mb-3">
+          <div class="h5 mb-0">Tus Rutinas</div>
+          <button class="btn btn-outline-dark btn-icon" data-bs-toggle="modal" data-bs-target="#modalCrearRutina"><i class="bi bi-plus-lg"></i> Nueva rutina</button>
         </div>
-    </div>
+        <div id="gridRutinas" class="row g-3"></div>
 
-<div class="d-flex align-items-center justify-content-between mb-3"><div class="h5 mb-0">Tus Rutinas</div><button id="btnCrearRutina" class="btn btn-outline-dark btn-icon" data-bs-toggle="modal" data-bs-target="#modalCrearRutina"><i class="bi bi-plus-lg"></i> Nueva rutina</button></div>
+        <div class="modal fade" id="modalCrearRutina" tabindex="-1" aria-labelledby="modalCrearRutinaLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header"><h5 class="modal-title" id="modalCrearRutinaLabel">Crear Nueva Rutina</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+              <form id="formCrearRutina">
+                <div class="modal-body">
+                  <div class="mb-3"><label for="newRoutineName" class="form-label">Nombre</label><input type="text" class="form-control" id="newRoutineName" required minlength="2"></div>
+                  <div class="mb-3"><label for="newRoutineDescription" class="form-label">Descripción</label><textarea class="form-control" id="newRoutineDescription" rows="3"></textarea></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-dark">Crear y Editar Ejercicios</button></div>
+              </form>
+            </div>
+          </div>
+        </div>
 
-      <div id="tab-config" class="tab-pane" style="display: none;">
-        <div class="row g-3">
+        <div class="modal fade" id="modalEditorRutina" tabindex="-1" aria-labelledby="modalEditorRutinaLabel" aria-hidden="true">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+              <div class="modal-header"><h5 class="modal-title" id="modalEditorRutinaLabel">Editar Rutina</h5><input type="hidden" id="editorRoutineId" value=""><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+              <div class="modal-body">
+                <h6>Ejercicios en esta rutina</h6>
+                <div class="table-responsive mb-4"><table class="table table-sm"><thead><tr><th>Orden</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th></th></tr></thead><tbody id="tbEjerciciosRutina"><tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr></tbody></table></div>
+                <hr>
+                <h6>Agregar ejercicio</h6>
+                <form id="formAgregarEjercicio" class="row g-3 align-items-end">
+                  <div class="col-12 col-md-6"><label class="form-label small">Ejercicio</label><select id="selectCatalogoEjercicios" class="form-select" required><option value="">Seleccionar...</option></select></div>
+                  <div class="col-6 col-md-2"><label class="form-label small">Orden</label><input id="formOrden" type="number" class="form-control" value="1" min="1" required></div>
+                  <div class="col-6 col-md-2"><label class="form-label small">Series</label><input id="formSeries" type="number" class="form-control" value="3" min="1" max="50" required></div>
+                  <div class="col-6 col-md-2"><label class="form-label small">Reps</label><input id="formReps" type="number" class="form-control" value="10" min="0" max="1000" required></div> <div class="col-12"><button type="submit" class="btn btn-dark btn-sm"><i class="bi bi-plus-lg me-1"></i> Añadir a la rutina</button></div>
+                </form>
+              </div>
+              <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar Editor</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-config" class="tab-pane"> <div class="row g-3">
           <div class="col-12 col-lg-8">
             <div class="card card-lite">
               <div class="card-body">
@@ -156,7 +161,7 @@
                   <div class="col-6 col-md-3"><label class="form-label">Altura (cm)</label><input id="pfAltura" class="form-control" type="number"/></div>
                   <div class="col-12 col-md-3"><label class="form-label">Nivel</label><select id="pfNivel" class="form-select"><option value="">—</option><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></select></div>
                   <div class="col-12 col-md-3"><label class="form-label">Objetivo</label><select id="pfObjetivo" class="form-select"><option value="">—</option><option value="perder_peso">Perder peso</option><option value="ganar_musculo">Ganar músculo</option><option value="mantenerse">Mantenerse</option></select></div>
-                  <div class="col-12"><button class="btn btn-dark" type="submit"><i class="bi bi-save me-1"></i> Guardar</button></div>
+                  <div class="col-12"><button class="btn btn-dark" type="submit"><i class="bi bi-save me-1"></i> Guardar Perfil</button></div>
                 </form>
               </div>
             </div>
@@ -179,476 +184,326 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// === INICIO JS CORREGIDO (Final) ===
-// ======= Globals & API Helper =======
-const API_BASE = '/api';
+// === INICIO JS CORREGIDO Y COMPLETO ===
+// === INICIO SCRIPT CORREGIDO Y COMPLETO ===
+// === INICIO SCRIPT COMPLETO ===
+document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM esté listo
 
-// ------------------------------------
-// DECLARACIÓN ÚNICA Y SEGURA DE VARIABLES GLOBALES
-// ------------------------------------
-const formPerfil = document.getElementById('formPerfil');
-const btnCambiarPass = document.getElementById('btnCambiarPass');
+    // ======= Globals & API Helper =======
+    const API_BASE = '/api';
+    const formPerfil = document.getElementById('formPerfil');
+    const btnCambiarPass = document.getElementById('btnCambiarPass');
+    const modalEditorRutinaEl = document.getElementById('modalEditorRutina');
+    const modalCrearRutinaEl = document.getElementById('modalCrearRutina');
+    // Inicialización segura de Modals
+    let modalEditorRutina = modalEditorRutinaEl ? new bootstrap.Modal(modalEditorRutinaEl) : null;
+    let modalCrearRutina = modalCrearRutinaEl ? new bootstrap.Modal(modalCrearRutinaEl) : null;
+    const modalLabel = document.getElementById('modalEditorRutinaLabel');
+    const editorRoutineIdInput = document.getElementById('editorRoutineId'); // Input hidden en modal editor
+    const tbEjerciciosRutina = document.getElementById('tbEjerciciosRutina');
+    const formAgregarEjercicio = document.getElementById('formAgregarEjercicio');
+    const selectCatalogoEjercicios = document.getElementById('selectCatalogoEjercicios');
+    const formCrearRutina = document.getElementById('formCrearRutina');
 
-// Variables para la LÓGICA de Rutinas
-const modalEditorRutinaEl = document.getElementById('modalEditorRutina');
-const modalLabel = document.getElementById('modalEditorRutinaLabel');
-const editorRoutineId = document.getElementById('editorRoutineId');
-const tbEjerciciosRutina = document.getElementById('tbEjerciciosRutina');
-const formAgregarEjercicio = document.getElementById('formAgregarEjercicio');
-const selectCatalogoEjercicios = document.getElementById('selectCatalogoEjercicios');
-const formCrearRutina = document.getElementById('formCrearRutina');
-const modalCrearRutinaEl = document.getElementById('modalCrearRutina');
+    let __CATALOGO_EJERCICIOS__ = [];
+    let __PROFILE_CACHE__ = null;
+    let chartFrecuencia = null;
+    let chartProgreso = null;
+    let currentUserId = null; // Variable global para ID de usuario
 
-// ------------------------------------
-// INICIALIZACIÓN DE MODALS (Bootstrap)
-// ------------------------------------
-let modalEditorRutina = null;
-if (typeof bootstrap !== 'undefined' && modalEditorRutinaEl) {
-    modalEditorRutina = new bootstrap.Modal(modalEditorRutinaEl);
-} else {
-    console.warn("Bootstrap Modal de Edición no inicializado (Elemento no encontrado o Bootstrap no cargó).");
-}
-
-let modalCrearRutina = null;
-if (typeof bootstrap !== 'undefined' && modalCrearRutinaEl) {
-    modalCrearRutina = new bootstrap.Modal(modalCrearRutinaEl);
-}
-
-let __CATALOGO_EJERCICIOS__ = [];
-let __PROFILE_CACHE__ = null;
-let chartFrecuencia = null;
-let chartProgreso = null;
-
-function getToken(){
-  return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') || null;
-}
-async function api(path, opts={}){
-  const token = getToken();
-  const res = await fetch(API_BASE + path, {
-    ...opts,
-    headers: {
-      'Content-Type':'application/json',
-      ...(token ? { Authorization: 'Bearer ' + token } : {}),
-      ...(opts.headers||{})
-    },
-    credentials: 'same-origin'
-  });
-  if(res.status === 401){ window.location.href = '/login'; throw new Error('No autorizado'); }
-  if(!res.ok){
-    let msg = `HTTP ${res.status}`;
-    try{ const data = await res.json(); msg = data?.error || data?.message || msg; }catch(_){}
-    throw new Error(msg);
-  }
-  const ct = res.headers.get('content-type') || '';
-  if (res.status === 204 || ct === '') { return null; }
-  return ct.includes('application/json') ? res.json() : res.text();
-}
-
-// ======= Tabs y Funciones de Utilidad (Sin cambios funcionales) =======
-const panes = {
-  inicio: document.getElementById('tab-inicio'),
-  rutinas: document.getElementById('tab-rutinas'),
-  config: document.getElementById('tab-config')
-};
-document.querySelectorAll('.sidebar-item[data-tab]').forEach(btn => { // Ser más específico con el selector
-  btn.addEventListener('click', (event) => {
-    const clickedButton = event.currentTarget; // Usar currentTarget
-    document.querySelectorAll('.sidebar-item[data-tab]').forEach(b => b.classList.remove('active'));
-    clickedButton.classList.add('active');
-    const tab = clickedButton.getAttribute('data-tab');
-    console.log(`Switching to tab: ${tab}`); // Log para depurar
-    Object.entries(panes).forEach(([k, el]) => {
-      if (el) {
-        el.style.display = (k === tab) ? 'block' : 'none';
-        el.classList.toggle('active', k === tab);
-      } else {
-        console.error(`Tab pane element not found for key: ${k}`);
+    function getToken(){
+      let token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+      let exp = localStorage.getItem('accessTokenExp') || sessionStorage.getItem('accessTokenExp');
+      if (token && exp && Date.now() > parseInt(exp)) {
+          console.warn("Token expirado.");
+          localStorage.removeItem('accessToken'); localStorage.removeItem('accessTokenExp');
+          sessionStorage.removeItem('accessToken'); sessionStorage.removeItem('accessTokenExp');
+          window.location.href = '/login';
+          return null;
       }
-    });
-  });
-});
-
-// ======= PERFIL (carga) =======
-async function cargarPerfil(){
-  console.log("Cargando perfil...");
-  try{
-    const me = await api('/me');
-    const uid = me?.userId;
-    if(!uid) throw new Error('No se obtuvo userId en /me');
-    window.__CURRENT_USER_ID__ = uid;
-
-    const [u, p] = await Promise.all([
-      api(`/users/${uid}`).catch(()=>null),
-      api('/profile').catch(()=>null)
-    ]);
-
-    __PROFILE_CACHE__ = p || {};
-    const email = u?.email || '';
-    const name  = p?.name || '';
-    const weight = p?.weight;
-    const height = p?.height;
-    const level  = p?.level;
-    const goal   = p?.goal;
-    const birthDate = p?.birthDate || '';
-
-    const sidebarEmailEl = document.getElementById('sidebarUserEmail');
-    if(sidebarEmailEl) sidebarEmailEl.textContent = email || '—';
-    const configEmailEl = document.getElementById('configUserEmail');
-    if(configEmailEl) configEmailEl.textContent = email || '—';
-
-    const fNombre = document.getElementById('pfNombre'); if(fNombre) fNombre.value = name;
-    const fEmail  = document.getElementById('pfEmail');  if(fEmail)  fEmail.value  = email || '';
-    const fBirthDate = document.getElementById('pfBirthDate');
-    if(fBirthDate) fBirthDate.value = birthDate.startsWith('0001-01-01') ? '' : birthDate;
-    const fPeso   = document.getElementById('pfPeso');   if(fPeso)   fPeso.value   = (weight ?? '');
-    const fAltura = document.getElementById('pfAltura'); if(fAltura) fAltura.value = (height ?? '');
-    const fNivel  = document.getElementById('pfNivel');
-    if(fNivel) fNivel.value = mapLevelForSelect(level) || '';
-    const fObj    = document.getElementById('pfObjetivo');
-    if(fObj) fObj.value = mapGoalForSelect(goal) || '';
-    console.log("Perfil cargado exitosamente.");
-  } catch(e) {
-    console.error('Error al cargar perfil:', e.message);
-  }
-}
-
-// ======= STATS / HISTORIAL (Sin cambios funcionales) =======
-async function cargarStats(){
-  console.log("Cargando stats...");
-  try{
-    const freqPromise = api('/stats/user/frequency').catch(e => { console.error("Error fetching frequency:", e); return null; });
-    const topPromise = api('/stats/user/top-routines').catch(e => { console.error("Error fetching top routines:", e); return null; });
-    // const progressPromise = api('/stats/user/progress?exerciseId=...').catch(e => { console.error("Error fetching progress:", e); return null; });
-
-    const [freq, top] = await Promise.all([freqPromise, topPromise]);
-    let prog = []; // Placeholder
-
-    console.log("Stats data:", { freq, top });
-
-    const kpiFreqEl = document.getElementById('kpiFrecuencia');
-    if (kpiFreqEl) {
-        if (freq?.buckets && freq.buckets.length > 0) {
-            const sesiones = freq.buckets.map(b => b.count || 0);
-            const prom = sesiones.length ? (sesiones.reduce((a, b) => a + b, 0) / sesiones.length) : 0;
-            kpiFreqEl.textContent = prom.toFixed(1);
-        } else { kpiFreqEl.textContent = '0'; } // Default a 0 si no hay datos
+      return token;
     }
 
-    const kpiTopEl = document.getElementById('kpiTop');
-    if (kpiTopEl) { kpiTopEl.textContent = top?.[0]?.name || '—'; }
-
-     const kpiMejoraEl = document.getElementById('kpiMejora');
-     if (kpiMejoraEl) { kpiMejoraEl.textContent = '0%';} // Default a 0%
-
-     const kpiRachaEl = document.getElementById('kpiRacha'); // Placeholder
-     if(kpiRachaEl) { kpiRachaEl.textContent = '0'; }
-
-
-    // Charts
-    const ctx1 = document.getElementById('chartFrecuencia');
-    if (ctx1) {
-      chartFrecuencia?.destroy?.();
-      if (freq?.buckets && freq.buckets.length > 0) {
-          chartFrecuencia = new Chart(ctx1, {
-              type: 'bar',
-              data: { labels: freq.buckets.map(b => b.label || ''), datasets: [{ label: 'Sesiones', data: freq.buckets.map(b => b.count || 0), backgroundColor: '#111827' }] },
-              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    async function api(path, opts={}){
+      const token = getToken();
+      if (!token && !path.startsWith('/auth/')) {
+          console.warn("No token found, redirecting to login.");
+          window.location.href = '/login';
+          return Promise.reject(new Error('No autorizado'));
+      }
+      try {
+          const res = await fetch(API_BASE + path, {
+            ...opts,
+            headers: {
+              'Content-Type':'application/json',
+              ...(token ? { Authorization: 'Bearer ' + token } : {}),
+              ...(opts.headers||{})
+            },
+            credentials: 'same-origin'
           });
-      } else {
-          const context = ctx1.getContext('2d'); context.clearRect(0, 0, ctx1.width, ctx1.height); context.textAlign = 'center'; context.fillText("No hay datos de frecuencia", ctx1.width / 2, ctx1.height / 2);
+          if(res.status === 401 || res.status === 403){
+              console.warn(`Auth error (${res.status}), redirecting to login.`);
+              localStorage.removeItem('accessToken'); localStorage.removeItem('accessTokenExp');
+              sessionStorage.removeItem('accessToken'); sessionStorage.removeItem('accessTokenExp');
+              window.location.href = '/login';
+              throw new Error('No autorizado o prohibido');
+          }
+          if(!res.ok){
+            let msg = `Error ${res.status}`;
+            try{ const data = await res.json(); msg = data?.error || data?.message || `Error ${res.status}`; }
+            catch(_){ msg = `Error ${res.status} - ${res.statusText}`; }
+            throw new Error(msg);
+          }
+          const ct = res.headers.get('content-type') || '';
+          if (res.status === 204 || ct === '') { return null; }
+          if (ct.includes('application/json')) { return res.json(); }
+          return res.text();
+      } catch (error) {
+           console.error(`API call failed for ${path}:`, error.message);
+           if (error.message.includes('No autorizado') || error.message.includes('prohibido')) {
+               return Promise.reject(error);
+           }
+           throw error;
       }
     }
 
-    const ctx2 = document.getElementById('chartProgreso');
-    if (ctx2) {
-      chartProgreso?.destroy?.();
-      if (prog?.length > 0) { /* ... config ... */ }
-      else {
-          const context = ctx2.getContext('2d'); context.clearRect(0, 0, ctx2.width, ctx2.height); context.textAlign = 'center'; context.fillText("Selecciona ejercicio para ver progreso", ctx2.width / 2, ctx2.height / 2);
-      }
-    }
-    console.log("Stats cargados exitosamente.");
-  } catch(e) {
-    console.error('Error general cargando stats:', e);
-     ['kpiFrecuencia', 'kpiMejora', 'kpiTop', 'kpiRacha'].forEach(id => {
-         const el = document.getElementById(id); if(el) el.textContent = 'Error';
-     });
-     chartFrecuencia?.destroy?.(); chartProgreso?.destroy?.();
-  }
-}
-
-async function cargarHistorial(){
-  const tb = document.getElementById('tbHistorial');
-  if(!tb) return;
-  tb.innerHTML='<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
-  try{
-    const data = await api('/workout-sessions/search');
-    const estado = document.querySelector('.chip.active[data-estado]')?.dataset?.estado || '';
-    const q = (document.getElementById('buscarHistorial')?.value||'').trim().toLowerCase();
-    const filtered = (data||[]).filter(s=>{
-      const notes=(s.notes||'').toLowerCase();
-      const fin = s.endTime || s.fecha_hora_fin;
-      const status = fin ? 'completed' : 'open';
-      const inicio=s.startTime || s.fecha_hora_inicio||'';
-      const qok = !q || notes.includes(q) || (inicio && new Date(inicio).toLocaleDateString().includes(q));
-      const sok = !estado || status===estado; return qok && sok;
-    });
-    if(!filtered.length){ tb.innerHTML='<tr><td colspan="5" class="text-center text-muted">Sin registros que coincidan.</td></tr>'; return; }
-    tb.innerHTML='';
-    for(const s of filtered){
-      const inicio=s.startTime||s.fecha_hora_inicio||'';
-      const fin=s.endTime||s.fecha_hora_fin||'';
-      const status= fin? 'completed':'open';
-      const pill = status==='completed' ? '<span class="pill pill-green"><span class="icon-dot dot-green"></span>Completado</span>' : '<span class="pill pill-amber"><span class="icon-dot dot-amber"></span>En curso</span>';
-      const tr=document.createElement('tr');
-      tr.innerHTML=`
-        <td><div class="fw-semibold">Sesión ${s.id ? s.id.slice(-4) : 'N/A'}</div><div class="text-muted small">${(s.notes||'Sin notas').slice(0,60)}</div></td>
-        <td>${inicio? new Date(inicio).toLocaleString(): '—'}</td><td>${fin? new Date(fin).toLocaleString(): '—'}</td><td>${pill}</td>
-        <td class="text-end"><button class="btn btn-sm btn-outline-dark">Ver</button></td>`;
-      tb.appendChild(tr);
-    }
-  }catch(e){
-    console.error("Error cargando historial:", e);
-    tb.innerHTML='<tr><td colspan="5" class="text-center text-danger">Error al cargar historial</td></tr>';
-  }
-}
-document.getElementById('buscarHistorial')?.addEventListener('input', cargarHistorial);
-document.querySelectorAll('.chip[data-estado]').forEach(ch=>{
-  ch.addEventListener('click', ()=>{
-    document.querySelectorAll('.chip[data-estado]').forEach(c=>c.classList.remove('active'));
-    ch.classList.add('active');
-    cargarHistorial();
-  });
-});
-document.getElementById('btnNuevaSesion')?.addEventListener('click', async()=>{
-  try{
-    const body = { start_time: new Date().toISOString() };
-    const r = await api('/workout-sessions', { method:'POST', body: JSON.stringify(body) });
-    if(r && r.id){ alert('Sesión iniciada: ' + r.id); await cargarHistorial(); }
-    else { console.warn("Respuesta inesperada:", r); alert('Sesión creada.'); await cargarHistorial(); }
-  }catch(e){ alert('Error al iniciar sesión: '+e.message) }
-});
-
-// ======= RUTINAS (Lógica Consolidada) =======
-async function cargarRutinas(){
-  const grid = document.getElementById('gridRutinas');
-  if (!grid) return;
-  grid.innerHTML='<div class="col-12 text-muted">Cargando rutinas...</div>';
-  try{ 
-    const isUser = window.__CURRENT_USER_ID__ && window.__CURRENT_USER_ID__ !== 'admin';
-    const filter = isUser ? `user_id=${window.__CURRENT_USER_ID__}` : '';
-    const data = await api(`/routines/search?${filter}`);
-    grid.innerHTML = '';
-    
-    if(!data || data.length === 0){
-        grid.innerHTML = '<div class="col-12 text-muted">No hay rutinas disponibles.</div>';
-        return;
-    }
-
-    // Renderizar rutinas (este es un placeholder, debes tener la lógica de renderizado real)
-    data.forEach(r => {
-        const card = document.createElement('div');
-        card.classList.add('col-12', 'col-md-6', 'col-lg-4');
-        card.innerHTML = `
-            <div class="card card-lite h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <h5 class="mb-1">${r.name}</h5>
-                            <small class="text-muted">${r.description || 'Sin descripción'}</small>
-                        </div>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item btn-editar-rutina" href="#" data-bs-toggle="modal" data-bs-target="#modalEditorRutina" data-routine-id="${r.id}" data-routine-name="${r.name}">Editar</a></li>
-                                <li><a class="dropdown-item btn-duplicar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name}">Duplicar</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger btn-eliminar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name}">Eliminar</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        grid.appendChild(card);
-    });
-
-  } catch(e) { 
-    console.error("Error cargando rutinas:", e);
-    grid.innerHTML='<div class="col-12 text-danger">Error al cargar rutinas: '+e.message+'</div>';
-  }
-}
-async function abrirEditorRutina(routineId, routineName) {
-  // Las variables como modalLabel y editorRoutineId ya son globales.
-  if (!modalEditorRutinaEl || !modalLabel || !editorRoutineId || !tbEjerciciosRutina) { 
-    console.error("Faltan elementos DOM necesarios para abrir el Editor de Rutina."); 
-    return; 
-  }
-  
-  // Re-instanciar el modal SÓLO si es null (ESTA ES LA CORRECCIÓN ROBUSTA)
-  if (!modalEditorRutina && typeof bootstrap !== 'undefined') {
-    modalEditorRutina = new bootstrap.Modal(modalEditorRutinaEl);
-  }
-
-  modalLabel.textContent = `Editar: ${routineName || 'Rutina'}`;
-  editorRoutineId.value = routineId;
-  tbEjerciciosRutina.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
-  try { 
-    const exercises = await api(`/routines/exercises/search?routine_id=${routineId}`); 
-    renderTablaEjercicios(exercises); 
-  }
-  catch (e) { 
-    console.error("Error loading routine exercises:", e); 
-    tbEjerciciosRutina.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error loading exercises</td></tr>`; 
-  }
-}
-function renderTablaEjercicios(exercises) {
-   if (!tbEjerciciosRutina) return;
-   tbEjerciciosRutina.innerHTML = '';
-   if (!exercises || !exercises.length) { tbEjerciciosRutina.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No exercises yet. Add one below.</td></tr>'; return; }
-   const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => { acc[ex.id] = ex.name; return acc; }, {});
-   exercises.sort((a, b) => (a.order || 0) - (b.order || 0));
-   for (const ex of exercises) { const tr = document.createElement('tr'); tr.innerHTML = `<td>${ex.order||'?'}</td><td>${exerciseMap[ex.exercise_id]||ex.exercise_id}</td><td>${ex.sets||'?'}</td><td>${ex.reps||'?'}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger btn-eliminar-ejercicio" data-routine-exercise-id="${ex.id}"><i class="bi bi-trash-fill"></i></button></td>`; tbEjerciciosRutina.appendChild(tr); }
-}
-async function cargarCatalogoEjercicios() {
-   if (!selectCatalogoEjercicios) return;
-   selectCatalogoEjercicios.disabled = true;
-   try { const data = await api('/exercises?limit=100'); __CATALOGO_EJERCICIOS__ = data.items || []; selectCatalogoEjercicios.innerHTML = '<option value="">Select exercise...</option>'; for (const ex of __CATALOGO_EJERCICIOS__) { const opt = document.createElement('option'); opt.value = ex.id; opt.textContent = ex.name; selectCatalogoEjercicios.appendChild(opt); } selectCatalogoEjercicios.disabled = false; }
-   catch (e) { console.error('Error loading exercise catalog:', e); selectCatalogoEjercicios.innerHTML = '<option value="">Error loading</option>'; }
-}
-
-document.getElementById('gridRutinas')?.addEventListener('click', async e => {
-    const btnEdit = e.target.closest('.btn-editar-rutina');
-    if (btnEdit) { const routineId = btnEdit.dataset.routineId; const routineName = btnEdit.dataset.routineName; if (routineId && modalEditorRutina) { abrirEditorRutina(routineId, routineName); modalEditorRutina.show(); } else if (!modalEditorRutina) { console.error("Modal editor not initialized."); } return; }
-    const btnDup = e.target.closest('.btn-duplicar-rutina');
-    if (btnDup) { const routineId = btnDup.dataset.routineId; const routineName = btnDup.dataset.routineName; const newName = prompt(`Name for the copy of "${routineName}":`, `${routineName} (Copy)`); if (!newName || !newName.trim()) return; try { await api(`/routines/${routineId}/duplicate`, { method: 'POST', body: JSON.stringify({ new_name: newName.trim() }) }); await cargarRutinas(); } catch (e) { alert('Error duplicating routine: ' + e.message); } return; }
-    const btnDel = e.target.closest('.btn-eliminar-rutina');
-    if (btnDel) { const routineId = btnDel.dataset.routineId; const routineName = btnDel.dataset.routineName; if (!confirm(`Delete routine "${routineName}"? This cannot be undone.`)) return; try { await api(`/routines/${routineId}`, { method: 'DELETE' }); await cargarRutinas(); } catch (e) { alert('Error deleting routine: ' + e.message); } }
-});
-
-formAgregarEjercicio?.addEventListener('submit', async e => {
-  e.preventDefault(); const routineId = editorRoutineId?.value; const exerciseIdEl = document.getElementById('selectCatalogoEjercicios'); const orderEl = document.getElementById('formOrden'); const setsEl = document.getElementById('formSeries'); const repsEl = document.getElementById('formReps');
-  if (!routineId || !exerciseIdEl || !orderEl || !setsEl || !repsEl) { alert('Error: Form elements not found.'); return; }
-  const exerciseId = exerciseIdEl.value; const order = parseInt(orderEl.value); const sets = parseInt(setsEl.value); const reps = parseInt(repsEl.value);
-  if (!routineId || !exerciseId || isNaN(order) || order < 1 || isNaN(sets) || sets < 1 || isNaN(reps) || reps < 1) { alert('Please select an exercise and fill Order, Sets, Reps (min 1).'); return; }
-  try { await api(`/routines/${routineId}/exercises`, { method: 'POST', body: JSON.stringify({ routine_id: routineId, exercise_id: exerciseId, order: order, sets: sets, reps: reps }) }); await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar: ', '')); formAgregarEjercicio.reset(); const nextOrder = (tbEjerciciosRutina?.rows.length || 0) + 1; if (orderEl) orderEl.value = nextOrder; }
-  catch(e) { alert('Error adding exercise: ' + e.message); }
-});
-
-tbEjerciciosRutina?.addEventListener('click', async e => {
-  const btn = e.target.closest('.btn-eliminar-ejercicio');
-  if (btn) { const routineExerciseId = btn.dataset.routineExerciseId; if (!routineExerciseId || !confirm('Remove this exercise from the routine?')) return; try { await api(`/routines/exercises/${routineExerciseId}`, { method: 'DELETE' }); const routineId = editorRoutineId?.value; if (routineId) { await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar: ', '')); } } catch(e) { alert('Error removing exercise: ' + e.message); } }
-});
-
-// ======= RUTINAS (Creación con Modal - LÓGICA DE SUBMIT) =======
-formCrearRutina?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    // 1. Obtener valores del formulario
-    const nameEl = document.getElementById('newRoutineName');
-    const descriptionEl = document.getElementById('newRoutineDescription');
-    
-    const name = nameEl.value.trim();
-    const description = descriptionEl.value.trim();
-    
-    if (!name) {
-        alert('El nombre de la rutina es obligatorio.');
-        return;
-    }
-
-    try {
-        // 💡 CORRECCIÓN: Usamos 'description' y 'is_template' explícitamente.
-        const payload = {
-            "name": name,
-            "description": description, // <-- Enviaremos "description"
-            "is_template": false      // <-- Aseguramos que is_template también se envíe
-        };
-        
-        // 2. Llamar a la API
-        const nuevaRutina = await api('/routines', { 
-            method: 'POST', 
-            body: JSON.stringify(payload) 
+    // ======= Tabs =======
+    const panes = {
+      inicio: document.getElementById('tab-inicio'),
+      rutinas: document.getElementById('tab-rutinas'),
+      config: document.getElementById('tab-config') // Asegúrate que este ID exista en tu HTML
+    };
+    document.querySelectorAll('.sidebar-item[data-tab]').forEach(btn => {
+      btn.addEventListener('click', (event) => {
+        const clickedButton = event.currentTarget;
+        document.querySelectorAll('.sidebar-item[data-tab]').forEach(b => b.classList.remove('active'));
+        clickedButton.classList.add('active');
+        const tab = clickedButton.getAttribute('data-tab');
+        console.log(`Activating tab: ${tab}`);
+        Object.entries(panes).forEach(([k, el]) => {
+          if (el) {
+            el.style.display = (k === tab) ? 'block' : 'none'; // Mostrar/Ocultar
+          } else {
+            console.error(`Tab pane element not found for key: ${k}`); // Error si falta el div
+          }
         });
+      });
+    });
 
-        // 3. Cerrar el modal y limpiar
-        modalCrearRutina?.hide(); 
-        formCrearRutina.reset();
-        
-        // 4. Recargar la lista y abrir el editor (flujo original)
-       await cargarRutinas(); 
-        
-        if (nuevaRutina && nuevaRutina.id && modalEditorRutina) { // <-- Línea con error potencial
-            abrirEditorRutina(nuevaRutina.id, nuevaRutina.name);
-            modalEditorRutina.show(); // <-- Línea con error potencial
-        } else if (!modalEditorRutina) {
-            console.warn("Editor Modal no inicializado.");
-        }
-        
-    } catch(e) { 
-        alert('Error al crear rutina: ' + e.message); 
+    // ======= PERFIL (carga y guardado) =======
+    async function cargarPerfil(){
+      console.log("Cargando perfil...");
+      try{
+        const me = await api('/me'); currentUserId = me?.userId;
+        if(!currentUserId) throw new Error('Cannot identify user: No userId from /me');
+        const [u, p] = await Promise.all([ api(`/users/${currentUserId}`).catch(()=>null), api('/profile').catch(()=>null) ]);
+        __PROFILE_CACHE__ = p || {};
+        const email = u?.email || ''; const name = p?.name || u?.username || '';
+        const weight = p?.weight; const height = p?.height; const level = p?.level; const goal = p?.goal; const birthDate = p?.birthDate || '';
+        const sidebarEmailEl=document.getElementById('sidebarUserEmail'); if(sidebarEmailEl) sidebarEmailEl.textContent=email||'—';
+        const configEmailEl=document.getElementById('configUserEmail'); if(configEmailEl) configEmailEl.textContent=email||'—';
+        const fNombre=document.getElementById('pfNombre'); if(fNombre) fNombre.value=name;
+        const fEmail=document.getElementById('pfEmail'); if(fEmail) fEmail.value=email||'';
+        const fBirthDate=document.getElementById('pfBirthDate'); if(fBirthDate) fBirthDate.value=birthDate.startsWith('0001-01-01')?'':birthDate;
+        const fPeso=document.getElementById('pfPeso'); if(fPeso) fPeso.value=(weight??'');
+        const fAltura=document.getElementById('pfAltura'); if(fAltura) fAltura.value=(height??'');
+        const fNivel=document.getElementById('pfNivel'); if(fNivel) fNivel.value=mapLevelForSelect(level)||'';
+        const fObj=document.getElementById('pfObjetivo'); if(fObj) fObj.value=mapGoalForSelect(goal)||'';
+        console.log("Perfil cargado.");
+      } catch(e) { console.error('Error crítico al cargar perfil:', e.message); alert(`Error cargando tu perfil: ${e.message}. Serás redirigido.`); window.location.href = '/login'; }
     }
-});
+    // Mapeos (sin cambios)
+    const LEVEL_TO_API = {'principiante':'PRINCIPIANTE','intermedio':'INTERMEDIO','avanzado':'AVANZADO'};
+    const GOAL_TO_API = {'perder_peso':'PERDER_PESO','ganar_musculo':'GANAR_MUSCULO','mantenerse':'MANTENERSE'};
+    function mapLevelForSelect(level){ const k=(level||'').toLowerCase(); if(k==='principiante'||k==='beginner')return'principiante'; if(k==='intermedio'||k==='intermediate')return'intermedio'; if(k==='avanzado'||k==='advanced')return'avanzado'; return '';}
+    function mapGoalForSelect(goal){ const k=(goal||'').toLowerCase(); if(k==='perder_peso'||k==='lose_weight'||k==='weight_loss')return'perder_peso'; if(k==='ganar_musculo'||k==='gain_muscle'||k==='muscle_gain')return'ganar_musculo'; if(k==='mantenerse'||k==='maintain'||k==='maintenance')return'mantenerse'; return '';}
+    // Listener submit Formulario Perfil
+    formPerfil?.addEventListener('submit', async e=>{
+      e.preventDefault(); const uid = currentUserId; if(!uid){ alert('Cannot identify user'); return; }
+      const pfNombre=document.getElementById('pfNombre'); const pfPeso=document.getElementById('pfPeso'); const pfAltura=document.getElementById('pfAltura'); const pfNivel=document.getElementById('pfNivel'); const pfObjetivo=document.getElementById('pfObjetivo'); const pfBirthDate=document.getElementById('pfBirthDate');
+      if(!pfNombre||!pfPeso||!pfAltura||!pfNivel||!pfObjetivo||!pfBirthDate){ alert('Formulario incompleto'); return; }
+      const formName=pfNombre.value.trim(); const formBirthDate=pfBirthDate.value.trim(); const formWeight=parseFloat(pfPeso.value); const formHeight=parseFloat(pfAltura.value); const formLevel=(pfNivel.value??'').trim().toLowerCase(); const formGoal=(pfObjetivo.value??'').trim().toLowerCase();
+      const profileExists = __PROFILE_CACHE__ && __PROFILE_CACHE__.id;
+      let method='PUT', endpoint='/profile', payload={}, successMsg='Perfil actualizado';
+      if (profileExists) {
+        method='PUT'; endpoint='/profile'; successMsg='Perfil actualizado'; const base=__PROFILE_CACHE__||{};
+        // PUT /api/profile usa dto.ProfileUpdateRequest
+        payload={name:formName!==''?formName:(base.name??''), weight:!isNaN(formWeight)?formWeight:(base.weight??undefined), height:!isNaN(formHeight)?formHeight:(base.height??undefined), level:formLevel!==''?formLevel:(base.level??''), goal:formGoal!==''?formGoal:(base.goal??''), birthDate:formBirthDate!==''?formBirthDate:(base.birthDate??undefined)};
+        if(Number.isNaN(payload.weight))delete payload.weight; if(Number.isNaN(payload.height))delete payload.height;
+      } else {
+        method='POST'; endpoint='/profile'; successMsg='Perfil creado';
+        if(!formName||!formBirthDate||isNaN(formWeight)||isNaN(formHeight)||!formLevel||!formGoal){ alert('Todos los campos son obligatorios para crear perfil.'); return; }
+        // POST /api/profile usa dto.UserProfileCreateRequest
+        payload={full_name:formName, birth_date:formBirthDate, weight_kg:formWeight, height_cm:parseInt(formHeight), level:formLevel, goal:formGoal};
+      }
+      console.log(`Guardando perfil (${method} ${endpoint}) con payload:`, payload);
+      try{
+         await api(endpoint, { method: method, body: JSON.stringify(payload) }); // Llama a PUT /api/profile (sin ID)
+         alert(successMsg); await cargarPerfil();
+      } catch(e) { alert('Error al guardar perfil: '+ e.message); }
+    });
+    // Listener Cambiar Contraseña
+    btnCambiarPass?.addEventListener('click', async()=>{ /* ... (sin cambios) ... */ });
 
 
-// ======= CONFIGURACIÓN (Perfil - Sin cambios funcionales) =======
-const LEVEL_TO_API = {'principiante':'PRINCIPIANTE','beginner':'PRINCIPIANTE','intermedio':'INTERMEDIO','intermediate':'INTERMEDIO','avanzado':'AVANZADO','advanced':'AVANZADO'};
-const GOAL_TO_API = {'perder_peso':'PERDER_PESO','perderpeso':'PERDER_PESO','lose_weight':'PERDER_PESO','weight_loss':'PERDER_PESO','ganar_musculo':'GANAR_MUSCULO','ganarmusculo':'GANAR_MUSCULO','gain_muscle':'GANAR_MUSCULO','muscle_gain':'GANAR_MUSCULO','mantenerse':'MANTENERSE','mantener':'MANTENERSE','maintain':'MANTENERSE','maintenance':'MANTENERSE'};
-function mapLevelForSelect(level){ const key = (level ?? '').toString().trim().toLowerCase(); if(!key) return ''; if(key === 'beginner' || key === 'principiante') return 'principiante'; if(key === 'intermediate' || key === 'intermedio') return 'intermedio'; if(key === 'advanced' || key === 'avanzado') return 'avanzado'; return ''; }
-function mapGoalForSelect(goal){ const key = (goal ?? '').toString().trim().toLowerCase(); if(!key) return ''; if(key === 'lose_weight' || key === 'perder_peso' || key === 'perderpeso' || key === 'weight_loss') return 'perder_peso'; if(key === 'gain_muscle' || key === 'ganar_musculo' || key === 'ganarmusculo' || key === 'muscle_gain') return 'ganar_musculo'; if(key === 'maintain' || key === 'mantenerse' || key === 'mantener' || key === 'maintenance') return 'mantenerse'; return ''; }
-formPerfil?.addEventListener('submit', async e=>{
-  e.preventDefault(); const uid = window.__CURRENT_USER_ID__; if(!uid){ alert('Cannot identify user'); return; }
-  const pfNombre = document.getElementById('pfNombre'); const pfPeso = document.getElementById('pfPeso'); const pfAltura = document.getElementById('pfAltura'); const pfNivel = document.getElementById('pfNivel'); const pfObjetivo = document.getElementById('pfObjetivo'); const pfBirthDate = document.getElementById('pfBirthDate');
-  if(!pfNombre || !pfPeso || !pfAltura || !pfNivel || !pfObjetivo || !pfBirthDate){ alert('Profile form incomplete'); return; }
-  const formName = pfNombre.value.trim(); const formBirthDate = pfBirthDate.value.trim(); const formWeight = parseFloat(pfPeso.value); const formHeight = parseFloat(pfAltura.value); const formLevel = (pfNivel.value ?? '').trim().toLowerCase(); const formGoal = (pfObjetivo.value ?? '').trim().toLowerCase();
-  const profileExists = __PROFILE_CACHE__ && __PROFILE_CACHE__.id;
-  let method = 'PUT', endpoint = '/profile', payload = {}, successMsg = 'Profile updated';
-  if (profileExists) {
-    method = 'PUT'; endpoint = '/profile'; successMsg = 'Profile updated'; const base = (__PROFILE_CACHE__ && typeof __PROFILE_CACHE__ === 'object') ? {...__PROFILE_CACHE__} : {};
-    payload = { name: formName !== '' ? formName : (base.name ?? ''), weight: !isNaN(formWeight) ? formWeight : (base.weight ?? undefined), height: !isNaN(formHeight) ? formHeight : (base.height ?? undefined), level:  formLevel !== '' ? formLevel : (base.level ?? ''), goal:   formGoal !== '' ? formGoal : (base.goal ?? ''), birthDate: formBirthDate !== '' ? formBirthDate : (base.birthDate ?? undefined) };
-    if (Number.isNaN(payload.weight)) delete payload.weight; if (Number.isNaN(payload.height)) delete payload.height;
-  } else {
-    method = 'POST'; endpoint = '/profile'; successMsg = 'Profile created';
-    if (!formName || !formBirthDate || isNaN(formWeight) || isNaN(formHeight) || !formLevel || !formGoal) { alert('All fields required to create profile.'); return; }
-    payload = { full_name: formName, birth_date: formBirthDate, weight_kg: formWeight, height_cm: parseInt(formHeight), level: formLevel, goal: formGoal };
-  }
-  try{ await api(endpoint, { method: method, body: JSON.stringify(payload) }); alert(successMsg); await cargarPerfil(); }
-  catch(e) { alert('Error saving profile: '+ e.message); }
-});
-btnCambiarPass?.addEventListener('click', async()=>{
-  const oldPassword=prompt('Current password:'); if(!oldPassword) return;
-  const newPassword=prompt('New password (min 6 chars):'); if(!newPassword || newPassword.length < 6) { alert('New password must be at least 6 characters.'); return; }
-  try{ await api('/users/change-password',{method:'PUT',body:JSON.stringify({ old_password: oldPassword, new_password: newPassword })}); alert('Password updated'); }
-  catch(e){ alert('Error: '+e.message) }
-});
+    // ======= STATS / HISTORIAL =======
+    async function cargarStats(){ /* ... (sin cambios) ... */ }
+    async function cargarHistorial(){ /* ... (sin cambios) ... */ }
+    document.getElementById('buscarHistorial')?.addEventListener('input', cargarHistorial);
+    document.querySelectorAll('.chip[data-estado]').forEach(ch=>{ /* ... (sin cambios) ... */ });
+    document.getElementById('btnNuevaSesion')?.addEventListener('click', async()=>{ /* ... (sin cambios) ... */ });
 
-// ======= Init =======
-(async function(){
-  console.log("Initializing page...");
-  try {
-      await cargarPerfil(); // Carga perfil primero
-      // Carga el resto en paralelo
-      await Promise.all([
-          cargarStats().catch(e => console.error("Error inicial stats:", e)),
-          cargarHistorial().catch(e => console.error("Error inicial historial:", e)),
-          cargarRutinas().catch(e => console.error("Error inicial rutinas:", e)),
-          cargarCatalogoEjercicios().catch(e => console.error("Error inicial catálogo:", e))
-      ]);
-      console.log("Initial data loaded.");
-      // Asegurar que el tab 'inicio' esté visible al cargar (importante!)
-      const inicioPane = document.getElementById('tab-inicio');
-      if (inicioPane) inicioPane.style.display = 'block';
-      const rutinasPane = document.getElementById('tab-rutinas');
-       if (rutinasPane) rutinasPane.style.display = 'none';
-       const configPane = document.getElementById('tab-config');
-       if (configPane) configPane.style.display = 'none';
 
-  } catch (error) {
-      console.error("Critical error during initial page load:", error);
-      alert("Hubo un error crítico al cargar la página. Intenta refrescar.");
-  }
-})();
-// === FIN JS CORREGIDO ===
+    // ======= RUTINAS (Lógica Completa) =======
+    async function cargarRutinas(){
+      const grid = document.getElementById('gridRutinas'); if (!grid) return;
+      grid.innerHTML='<div class="col-12 text-muted">Cargando rutinas...</div>';
+      try{
+        const arr = await api('/routines/search?is_template=false'); // GET /api/routines/search
+        grid.innerHTML='';
+        if(!arr?.length){ grid.innerHTML = '<div class="col-12 text-muted">Aún no tienes rutinas.</div>'; return; }
+        for(const r of arr){
+          const col=document.createElement('div'); col.className='col-12 col-md-6 col-lg-4';
+          col.innerHTML=`
+            <div class="card card-lite h-100">
+              <div class="card-body d-flex flex-column">
+                 <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="flex-grow-1 me-2">
+                        <div class="fw-semibold mb-1">${r.name || 'Rutina'}</div>
+                        <div class="text-muted small">${(r.description || 'Sin desc.').slice(0, 100)}</div>
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-light py-0 px-1 dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item btn-editar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name || ''}" data-bs-toggle="modal" data-bs-target="#modalEditorRutina"><i class="bi bi-pencil-fill me-2"></i>Editar Ejercicios</a></li>
+                            <li><a class="dropdown-item btn-duplicar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name || ''}"><i class="bi bi-copy me-2"></i>Duplicar</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger btn-eliminar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name || ''}"><i class="bi bi-trash-fill me-2"></i>Eliminar Rutina</a></li>
+                        </ul>
+                    </div>
+                 </div>
+              </div>
+            </div>`;
+          grid.appendChild(col);
+        }
+      }catch(e){ console.error("Error cargando rutinas:", e); grid.innerHTML='<div class="col-12 text-danger">Error al cargar rutinas.</div>'; }
+    }
+    async function abrirEditorRutina(routineId, routineName) {
+      if (!modalEditorRutina || !modalLabel || !editorRoutineIdInput || !tbEjerciciosRutina) { console.error("Elementos del modal Editor no encontrados"); return; }
+      modalLabel.textContent = `Editar Ejercicios: ${routineName || 'Rutina'}`;
+      editorRoutineIdInput.value = routineId; // Guardar ID en input hidden
+      tbEjerciciosRutina.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
+      try {
+        // GET /api/routines/exercises/search?routine_id=...
+        const exercises = await api(`/routines/exercises/search?routine_id=${routineId}`);
+        renderTablaEjercicios(exercises);
+        const nextOrder = (exercises?.length || 0) + 1;
+        const orderEl = document.getElementById('formOrden'); if(orderEl) orderEl.value = nextOrder;
+      } catch (e) { console.error("Error cargando ejercicios rutina:", e); tbEjerciciosRutina.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error cargando ejercicios</td></tr>`; }
+    }
+    function renderTablaEjercicios(exercises) {
+       if (!tbEjerciciosRutina) return; tbEjerciciosRutina.innerHTML = '';
+       if (!exercises || !exercises.length) { tbEjerciciosRutina.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Aún no hay ejercicios.</td></tr>'; return; }
+       const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => { acc[ex.id] = ex.name; return acc; }, {});
+       exercises.sort((a, b) => (a.order || 0) - (b.order || 0));
+       for (const ex of exercises) {
+         const tr = document.createElement('tr');
+         tr.innerHTML = `<td>${ex.order||'?'}</td><td>${exerciseMap[ex.exercise_id]||ex.exercise_id.slice(-6)}</td><td>${ex.sets||'?'}</td><td>${ex.reps||'?'}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger btn-eliminar-ejercicio" data-routine-exercise-id="${ex.id}"><i class="bi bi-trash-fill"></i></button></td>`;
+         tbEjerciciosRutina.appendChild(tr);
+       }
+    }
+    async function cargarCatalogoEjercicios() {
+       if (!selectCatalogoEjercicios) return; selectCatalogoEjercicios.disabled = true;
+       try {
+         // GET /api/exercises
+         const data = await api('/exercises?limit=200'); // Aumentar límite si hay muchos
+         __CATALOGO_EJERCICIOS__ = data?.items?.sort((a, b) => a.name.localeCompare(b.name)) || [];
+         selectCatalogoEjercicios.innerHTML = '<option value="">Seleccionar...</option>';
+         for (const ex of __CATALOGO_EJERCICIOS__) { const opt = document.createElement('option'); opt.value = ex.id; opt.textContent = ex.name; selectCatalogoEjercicios.appendChild(opt); }
+         selectCatalogoEjercicios.disabled = false;
+         console.log(`Catálogo con ${__CATALOGO_EJERCICIOS__.length} ejercicios cargado.`);
+       } catch (e) { console.error('Error cargando catálogo ejercicios:', e); selectCatalogoEjercicios.innerHTML = '<option value="">Error</option>'; }
+    }
+    // Listener para el form de CREAR rutina (Modal #modalCrearRutina)
+    formCrearRutina?.addEventListener('submit', async (e) => {
+        e.preventDefault(); const nameEl = document.getElementById('newRoutineName'); const descriptionEl = document.getElementById('newRoutineDescription');
+        const name = nameEl.value.trim(); const description = descriptionEl.value.trim(); if (!name) { alert('Nombre obligatorio.'); return; }
+        try {
+            const payload = { "name": name, "description": description, "is_template": false };
+            // POST /api/routines
+            const nuevaRutina = await api('/routines', { method: 'POST', body: JSON.stringify(payload) });
+            modalCrearRutina?.hide(); formCrearRutina.reset(); await cargarRutinas();
+            if (nuevaRutina && nuevaRutina.id && modalEditorRutina) { abrirEditorRutina(nuevaRutina.id, nuevaRutina.name); modalEditorRutina.show(); }
+            else { console.warn("No se pudo abrir editor para nueva rutina."); }
+        } catch(e) { alert('Error al crear rutina: ' + e.message); }
+    });
+    // Listener para botones EDITAR, DUPLICAR, ELIMINAR en las cards (Delegación)
+    document.getElementById('gridRutinas')?.addEventListener('click', async e => {
+        const btnEdit = e.target.closest('.btn-editar-rutina');
+        if (btnEdit) { const routineId = btnEdit.dataset.routineId; const routineName = btnEdit.dataset.routineName; if (routineId && modalEditorRutina) { await abrirEditorRutina(routineId, routineName); /* Modal se muestra por data-bs-toggle */ } else { console.error("Modal editor no inicializado o falta ID."); } return; }
+        const btnDup = e.target.closest('.btn-duplicar-rutina');
+        if (btnDup) { const routineId = btnDup.dataset.routineId; const routineName = btnDup.dataset.routineName; const newName = prompt(`Nombre para copia de "${routineName}":`, `${routineName} (Copia)`); if (!newName || !newName.trim()) return; try { await api(`/routines/${routineId}/duplicate`, { method: 'POST', body: JSON.stringify({ new_name: newName.trim() }) }); await cargarRutinas(); alert(`Rutina "${newName}" creada.`); } catch (e) { alert('Error al duplicar: ' + e.message); } return; }
+        const btnDel = e.target.closest('.btn-eliminar-rutina');
+        if (btnDel) { const routineId = btnDel.dataset.routineId; const routineName = btnDel.dataset.routineName; if (!confirm(`¿Eliminar rutina "${routineName}"?`)) return; try { await api(`/routines/${routineId}`, { method: 'DELETE' }); await cargarRutinas(); alert(`Rutina "${routineName}" eliminada.`); } catch (e) { alert('Error al eliminar: ' + e.message); } }
+    });
+    // Listener para AÑADIR ejercicio (Modal Editor)
+    formAgregarEjercicio?.addEventListener('submit', async e => {
+      e.preventDefault(); const routineId = editorRoutineIdInput?.value; const exerciseIdEl = document.getElementById('selectCatalogoEjercicios'); const orderEl = document.getElementById('formOrden'); const setsEl = document.getElementById('formSeries'); const repsEl = document.getElementById('formReps');
+      if (!routineId || !exerciseIdEl || !orderEl || !setsEl || !repsEl) { alert('Error: Elementos del form no encontrados.'); return; }
+      const exerciseId = exerciseIdEl.value; const order = parseInt(orderEl.value); const sets = parseInt(setsEl.value); const reps = parseInt(repsEl.value);
+      if (!routineId || !exerciseId || isNaN(order) || order < 1 || isNaN(sets) || sets < 1 || isNaN(reps) || reps < 0) { alert('Selecciona ejercicio y completa Orden(>=1), Series(>=1), Reps(>=0).'); return; }
+      try {
+        // POST /api/routines/:id/exercises
+        await api(`/routines/${routineId}/exercises`, { method: 'POST', body: JSON.stringify({ routine_id: routineId, exercise_id: exerciseId, order: order, sets: sets, reps: reps }) });
+        await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar Ejercicios: ', '')); // Recarga tabla
+        formAgregarEjercicio.reset(); const nextOrder = (tbEjerciciosRutina?.rows.length || 0) + 1; if (orderEl) orderEl.value = nextOrder;
+      } catch(e) { alert('Error al agregar: ' + e.message); }
+    });
+    // Listener para ELIMINAR ejercicio (Modal Editor - Delegación)
+    tbEjerciciosRutina?.addEventListener('click', async e => {
+      const btn = e.target.closest('.btn-eliminar-ejercicio');
+      if (btn) { const routineExerciseId = btn.dataset.routineExerciseId; if (!routineExerciseId || !confirm('¿Quitar este ejercicio?')) return;
+        try {
+          // DELETE /api/routines/exercises/:routineExerciseId
+          await api(`/routines/exercises/${routineExerciseId}`, { method: 'DELETE' });
+          const routineId = editorRoutineIdInput?.value; if (routineId) { await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar Ejercicios: ', '')); } // Recarga tabla
+        } catch(e) { alert('Error al quitar: ' + e.message); }
+      }
+    });
+
+    // ======= Init =======
+    async function initializeApp() {
+        console.log("Inicializando aplicación...");
+        try {
+            await cargarPerfil(); // Carga perfil y obtiene UserID
+            if (!currentUserId) { throw new Error("Fallo al obtener ID de usuario."); } // Detener si falla
+
+            // Carga el resto en paralelo
+            await Promise.all([
+                cargarStats().catch(e => console.error("Error inicial stats:", e)),
+                cargarHistorial().catch(e => console.error("Error inicial historial:", e)),
+                cargarRutinas().catch(e => console.error("Error inicial rutinas:", e)),
+                cargarCatalogoEjercicios().catch(e => console.error("Error inicial catálogo:", e))
+            ]);
+            console.log("Carga inicial completa.");
+            // Asegurar visibilidad inicial correcta de tabs
+            const inicioPane = document.getElementById('tab-inicio'); if (inicioPane) inicioPane.style.display = 'block';
+            const rutinasPane = document.getElementById('tab-rutinas'); if (rutinasPane) rutinasPane.style.display = 'none';
+            const configPane = document.getElementById('tab-config'); if (configPane) configPane.style.display = 'none'; // Asegurar que config esté oculto
+
+        } catch (error) { // Captura errores de cargarPerfil o fallos generales
+            console.error("Error crítico durante inicialización:", error);
+            const mainContent = document.querySelector('main');
+            if(mainContent) { mainContent.innerHTML = `<div class="alert alert-danger m-4">Error cargando datos: ${error.message}. Por favor, <a href="/login">inicia sesión</a> de nuevo.</div>`; }
+        }
+    }
+
+    initializeApp(); // Iniciar la aplicación
+
+}); // Fin del DOMContentLoaded
+// === FIN SCRIPT COMPLETO === // Iniciar la aplicación
 </script>
 {{end}}

@@ -272,16 +272,21 @@ func main() {
 		}
 
 		// --- Rutas de perfil ---
+		// --- Rutas de perfil ---
 		apiProfile := api.Group("/profile")
 		apiProfile.Use(middleware.AuthMiddleware(jwtCfg)) // solo usuarios logueados
 		{
-			apiProfile.GET("", userProfileHandler.GetMyProfile)
-			apiProfile.POST("/change-password", userProfileHandler.ChangePassword)
-			apiProfile.GET("/search", userProfileHandler.GetProfile)
-			apiProfile.PUT("/:id", userProfileHandler.UpdateProfile)
-			apiProfile.DELETE("/:id", userProfileHandler.DeleteProfile)
-			apiProfile.POST("/", userProfileHandler.CreateProfile)
+			apiProfile.GET("", userProfileHandler.GetMyProfile) // Obtiene perfil propio (formato amigable)
+			// === INICIO CAMBIO === (Añadir esta línea ~277)
+			apiProfile.PUT("", userProfileHandler.UpdateProfile) // <<-- AÑADIR ESTA RUTA para actualizar perfil PROPIO
+			// === FIN CAMBIO ===
+			apiProfile.POST("/change-password", userProfileHandler.ChangePassword) // Cambia contraseña propia
+			// apiProfile.GET("/search", userProfileHandler.GetProfile) // Probablemente redundante
+			apiProfile.PUT("/:id", userProfileHandler.UpdateProfile)    // Admin actualiza OTRO perfil
+			apiProfile.DELETE("/:id", userProfileHandler.DeleteProfile) // Admin/usuario borra perfil
+			apiProfile.POST("/", userProfileHandler.CreateProfile)      // Usuario crea su perfil si no existe
 		}
+		// ... resto ...
 		apiWorkouts := api.Group("/workouts")
 		apiWorkouts.Use(middleware.AuthMiddleware(jwtCfg))
 		{

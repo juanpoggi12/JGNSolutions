@@ -92,11 +92,24 @@ html, body {
 /* Responsive: una sola columna en móviles */
 @media (max-width: 991.98px) {
   .login-split {
-    flex-direction: column;
-    min-height: auto;
+    flex-direction: column; /* Apila los paneles verticalmente */
+    min-height: auto; /* Permite que el alto se ajuste al contenido */
   }
+
+  .login-left {
+    flex: 1 1 auto;      /* Permite que ocupe todo el ancho disponible */
+    max-width: 100%;   /* Asegura que pueda usar el 100% del ancho */
+    padding: 40px;     /* Reduce el padding lateral excesivo */
+    justify-content: center; /* Centra el contenido del formulario */
+  }
+
+  .login-inner {
+     max-width: 100%; /* Asegura que el contenido interno pueda usar todo el espacio */
+     padding-right: 0; /* Quita padding extra si lo había */
+  }
+
   .login-right {
-    display: none; /* ocultar imagen en pantallas chicas */
+    display: none; /* Mantiene oculta la imagen */
   }
 }
 

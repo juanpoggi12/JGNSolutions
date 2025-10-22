@@ -60,6 +60,7 @@ func (h *UserProfileHandler) GetProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, perfil)
 }
+
 // PUT /api/profile/:id? → Actualizar perfil propio o de otro usuario (si es admin)
 func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 	role := c.GetString("role")
@@ -107,7 +108,6 @@ func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 		UpdatedAt: updated.UpdatedAt.Format(time.RFC3339),
 	})
 }
-
 
 // POST /api/profile → Crear perfil (si aún no existe)
 func (h *UserProfileHandler) CreateProfile(c *gin.Context) {
