@@ -135,12 +135,35 @@
                 <div class="table-responsive mb-4"><table class="table table-sm"><thead><tr><th>Orden</th><th>Ejercicio</th><th>Series</th><th>Reps</th><th></th></tr></thead><tbody id="tbEjerciciosRutina"><tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr></tbody></table></div>
                 <hr>
                 <h6>Agregar ejercicio</h6>
-                <form id="formAgregarEjercicio" class="row g-3 align-items-end">
-                  <div class="col-12 col-md-6"><label class="form-label small">Ejercicio</label><select id="selectCatalogoEjercicios" class="form-select" required><option value="">Seleccionar...</option></select></div>
-                  <div class="col-6 col-md-2"><label class="form-label small">Orden</label><input id="formOrden" type="number" class="form-control" value="1" min="1" required></div>
-                  <div class="col-6 col-md-2"><label class="form-label small">Series</label><input id="formSeries" type="number" class="form-control" value="3" min="1" max="50" required></div>
-                  <div class="col-6 col-md-2"><label class="form-label small">Reps</label><input id="formReps" type="number" class="form-control" value="10" min="0" max="1000" required></div> <div class="col-12"><button type="submit" class="btn btn-dark btn-sm"><i class="bi bi-plus-lg me-1"></i> Añadir a la rutina</button></div>
-                </form>
+                <form id="formAgregarEjercicio" class="row gx-2 gy-2 align-items-end">
+                <div class="col-12 col-md-4">
+                  <label class="form-label small">Ejercicio</label>
+                  <select id="selectCatalogoEjercicios" class="form-select form-select-sm" required>
+                    <option value="">Cargando...</option>
+                  </select>
+                </div>
+                <div class="col-4 col-md-1">
+                  <label class="form-label small">Orden</label>
+                  <input id="formOrden" type="number" class="form-control form-control-sm" value="1" min="1" required>
+                </div>
+                <div class="col-4 col-md-1">
+                  <label class="form-label small">Series</label>
+                  <input id="formSeries" type="number" class="form-control form-control-sm" value="3" min="1" required>
+                </div>
+                <div class="col-4 col-md-1">
+                  <label class="form-label small">Reps</label>
+                  <input id="formReps" type="number" class="form-control form-control-sm" value="10" min="1" required>
+                </div>
+                
+                <div class="col-6 col-md-2">
+                  <label class="form-label small">Peso Obj. (kg)</label>
+                  <input id="formPesoObjetivo" type="number" step="0.1" min="0" class="form-control form-control-sm" placeholder="Opcional">
+                </div>
+                
+                <div class="col-6 col-md-3">
+                  <button type="submit" class="btn btn-dark btn-sm w-100">Añadir Ejercicio</button>
+                </div>
+              </form>
               </div>
               <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar Editor</button></div>
             </div>
@@ -148,24 +171,33 @@
         </div>
       </div>
 
-      <div id="tab-config" class="tab-pane"> <div class="row g-3">
+      <div id="tab-config" class="tab-pane" style="display: none;">
+        <div class="row g-3">
           <div class="col-12 col-lg-8">
-            <div class="card card-lite">
+            
+            <div class="card card-lite"> 
               <div class="card-body">
-                <div class="h5 mb-3">Perfil</div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div class="h5 mb-0">Perfil</div>
+                  <button id="btnEditarPerfil" class="btn btn-sm btn-outline-dark" title="Editar Perfil">
+                    <i class="bi bi-pencil-fill"></i>
+                  </button>
+                </div>
+
                 <form id="formPerfil" class="row g-3">
-                  <div class="col-12 col-md-6"><label class="form-label">Nombre</label><input id="pfNombre" class="form-control"/></div>
+                  <div class="col-12 col-md-6"><label class="form-label">Nombre</label><input id="pfNombre" class="form-control" disabled/></div>
                   <div class="col-12 col-md-6"><label class="form-label">Email</label><input id="pfEmail" class="form-control" type="email" disabled/></div>
-                  <div class="col-12 col-md-6"><label class="form-label">Fecha Nacimiento</label><input id="pfBirthDate" class="form-control" type="text" placeholder="YYYY-MM-DD"/></div>
-                  <div class="col-6 col-md-3"><label class="form-label">Peso (kg)</label><input id="pfPeso" class="form-control" type="number" step="0.1"/></div>
-                  <div class="col-6 col-md-3"><label class="form-label">Altura (cm)</label><input id="pfAltura" class="form-control" type="number"/></div>
-                  <div class="col-12 col-md-3"><label class="form-label">Nivel</label><select id="pfNivel" class="form-select"><option value="">—</option><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></select></div>
-                  <div class="col-12 col-md-3"><label class="form-label">Objetivo</label><select id="pfObjetivo" class="form-select"><option value="">—</option><option value="perder_peso">Perder peso</option><option value="ganar_musculo">Ganar músculo</option><option value="mantenerse">Mantenerse</option></select></div>
-                  <div class="col-12"><button class="btn btn-dark" type="submit"><i class="bi bi-save me-1"></i> Guardar Perfil</button></div>
+                  <div class="col-12 col-md-6"><label class="form-label">Fecha Nacimiento</label><input id="pfBirthDate" class="form-control" type="text" placeholder="YYYY-MM-DD" disabled/></div>
+                  <div class="col-6 col-md-3"><label class="form-label">Peso (kg)</label><input id="pfPeso" class="form-control" type="number" step="0.1" disabled/></div>
+                  <div class="col-6 col-md-3"><label class="form-label">Altura (cm)</label><input id="pfAltura" class="form-control" type="number" disabled/></div>
+                  <div class="col-12 col-md-3"><label class="form-label">Nivel</label><select id="pfNivel" class="form-select" disabled><option value="">—</option><option value="principiante">Principiante</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></select></div>
+                  <div class="col-12 col-md-3"><label class="form-label">Objetivo</label><select id="pfObjetivo" class="form-select" disabled><option value="">—</option><option value="perder_peso">Perder peso</option><option value="ganar_musculo">Ganar músculo</option><option value="mantenerse">Mantenerse</option></select></div>
+                  <div class="col-12"><button id="btnGuardarPerfil" class="btn btn-dark" type="submit" disabled><i class="bi bi-save me-1"></i> Guardar Perfil</button></div>
                 </form>
               </div>
-            </div>
-            <div class="card card-lite mt-3">
+              </div>
+            </div> <div class="card card-lite mt-3">
               <div class="card-body"><div class="h5 mb-3">Seguridad</div><button id="btnCambiarPass" class="btn btn-outline-dark"><i class="bi bi-shield-lock me-1"></i> Cambiar contraseña</button></div>
             </div>
           </div>
@@ -175,6 +207,10 @@
                 <div class="h5 mb-3">Estado de cuenta</div><div class="d-flex align-items-center gap-2"><span class="pill pill-green"><span class="icon-dot dot-green"></span> Activa</span></div><div class="text-muted small mt-2">Email de acceso</div>
                 <div id="configUserEmail" class="fw-semibold">—</div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
             </div>
           </div>
         </div>
@@ -294,6 +330,14 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
     });
 
     // ======= PERFIL (carga y guardado) =======
+    const btnGuardarPerfil = document.getElementById('btnGuardarPerfil');
+const profileFields = [
+    document.getElementById('pfNombre'),
+    document.getElementById('pfBirthDate'),
+    document.getElementById('pfPeso'),
+    document.getElementById('pfAltura'),
+    document.getElementById('pfNivel'),
+    document.getElementById('pfObjetivo')];
     async function cargarPerfil(){
       console.log("Cargando perfil...");
       try{
@@ -312,9 +356,17 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
         const fAltura=document.getElementById('pfAltura'); if(fAltura) fAltura.value=(height??'');
         const fNivel=document.getElementById('pfNivel'); if(fNivel) fNivel.value=mapLevelForSelect(level)||'';
         const fObj=document.getElementById('pfObjetivo'); if(fObj) fObj.value=mapGoalForSelect(goal)||'';
+        const btnEditarPerfil = document.getElementById('btnEditarPerfil');
+
         console.log("Perfil cargado.");
       } catch(e) { console.error('Error crítico al cargar perfil:', e.message); alert(`Error cargando tu perfil: ${e.message}. Serás redirigido.`); window.location.href = '/login'; }
     }
+
+    btnEditarPerfil?.addEventListener('click', () => {
+    console.log("Modo edición activado.");
+    profileFields.forEach(field => field && (field.disabled = false));
+    if (btnGuardarPerfil) btnGuardarPerfil.disabled = false;
+});
     // Mapeos (sin cambios)
     const LEVEL_TO_API = {'principiante':'PRINCIPIANTE','intermedio':'INTERMEDIO','avanzado':'AVANZADO'};
     const GOAL_TO_API = {'perder_peso':'PERDER_PESO','ganar_musculo':'GANAR_MUSCULO','mantenerse':'MANTENERSE'};
@@ -329,7 +381,10 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
       const profileExists = __PROFILE_CACHE__ && __PROFILE_CACHE__.id;
       let method='PUT', endpoint='/profile', payload={}, successMsg='Perfil actualizado';
       if (profileExists) {
-        method='PUT'; endpoint='/profile'; successMsg='Perfil actualizado'; const base=__PROFILE_CACHE__||{};
+  method = 'PUT';
+  // ✅ LÍNEA CORREGIDA: Añadimos el ID del perfil a la URL
+  endpoint = `/profile/${__PROFILE_CACHE__.id}`; 
+  successMsg = 'Profile updated';
         // PUT /api/profile usa dto.ProfileUpdateRequest
         payload={name:formName!==''?formName:(base.name??''), weight:!isNaN(formWeight)?formWeight:(base.weight??undefined), height:!isNaN(formHeight)?formHeight:(base.height??undefined), level:formLevel!==''?formLevel:(base.level??''), goal:formGoal!==''?formGoal:(base.goal??''), birthDate:formBirthDate!==''?formBirthDate:(base.birthDate??undefined)};
         if(Number.isNaN(payload.weight))delete payload.weight; if(Number.isNaN(payload.height))delete payload.height;
@@ -340,10 +395,16 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
         payload={full_name:formName, birth_date:formBirthDate, weight_kg:formWeight, height_cm:parseInt(formHeight), level:formLevel, goal:formGoal};
       }
       console.log(`Guardando perfil (${method} ${endpoint}) con payload:`, payload);
-      try{
-         await api(endpoint, { method: method, body: JSON.stringify(payload) }); // Llama a PUT /api/profile (sin ID)
-         alert(successMsg); await cargarPerfil();
-      } catch(e) { alert('Error al guardar perfil: '+ e.message); }
+      try{ 
+    await api(endpoint, { method: method, body: JSON.stringify(payload) }); 
+    alert(successMsg); 
+    await cargarPerfil(); 
+
+    // ✅ Vuelve a deshabilitar todo
+    profileFields.forEach(field => field && (field.disabled = true));
+    if (btnGuardarPerfil) btnGuardarPerfil.disabled = true;
+
+  } catch(e) { alert('Error al guardar perfil: '+ e.message); }
     });
     // Listener Cambiar Contraseña
     btnCambiarPass?.addEventListener('click', async()=>{ /* ... (sin cambios) ... */ });
@@ -359,38 +420,54 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
 
     // ======= RUTINAS (Lógica Completa) =======
     async function cargarRutinas(){
-      const grid = document.getElementById('gridRutinas'); if (!grid) return;
-      grid.innerHTML='<div class="col-12 text-muted">Cargando rutinas...</div>';
-      try{
-        const arr = await api('/routines/search?is_template=false'); // GET /api/routines/search
-        grid.innerHTML='';
-        if(!arr?.length){ grid.innerHTML = '<div class="col-12 text-muted">Aún no tienes rutinas.</div>'; return; }
-        for(const r of arr){
-          const col=document.createElement('div'); col.className='col-12 col-md-6 col-lg-4';
-          col.innerHTML=`
-            <div class="card card-lite h-100">
-              <div class="card-body d-flex flex-column">
-                 <div class="d-flex justify-content-between align-items-start mb-2">
-                    <div class="flex-grow-1 me-2">
-                        <div class="fw-semibold mb-1">${r.name || 'Rutina'}</div>
-                        <div class="text-muted small">${(r.description || 'Sin desc.').slice(0, 100)}</div>
-                    </div>
-                    <div class="dropdown">
-                        <button class="btn btn-sm btn-light py-0 px-1 dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item btn-editar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name || ''}" data-bs-toggle="modal" data-bs-target="#modalEditorRutina"><i class="bi bi-pencil-fill me-2"></i>Editar Ejercicios</a></li>
-                            <li><a class="dropdown-item btn-duplicar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name || ''}"><i class="bi bi-copy me-2"></i>Duplicar</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger btn-eliminar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name || ''}"><i class="bi bi-trash-fill me-2"></i>Eliminar Rutina</a></li>
-                        </ul>
-                    </div>
-                 </div>
-              </div>
-            </div>`;
-          grid.appendChild(col);
-        }
-      }catch(e){ console.error("Error cargando rutinas:", e); grid.innerHTML='<div class="col-12 text-danger">Error al cargar rutinas.</div>'; }
+  const grid = document.getElementById('gridRutinas');
+  if (!grid) return;
+  grid.innerHTML='<div class="col-12 text-muted">Cargando rutinas...</div>';
+  try{ 
+    // ✅ LLAMA A LA API SIN EL FILTRO user_id. 
+    // El backend se encarga de filtrar basado en el token JWT.
+    const data = await api(`/routines/search`); 
+    
+    grid.innerHTML = '';
+    
+    if(!data || data.length === 0){
+        grid.innerHTML = '<div class="col-12 text-muted">No hay rutinas disponibles. Crea una nueva.</div>'; // Mensaje mejorado
+        return;
     }
+
+    // Renderizar rutinas (este es tu código de renderizado existente, sin cambios)
+    data.forEach(r => {
+        const card = document.createElement('div');
+        card.classList.add('col-12', 'col-md-6', 'col-lg-4');
+        card.innerHTML = `
+            <div class="card card-lite h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">${r.name}</h5>
+                            <small class="text-muted">${r.description || 'Sin descripción'}</small>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"></button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item btn-editar-rutina" href="#" data-bs-toggle="modal" data-bs-target="#modalEditorRutina" data-routine-id="${r.id}" data-routine-name="${r.name}">Editar</a></li>
+                                <li><a class="dropdown-item btn-duplicar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name}">Duplicar</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger btn-eliminar-rutina" href="#" data-routine-id="${r.id}" data-routine-name="${r.name}">Eliminar</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+
+  } catch(e) { 
+    console.error("Error cargando rutinas:", e);
+    grid.innerHTML='<div class="col-12 text-danger">Error al cargar rutinas: '+e.message+'</div>';
+  }
+}
     async function abrirEditorRutina(routineId, routineName) {
       if (!modalEditorRutina || !modalLabel || !editorRoutineIdInput || !tbEjerciciosRutina) { console.error("Elementos del modal Editor no encontrados"); return; }
       modalLabel.textContent = `Editar Ejercicios: ${routineName || 'Rutina'}`;
@@ -405,16 +482,46 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
       } catch (e) { console.error("Error cargando ejercicios rutina:", e); tbEjerciciosRutina.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error cargando ejercicios</td></tr>`; }
     }
     function renderTablaEjercicios(exercises) {
-       if (!tbEjerciciosRutina) return; tbEjerciciosRutina.innerHTML = '';
-       if (!exercises || !exercises.length) { tbEjerciciosRutina.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Aún no hay ejercicios.</td></tr>'; return; }
-       const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => { acc[ex.id] = ex.name; return acc; }, {});
-       exercises.sort((a, b) => (a.order || 0) - (b.order || 0));
-       for (const ex of exercises) {
-         const tr = document.createElement('tr');
-         tr.innerHTML = `<td>${ex.order||'?'}</td><td>${exerciseMap[ex.exercise_id]||ex.exercise_id.slice(-6)}</td><td>${ex.sets||'?'}</td><td>${ex.reps||'?'}</td><td class="text-end"><button class="btn btn-sm btn-outline-danger btn-eliminar-ejercicio" data-routine-exercise-id="${ex.id}"><i class="bi bi-trash-fill"></i></button></td>`;
-         tbEjerciciosRutina.appendChild(tr);
-       }
-    }
+   if (!tbEjerciciosRutina) return;
+   tbEjerciciosRutina.innerHTML = '';
+   if (!exercises || !exercises.length) { 
+     tbEjerciciosRutina.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No exercises yet. Add one below.</td></tr>'; // Colspan 6 ahora
+     return; 
+   }
+   // Mapea IDs a nombres para mostrar
+   const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => { acc[ex.id] = ex.name; return acc; }, {});
+   // Ordena los ejercicios
+   exercises.sort((a, b) => (a.order || 0) - (b.order || 0));
+   
+   // Genera las filas
+   for (const ex of exercises) { 
+     const tr = document.createElement('tr'); 
+     // ✅ Añade data-attributes para guardar los datos y un botón de editar
+     // ✅ Añade columna para Peso Obj.
+     tr.innerHTML = `
+        <td>${ex.order||'?'}</td>
+        <td>${exerciseMap[ex.exercise_id]||ex.exercise_id}</td>
+        <td>${ex.sets||'?'}</td>
+        <td>${ex.reps||'?'}</td>
+        <td>${ex.target_weight !== null && ex.target_weight !== undefined ? ex.target_weight + ' kg' : '—'}</td> 
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-secondary me-1 btn-editar-ejercicio-rutina" 
+                  title="Edit Exercise Details"
+                  data-routine-exercise-id="${ex.id}"
+                  data-order="${ex.order||''}"
+                  data-sets="${ex.sets||''}"
+                  data-reps="${ex.reps||''}"
+                  data-target-weight="${ex.target_weight !== null && ex.target_weight !== undefined ? ex.target_weight : ''}">
+            <i class="bi bi-pencil-fill"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger btn-eliminar-ejercicio" 
+                  data-routine-exercise-id="${ex.id}">
+            <i class="bi bi-trash-fill"></i>
+          </button>
+        </td>`; 
+     tbEjerciciosRutina.appendChild(tr); 
+   }
+}
     async function cargarCatalogoEjercicios() {
        if (!selectCatalogoEjercicios) return; selectCatalogoEjercicios.disabled = true;
        try {
@@ -427,19 +534,102 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
          console.log(`Catálogo con ${__CATALOGO_EJERCICIOS__.length} ejercicios cargado.`);
        } catch (e) { console.error('Error cargando catálogo ejercicios:', e); selectCatalogoEjercicios.innerHTML = '<option value="">Error</option>'; }
     }
+
+    // --- INICIO: Listener para limpiar backdrop del Editor de Rutinas ---
+const editorModalElement = document.getElementById('modalEditorRutina');
+if (editorModalElement) {
+  editorModalElement.addEventListener('hidden.bs.modal', function (event) {
+    // Busca CUALQUIER backdrop que pueda haber quedado
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    if (backdrops.length > 0) {
+      console.log(`Modal editor closed. Found ${backdrops.length} backdrop(s), removing them.`);
+      backdrops.forEach(backdrop => backdrop.remove());
+      // Reajusta el body por si acaso quedó con 'overflow: hidden'
+      document.body.style.overflow = 'auto'; 
+      document.body.style.paddingRight = ''; // Quita el padding que añade el modal
+    } else {
+      console.log("Modal editor closed cleanly.");
+    }
+  });
+} else {
+  console.warn("Elemento del Modal Editor (#modalEditorRutina) no encontrado para añadir listener de limpieza.");
+}
+// --- FIN: Listener para limpiar backdrop del Editor de Rutinas ---
+
+// ======= Init =======
+(async function(){
+  // ... tu código de inicialización existente ...
+})();
     // Listener para el form de CREAR rutina (Modal #modalCrearRutina)
     formCrearRutina?.addEventListener('submit', async (e) => {
-        e.preventDefault(); const nameEl = document.getElementById('newRoutineName'); const descriptionEl = document.getElementById('newRoutineDescription');
-        const name = nameEl.value.trim(); const description = descriptionEl.value.trim(); if (!name) { alert('Nombre obligatorio.'); return; }
-        try {
-            const payload = { "name": name, "description": description, "is_template": false };
-            // POST /api/routines
-            const nuevaRutina = await api('/routines', { method: 'POST', body: JSON.stringify(payload) });
-            modalCrearRutina?.hide(); formCrearRutina.reset(); await cargarRutinas();
-            if (nuevaRutina && nuevaRutina.id && modalEditorRutina) { abrirEditorRutina(nuevaRutina.id, nuevaRutina.name); modalEditorRutina.show(); }
-            else { console.warn("No se pudo abrir editor para nueva rutina."); }
-        } catch(e) { alert('Error al crear rutina: ' + e.message); }
-    });
+    e.preventDefault();
+    
+    // 1. Obtener valores del formulario
+    const nameEl = document.getElementById('newRoutineName');
+    const descriptionEl = document.getElementById('newRoutineDescription');
+    
+    // ✅ Obtener la instancia del modal de creación AHORA
+    const crearModalEl = document.getElementById('modalCrearRutina');
+    const crearModalInstance = bootstrap.Modal.getInstance(crearModalEl);
+
+    const name = nameEl.value.trim();
+    const description = descriptionEl.value.trim();
+    
+    if (!name) {
+        alert('El nombre de la rutina es obligatorio.');
+        return;
+    }
+
+    try {
+        const payload = {
+            "name": name,
+            "description": description, 
+            "is_template": false      
+        };
+        
+        // 2. Llamar a la API
+        const nuevaRutina = await api('/routines', { 
+            method: 'POST', 
+            body: JSON.stringify(payload) 
+        });
+
+        // 3. Cerrar el modal (usando la instancia segura) y limpiar
+        if (crearModalInstance) {
+           crearModalInstance.hide(); 
+        } else {
+           console.error("No se pudo obtener la instancia del modal de creación para cerrarlo.");
+           // Intenta forzar la eliminación del backdrop como último recurso
+           const backdrop = document.querySelector('.modal-backdrop');
+           if (backdrop) backdrop.remove();
+        }
+        formCrearRutina.reset();
+        
+        // 4. Recargar la lista de rutinas
+        await cargarRutinas(); 
+        
+        // 5. Abrir el editor (si existe la nueva rutina y el modal editor está listo)
+        //    (Esta parte no cambia, asumimos que modalEditorRutina está bien inicializado)
+        if (nuevaRutina && nuevaRutina.id && modalEditorRutina) { 
+            abrirEditorRutina(nuevaRutina.id, nuevaRutina.name);
+            // Espera un poco para evitar conflictos de animación (opcional pero más seguro)
+            setTimeout(() => {
+                modalEditorRutina.show(); 
+            }, 300); // Espera 300ms
+        } else if (!modalEditorRutina) {
+            console.warn("Editor Modal no inicializado, no se abrirá después de crear.");
+        }
+        
+    } catch(e) { 
+        alert('Error al crear rutina: ' + e.message); 
+        // Asegúrate de cerrar el modal incluso si hay un error
+        if (crearModalInstance) {
+           crearModalInstance.hide();
+        } else {
+             const backdrop = document.querySelector('.modal-backdrop');
+             if (backdrop) backdrop.remove();
+        }
+    }
+});
     // Listener para botones EDITAR, DUPLICAR, ELIMINAR en las cards (Delegación)
     document.getElementById('gridRutinas')?.addEventListener('click', async e => {
         const btnEdit = e.target.closest('.btn-editar-rutina');
@@ -449,19 +639,143 @@ document.addEventListener('DOMContentLoaded', () => { // Ejecutar cuando el DOM 
         const btnDel = e.target.closest('.btn-eliminar-rutina');
         if (btnDel) { const routineId = btnDel.dataset.routineId; const routineName = btnDel.dataset.routineName; if (!confirm(`¿Eliminar rutina "${routineName}"?`)) return; try { await api(`/routines/${routineId}`, { method: 'DELETE' }); await cargarRutinas(); alert(`Rutina "${routineName}" eliminada.`); } catch (e) { alert('Error al eliminar: ' + e.message); } }
     });
+
+    tbEjerciciosRutina?.addEventListener('click', async e => {
+  // --- Lógica para eliminar (sin cambios) ---
+  const btnDelete = e.target.closest('.btn-eliminar-ejercicio');
+  if (btnDelete) { 
+    const routineExerciseId = btnDelete.dataset.routineExerciseId; 
+    if (!routineExerciseId || !confirm('Remove this exercise from the routine?')) return; 
+    try { 
+      await api(`/routines/exercises/${routineExerciseId}`, { method: 'DELETE' }); 
+      const routineId = editorRoutineId?.value; 
+      if (routineId) { 
+        await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar: ', '')); 
+      } 
+    } catch(e) { 
+      alert('Error removing exercise: ' + e.message); 
+    } 
+    return; // Importante: Salir si se manejó la eliminación
+  }
+
+  // --- ✅ NUEVA Lógica para Editar ---
+  const btnEdit = e.target.closest('.btn-editar-ejercicio-rutina');
+  if (btnEdit) {
+    const routineExerciseId = btnEdit.dataset.routineExerciseId;
+    if (!routineExerciseId) return;
+
+    // Obtiene los datos actuales desde los atributos data-*
+    const currentOrder = btnEdit.dataset.order || '1';
+    const currentSets = btnEdit.dataset.sets || '3';
+    const currentReps = btnEdit.dataset.reps || '10';
+    const currentWeight = btnEdit.dataset.targetWeight || ''; // Puede ser vacío
+
+    // Pide los nuevos valores usando prompts (simple)
+    const newOrderStr = prompt('Nuevo Orden:', currentOrder);
+    const newSetsStr = prompt('Nuevas Series:', currentSets);
+    const newRepsStr = prompt('Nuevas Repeticiones:', newRepsStr);
+    const newWeightStr = prompt('Nuevo Peso Objetivo (kg, dejar vacío si no aplica):', currentWeight);
+
+    // Validación básica y conversión
+    const newOrder = parseInt(newOrderStr);
+    const newSets = parseInt(newSetsStr);
+    const newReps = parseInt(newRepsStr);
+    const newWeight = newWeightStr.trim() !== '' ? parseFloat(newWeightStr) : null;
+
+    if (isNaN(newOrder) || newOrder < 1 || isNaN(newSets) || newSets < 1 || isNaN(newReps) || newReps < 0 || (newWeight !== null && (isNaN(newWeight) || newWeight < 0))) {
+      alert('Valores inválidos. Orden, Series, Reps deben ser números >= 1 (Reps >= 0). Peso debe ser >= 0 si se ingresa.');
+      return;
+    }
+
+    // Prepara el payload para la API PUT
+    const payload = {
+      order: newOrder,
+      sets: newSets,
+      reps: newReps,
+      target_weight: (newWeight !== null && !isNaN(newWeight)) ? newWeight : undefined // Envía null o undefined si no hay peso
+    };
+    // Limpia undefined (si target_weight era null o inválido)
+    if (payload.target_weight === undefined) {
+      delete payload.target_weight;
+    }
+
+    try {
+      // Llama a la API para actualizar
+      await api(`/routines/exercises/${routineExerciseId}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload)
+      });
+      
+      // Recarga la tabla para ver los cambios
+      const routineId = editorRoutineId?.value;
+      if (routineId) {
+        await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar: ', ''));
+      }
+      alert('Ejercicio actualizado.');
+    } catch(e) {
+      alert('Error al actualizar ejercicio: ' + e.message);
+    }
+  }
+});
     // Listener para AÑADIR ejercicio (Modal Editor)
-    formAgregarEjercicio?.addEventListener('submit', async e => {
-      e.preventDefault(); const routineId = editorRoutineIdInput?.value; const exerciseIdEl = document.getElementById('selectCatalogoEjercicios'); const orderEl = document.getElementById('formOrden'); const setsEl = document.getElementById('formSeries'); const repsEl = document.getElementById('formReps');
-      if (!routineId || !exerciseIdEl || !orderEl || !setsEl || !repsEl) { alert('Error: Elementos del form no encontrados.'); return; }
-      const exerciseId = exerciseIdEl.value; const order = parseInt(orderEl.value); const sets = parseInt(setsEl.value); const reps = parseInt(repsEl.value);
-      if (!routineId || !exerciseId || isNaN(order) || order < 1 || isNaN(sets) || sets < 1 || isNaN(reps) || reps < 0) { alert('Selecciona ejercicio y completa Orden(>=1), Series(>=1), Reps(>=0).'); return; }
-      try {
-        // POST /api/routines/:id/exercises
-        await api(`/routines/${routineId}/exercises`, { method: 'POST', body: JSON.stringify({ routine_id: routineId, exercise_id: exerciseId, order: order, sets: sets, reps: reps }) });
-        await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar Ejercicios: ', '')); // Recarga tabla
-        formAgregarEjercicio.reset(); const nextOrder = (tbEjerciciosRutina?.rows.length || 0) + 1; if (orderEl) orderEl.value = nextOrder;
-      } catch(e) { alert('Error al agregar: ' + e.message); }
-    });
+   formAgregarEjercicio?.addEventListener('submit', async e => {
+  e.preventDefault(); 
+  const routineId = editorRoutineId?.value; 
+  const exerciseIdEl = document.getElementById('selectCatalogoEjercicios'); 
+  const orderEl = document.getElementById('formOrden'); 
+  const setsEl = document.getElementById('formSeries'); 
+  const repsEl = document.getElementById('formReps');
+  // ✅ Lee el nuevo campo de peso
+  const pesoObjEl = document.getElementById('formPesoObjetivo'); 
+
+  // Valida que los elementos existan
+  if (!routineId || !exerciseIdEl || !orderEl || !setsEl || !repsEl || !pesoObjEl) { 
+    alert('Error: Form elements not found.'); 
+    return; 
+  }
+  
+  const exerciseId = exerciseIdEl.value; 
+  const order = parseInt(orderEl.value); 
+  const sets = parseInt(setsEl.value); 
+  const reps = parseInt(repsEl.value);
+  // ✅ Parsea el peso (puede ser null si está vacío)
+  const pesoObj = pesoObjEl.value.trim() !== '' ? parseFloat(pesoObjEl.value) : null; 
+
+  if (!routineId || !exerciseId || isNaN(order) || order < 1 || isNaN(sets) || sets < 1 || isNaN(reps) || reps < 1 || (pesoObj !== null && (isNaN(pesoObj) || pesoObj < 0))) { 
+    alert('Please select an exercise and fill Order, Sets, Reps (min 1). Target Weight must be a positive number if entered.'); 
+    return; 
+  }
+  
+  // ✅ Prepara el payload incluyendo el peso objetivo
+  const payload = { 
+    routine_id: routineId, 
+    exercise_id: exerciseId, 
+    order: order, 
+    sets: sets, 
+    reps: reps,
+  };
+  // Solo añade target_weight si tiene un valor válido
+  if (pesoObj !== null && !isNaN(pesoObj)) {
+    payload.target_weight = pesoObj;
+  }
+
+  try { 
+    // ✅ Envía el payload actualizado
+    await api(`/routines/${routineId}/exercises`, { 
+      method: 'POST', 
+      body: JSON.stringify(payload) // Envía el objeto payload completo
+    }); 
+    
+    // Recarga la tabla y resetea el form
+    await abrirEditorRutina(routineId, modalLabel?.textContent.replace('Editar: ', '')); 
+    formAgregarEjercicio.reset(); 
+    const nextOrder = (tbEjerciciosRutina?.rows.length || 0) + 1; 
+    if (orderEl) orderEl.value = nextOrder; 
+  }
+  catch(e) { 
+    alert('Error adding exercise: ' + e.message); 
+  }
+});
     // Listener para ELIMINAR ejercicio (Modal Editor - Delegación)
     tbEjerciciosRutina?.addEventListener('click', async e => {
       const btn = e.target.closest('.btn-eliminar-ejercicio');

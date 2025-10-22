@@ -72,12 +72,15 @@ func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 		Role:   role,
 	}
 
-	// Bind del cuerpo JSON
-	var req dto.UserProfileUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	// ✅ 1. Bind al DTO del frontend (ProfileUpdateRequest)
+	var frontendReq dto.ProfileUpdateRequest
+	if err := c.ShouldBindJSON(&frontendReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
+
+	// ✅ 2. Mapear al DTO del servicio (UserProfileUpdateRequest)
+	serviceReq := mapProfileUpdateRequest(frontendReq) // Usando el helper que ya existe
 
 	// Si no se pasó :id, actualiza su propio perfil
 	targetID := userID
@@ -85,7 +88,8 @@ func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 		targetID = paramID
 	}
 
-	updated, err := h.userProfileService.UpdateProfile(actor, targetID, req)
+	// ✅ 3. Llamar al servicio con el DTO (serviceReq) correcto
+	updated, err := h.userProfileService.UpdateProfile(actor, targetID, serviceReq)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "no encontrado") {
