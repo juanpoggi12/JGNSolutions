@@ -76,7 +76,7 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 	now := time.Now()
 	user := models.User{
 		Email:        req.Email,
-		Username:     req.Email,
+		Username:     req.Email, // Puedes cambiar esto a req.Name si prefieres
 		PasswordHash: hashed,
 		Role:         models.RoleUser,
 		CreatedAt:    now,
@@ -93,8 +93,9 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 	if s.profiles != nil {
 		profile := models.UserProfile{
 			UserID:    user.ID,
-			Goal:      "Sin definir",
-			Level:     "Principiante",
+			FullName:  req.Name,                  // <-- CAMBIO: Usar el nombre del DTO
+			Goal:      models.ObjetivoMantenerse, // <-- CAMBIO: Usar constante del modelo
+			Level:     models.NivelPrincipiante,  // <-- CAMBIO: Usar constante del modelo
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
