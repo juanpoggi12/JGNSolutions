@@ -100,7 +100,7 @@ func (service *UserService) UpdateUser(actor Actor, id string, req dto.UserUpdat
 		return models.User{}, errors.New("no tienes permiso para modificar este usuario")
 	}
 
-	// Aplicar solo los campos presentes
+	// ⚙️ Aplicar solo los campos permitidos
 	if req.Username != nil {
 		userDB.Username = *req.Username
 	}
@@ -114,8 +114,17 @@ func (service *UserService) UpdateUser(actor Actor, id string, req dto.UserUpdat
 		}
 		userDB.PasswordHash = hash
 	}
-	if req.Role != nil && *req.Role != "" {
-		userDB.Role = models.Role(strings.ToLower(*req.Role))
+
+	// 🚫 Solo un admin puede cambiar roles
+	if actor.Role == "admin" {
+		if req.Role != nil && *req.Role != "" {
+			userDB.Role = models.Role(strings.ToLower(*req.Role))
+		}
+	} else if req.Role != nil {
+		// Registrar intento sospechoso (opcional)
+		if service.logService != nil {
+			service.logService.RecordAction(actor.UserID, "intento no autorizado de cambio de rol")
+		}
 	}
 
 	userDB.UpdatedAt = time.Now()
@@ -131,6 +140,7 @@ func (service *UserService) UpdateUser(actor Actor, id string, req dto.UserUpdat
 
 	return userDB, nil
 }
+
 
 func (service *UserService) DeleteUser(actor Actor, id string) error {
 	objectID, err := primitive.ObjectIDFromHex(id)

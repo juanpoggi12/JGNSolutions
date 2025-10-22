@@ -17,24 +17,28 @@ func AuthMiddleware(cfg utils.Config) gin.HandlerFunc {
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
+		// ✅ Usamos SplitN o Fields para tolerar espacios extra
+		parts := strings.Fields(authHeader)
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "formato de token inválido"})
 			c.Abort()
 			return
 		}
 
-		claims, err := utils.ParseAccessToken(parts[1], cfg.JWTSecret)
+		tokenString := parts[1]
+
+		claims, err := utils.ParseAccessToken(tokenString, cfg.JWTSecret)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "token inválido o expirado"})
 			c.Abort()
 			return
 		}
 
-		// Guardar en el contexto
+		// Guardar en el contexto (acceso global para handlers y services)
 		c.Set("userId", claims.Subject)
 		c.Set("role", claims.Role)
 
 		c.Next()
 	}
 }
+

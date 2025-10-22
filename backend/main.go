@@ -276,7 +276,6 @@ func main() {
 		apiProfile.Use(middleware.AuthMiddleware(jwtCfg)) // solo usuarios logueados
 		{
 			apiProfile.GET("", userProfileHandler.GetMyProfile)
-			apiProfile.PUT("", userProfileHandler.UpdateMyProfile)
 			apiProfile.POST("/change-password", userProfileHandler.ChangePassword)
 			apiProfile.GET("/search", userProfileHandler.GetProfile)
 			apiProfile.PUT("/:id", userProfileHandler.UpdateProfile)

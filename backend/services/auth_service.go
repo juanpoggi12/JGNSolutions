@@ -115,16 +115,24 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip
 		return "", 0, nil, err
 	}
 
+	// 🔹 Verificar si el usuario está activo antes de cualquier otra cosa
+	if !user.IsActive {
+		return "", 0, nil, errors.New("usuario inactivo o bloqueado")
+	}
+
+	// 🔹 Validar contraseña
 	if !utils.VerifyPassword(req.Password, user.PasswordHash) {
 		return "", 0, nil, ErrInvalidCredentials
 	}
 
+	// 🔹 Generar access token
 	accessTTL := time.Duration(s.cfg.AccessTTLMinutes) * time.Minute
 	accessToken, err := utils.GenerateAccessToken(user.ID.Hex(), string(user.Role), s.cfg.JWTSecret, accessTTL)
 	if err != nil {
 		return "", 0, nil, err
 	}
 
+	// 🔹 Generar refresh token (par hash + cookie)
 	plainRefresh, refreshHash, err := utils.GenerateRefreshToken()
 	if err != nil {
 		return "", 0, nil, err
@@ -144,16 +152,19 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip
 		return "", 0, nil, err
 	}
 
+	// 🔹 Registrar acción si hay servicio de logs
 	if s.logService != nil {
 		s.logService.RecordAction(user.ID, "login")
 	}
 
+	// 🔹 Crear cookie de refresh segura
 	setCookie := func(w http.ResponseWriter) {
 		http.SetCookie(w, buildRefreshCookie(plainRefresh, session.ExpiresAt, s.cfg.CookieSecure))
 	}
 
 	return accessToken, int64(accessTTL.Seconds()), setCookie, nil
 }
+
 
 func (s *AuthService) Refresh(ctx context.Context, plainRefresh, userAgent, ip string) (string, int64, func(http.ResponseWriter), error) {
 	session, err := s.findSessionByRefresh(ctx, plainRefresh)

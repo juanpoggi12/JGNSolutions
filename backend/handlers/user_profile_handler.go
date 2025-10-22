@@ -60,57 +60,54 @@ func (h *UserProfileHandler) GetProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, perfil)
 }
-
+// PUT /api/profile/:id? → Actualizar perfil propio o de otro usuario (si es admin)
 func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
+	paramID := c.Param("id") // opcional: si no viene, se usa el propio
 
 	actor := services.Actor{
 		UserID: parseObjectID(userID),
 		Role:   role,
 	}
 
+	// Bind del cuerpo JSON
 	var req dto.UserProfileUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
 		return
 	}
 
-	updated, err := h.userProfileService.UpdateProfile(actor, req)
+	// Si no se pasó :id, actualiza su propio perfil
+	targetID := userID
+	if paramID != "" {
+		targetID = paramID
+	}
+
+	updated, err := h.userProfileService.UpdateProfile(actor, targetID, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "no encontrado") {
+			status = http.StatusNotFound
+		} else if strings.Contains(err.Error(), "permiso") {
+			status = http.StatusForbidden
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	c.JSON(http.StatusOK, dto.UserProfileResponse{
+		ID:        updated.ID.Hex(),
+		FullName:  updated.FullName,
+		BirthDate: updated.BirthDate.Format("2006-01-02"),
+		WeightKg:  updated.WeightKg,
+		HeightCm:  updated.HeightCm,
+		Level:     string(updated.Level),
+		Goal:      string(updated.Goal),
+		UpdatedAt: updated.UpdatedAt.Format(time.RFC3339),
+	})
 }
 
-// PUT /api/profile → actualizar usando nombres de campos simplificados
-func (h *UserProfileHandler) UpdateMyProfile(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	var req dto.ProfileUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	updateReq := mapProfileUpdateRequest(req)
-
-	updated, err := h.userProfileService.UpdateProfile(actor, updateReq)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, toProfileResponse(updated))
-}
 
 // POST /api/profile → Crear perfil (si aún no existe)
 func (h *UserProfileHandler) CreateProfile(c *gin.Context) {

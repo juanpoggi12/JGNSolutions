@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
@@ -126,7 +127,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 
 	// 2️⃣ Obtener los datos del usuario autenticado (set por middleware JWT)
 	role := c.GetString("role")
-	userID := c.GetString("userId") // ⚠️ corregido: antes usabas "userID"
+	userID := c.GetString("userId")
 
 	// 3️⃣ Crear el actor
 	actor := services.Actor{
@@ -135,12 +136,24 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	}
 
 	// 4️⃣ Llamar al servicio para cambiar la contraseña
-	if err := h.userService.ChangePassword(actor, req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	err := h.userService.ChangePassword(actor, req)
+	if err != nil {
+		switch {
+		case err.Error() == "contraseña actual incorrecta":
+			// ❌ Error del usuario → 400
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		case strings.Contains(err.Error(), "no encontrado") ||
+			strings.Contains(err.Error(), "inexistente"):
+			// ❌ Usuario no existe → 404
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		default:
+			// ⚠️ Error inesperado → 500
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno del servidor"})
+		}
 		return
 	}
 
-	// 5️⃣ Responder al cliente
+	// 5️⃣ Responder al cliente si todo salió bien
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Contraseña actualizada correctamente",
 	})

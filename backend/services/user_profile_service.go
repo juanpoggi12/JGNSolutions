@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
@@ -73,59 +72,43 @@ func (service *UserProfileService) GetProfile(actor Actor) (models.UserProfile, 
 	return perfil, nil
 }
 
-// Actualizar perfil (usuario propio o admin)
-func (service *UserProfileService) UpdateProfile(actor Actor, req dto.UserProfileUpdateRequest) (models.UserProfile, error) {
+func (service *UserProfileService) UpdateProfile(actor Actor, id string, req dto.UserProfileUpdateRequest) (models.UserProfile, error) {
 	if actor.UserID.IsZero() {
 		return models.UserProfile{}, errors.New("ID de usuario inválido")
 	}
 
-	// Obtener perfil actual
-	perfilActual, err := service.repository.GetProfileByUserID(actor.UserID)
+	// Buscar el perfil objetivo
+	perfilActual, err := service.repository.GetProfileByID(id)
 	if err != nil {
 		return models.UserProfile{}, errors.New("perfil no encontrado")
 	}
 
-	// Validar permisos
+	// Permitir modificar si:
+	// - el actor es admin, o
+	// - el actor es dueño del perfil
 	if strings.ToLower(actor.Role) != "admin" && perfilActual.UserID != actor.UserID {
 		return models.UserProfile{}, errors.New("no tienes permiso para modificar este perfil")
 	}
 
-	// Aplicar solo los campos presentes en el DTO
-	if req.FullName != nil {
-		perfilActual.FullName = *req.FullName
-	}
-	if req.BirthDate != nil {
-		fecha, err := time.Parse("2006-01-02", *req.BirthDate)
-		if err == nil {
-			perfilActual.BirthDate = fecha
-		}
-	}
-	if req.WeightKg != nil {
-		perfilActual.WeightKg = *req.WeightKg
-	}
-	if req.HeightCm != nil {
-		perfilActual.HeightCm = *req.HeightCm
-	}
-	if req.Level != nil {
-		perfilActual.Level = models.Nivel(*req.Level)
-	}
-	if req.Goal != nil {
-		perfilActual.Goal = models.Objetivo(*req.Goal)
+	// Aplicar cambios usando helper del utils
+	if err := utils.ApplyUserProfileUpdateToModel(&perfilActual, req); err != nil {
+		return models.UserProfile{}, err
 	}
 
-	perfilActual.UpdatedAt = time.Now()
-
+	// Guardar cambios
 	_, err = service.repository.UpdateProfile(perfilActual)
 	if err != nil {
 		return models.UserProfile{}, err
 	}
 
+	// Log opcional
 	if service.logService != nil {
-		service.logService.RecordAction(actor.UserID, "perfil:modificado "+perfilActual.UserID.Hex())
+		service.logService.RecordAction(actor.UserID, "perfil actualizado: "+perfilActual.ID.Hex())
 	}
 
 	return perfilActual, nil
 }
+
 
 // Eliminar un perfil (solo admin)
 func (service *UserProfileService) DeleteProfile(actor Actor, id string) error {

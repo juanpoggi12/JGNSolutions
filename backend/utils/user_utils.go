@@ -2,6 +2,7 @@
 
 import (
 	"time"
+	"strings"
 
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
@@ -18,16 +19,23 @@ func ConvertUserCreateRequestToModel(req dto.UserCreateRequest) (models.User, er
 		return models.User{}, err
 	}
 
+	// 🔹 Normalizar el rol a minúsculas (evita errores con ADMIN vs admin)
+	role := strings.ToLower(strings.TrimSpace(req.Role))
+	if role == "" {
+		role = "user" // valor por defecto si no se envía
+	}
+
 	return models.User{
 		Username:     req.Username,
 		Email:        req.Email,
 		PasswordHash: string(hashed),
-		Role:         models.Role(req.Role),
+		Role:         models.Role(role),
 		IsActive:     req.IsActive != nil && *req.IsActive, // default false si no viene
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}, nil
 }
+
 
 // UpdateRequest → aplica cambios sobre el modelo existente
 func ApplyUserUpdateToModel(u *models.User, req dto.UserUpdateRequest) error {
