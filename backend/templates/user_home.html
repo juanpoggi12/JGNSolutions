@@ -28,7 +28,20 @@
   .modal-lg { max-width: 800px; }
   .modal-body { max-height: 70vh; overflow-y: auto; }
   /* Ocultar panes inactivos por defecto */
+  
   .tab-pane:not(.active) { display: none; }
+
+  /* --- AÑADIR ESTO --- */
+  .sidebar-container {
+    /* Altura automática en móvil (cuando se apila) */
+    min-height: auto; 
+  }
+  @media (min-width: 768px) { /* 768px es el punto de quiebre 'md' de Bootstrap */
+    .sidebar-container {
+      /* Altura 100% solo en 'md' y superior (vista lateral) */
+      min-height: 100vh;
+    }
+  }
 </style>
 
 <div class="container-fluid">
@@ -220,7 +233,7 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 // === INICIO JS CORREGIDO Y COMPLETO ===
