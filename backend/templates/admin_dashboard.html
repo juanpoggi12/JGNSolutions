@@ -1,0 +1,642 @@
+{{define "admin_dashboard"}}{{template "layout" .}}{{end}}
+{{define "content_admin_dashboard"}}
+<style>
+  /* ... (Estilos existentes: .kpi-admin, .card-lite, .table-sm) ... */
+  
+  /* Estilos adicionales */
+  .modal-lg { max-width: 800px; } /* Modal más ancho para ejercicios */
+  .exercise-details p { margin-bottom: 0.5rem; }
+  .exercise-details strong { display: inline-block; min-width: 100px; }
+  .log-entry { font-family: monospace; font-size: 0.85rem; border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-bottom: 5px; }
+  .log-entry:last-child { border-bottom: 0; }
+</style>
+
+<div class="container-fluid p-4 ps-md-4">
+
+ <h1 class="h3 mb-4 ps-3">Panel de Administración</h1>
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card card-lite">
+        <div class="card-body kpi-admin">
+          <div class="value" id="kpiTotalUsers">--</div>
+          <div class="label">Usuarios Registrados</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card card-lite">
+        <div class="card-body kpi-admin">
+          <div class="value" id="kpiTotalExercises">--</div>
+          <div class="label">Ejercicios Creados</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card card-lite">
+        <div class="card-body kpi-admin">
+          <div class="value" id="kpiTotalRoutines">--</div>
+          <div class="label">Rutinas Creadas</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card card-lite">
+        <div class="card-body kpi-admin">
+          <div class="value" id="kpiTotalWorkouts">--</div>
+          <div class="label">Entrenamientos Registrados</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-lite mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Gestión de Usuarios</h5>
+       </div>
+
+    <div class="card-body">
+
+      <div class="mb-3">
+        <label for="userSearchEmail" class="form-label">Buscar por Email:</label>
+        <input type="email" class="form-control" id="userSearchEmail" placeholder="Escribe un email...">
+      </div>
+
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="userListTableBody">
+            <tr><td colspan="4" class="text-center text-muted">Cargando usuarios...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card card-lite mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">Catálogo de Ejercicios</h5>
+      <button id="btnAddExercise" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#exerciseModal">
+        <i class="bi bi-plus-lg me-1"></i> Añadir Ejercicio
+      </button>
+    </div>
+    <div class="card-body">
+
+      <div class="mb-3">
+        <label for="exerciseSearchName" class="form-label">Buscar por Nombre:</label>
+        <input type="text" class="form-control" id="exerciseSearchName" placeholder="Escribe un nombre...">
+      </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Grupo Muscular</th>
+              <th>Dificultad</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="exerciseListTableBody">
+            <tr><td colspan="5" class="text-center text-muted">Cargando ejercicios...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="card card-lite mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Logs del Sistema</h5>
+    </div>
+    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+      <div id="logListContainer">
+        <p class="text-center text-muted">Cargando logs...</p>
+      </div>
+    </div>
+  </div>
+  </div> <div class="modal fade" id="exerciseModal" tabindex="-1" aria-labelledby="exerciseModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="exerciseForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exerciseModalLabel">Añadir Ejercicio</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="exerciseId" value=""> <div class="row g-3">
+            <div class="col-md-6 mb-3">
+              <label for="exName" class="form-label">Nombre <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="exName" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="exCategory" class="form-label">Categoría <span class="text-danger">*</span></label>
+              <select class="form-select" id="exCategory" required>
+                <option value="">Seleccionar...</option>
+                <option value="FUERZA">Fuerza</option>
+                <option value="CARDIO">Cardio</option>
+                <option value="FLEXIBILIDAD">Flexibilidad</option>
+                <option value="OTRA">Otra</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="exMuscleGroup" class="form-label">Grupo Muscular <span class="text-danger">*</span></label>
+              <select class="form-select" id="exMuscleGroup" required>
+                 <option value="">Seleccionar...</option>
+                 <option value="PECHO">Pecho</option>
+                 <option value="ESPALDA">Espalda</option>
+                 <option value="PIERNA">Pierna</option>
+                 <option value="HOMBRO">Hombro</option>
+                 <option value="BRAZO">Brazo</option>
+                 <option value="CORE">Core</option>
+              </select>
+            </div>
+             <div class="col-md-6 mb-3">
+              <label for="exDifficulty" class="form-label">Dificultad <span class="text-danger">*</span></label>
+              <select class="form-select" id="exDifficulty" required>
+                <option value="">Seleccionar...</option>
+                <option value="BAJA">Baja</option>
+                <option value="MEDIA">Media</option>
+                <option value="ALTA">Alta</option>
+              </select>
+            </div>
+             <div class="col-12 mb-3">
+              <label for="exDescription" class="form-label">Descripción</label>
+              <textarea class="form-control" id="exDescription" rows="3"></textarea>
+            </div>
+            <div class="col-12 mb-3">
+               <label for="exMediaUrl" class="form-label">URL Imagen/Video</label>
+               <input type="url" class="form-control" id="exMediaUrl" placeholder="https://ejemplo.com/video.mp4">
+            </div>
+             <div class="col-12 mb-3">
+               <label for="exInstructions" class="form-label">Instrucciones (una por línea)</label>
+               <textarea class="form-control" id="exInstructions" rows="4" placeholder="1. Paso uno..."></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar Ejercicio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', async () => { // Async para await inicial
+
+    const API_BASE = '/api';
+    let currentUserId = null; // Guardará el ID del admin logueado
+
+    // ===>>> HELPER FUNCTIONS (getToken y api - ¡ESENCIALES!) <<<===
+    function getToken(){
+        let token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        let exp = localStorage.getItem('accessTokenExp') || sessionStorage.getItem('accessTokenExp');
+        // Verifica si el token existe y no ha expirado
+        if (token && exp && Date.now() > parseInt(exp)) {
+            console.warn("Token expirado.");
+            // Limpia el almacenamiento si expira
+            localStorage.removeItem('accessToken'); localStorage.removeItem('accessTokenExp');
+            sessionStorage.removeItem('accessToken'); sessionStorage.removeItem('accessTokenExp');
+            return null; // Devuelve null si expiró
+        }
+        // Devuelve el token si es válido o si no hay datos de expiración (menos seguro)
+        return token;
+    }
+
+    async function api(path, opts={}){
+        const token = getToken();
+        // Redirige a login si NO hay token Y NO es una ruta pública inicial (como /auth/...)
+        if (!token && !path.startsWith('/auth/')) {
+            console.warn("No token found or token expired, redirecting to login.");
+            window.location.href = '/login';
+            // Detiene la ejecución de esta llamada api específica
+            return Promise.reject(new Error('No autorizado'));
+        }
+        try {
+            // Realiza la llamada fetch
+            const res = await fetch(API_BASE + path, {
+                ...opts, // Incluye método (GET, POST, etc.) y body si existen
+                headers: {
+                  'Content-Type':'application/json', // Asume JSON por defecto
+                  // Añade el token Bearer si existe
+                  ...(token ? { Authorization: 'Bearer ' + token } : {}),
+                  // Permite sobrescribir cabeceras si es necesario
+                  ...(opts.headers||{})
+                },
+                credentials: 'same-origin' // Necesario para cookies si las usaras
+             });
+
+             // --- Manejo de errores de autenticación/autorización ---
+             if(res.status === 401 || res.status === 403){
+                 console.warn(`Auth/Permission error (${res.status}) on ${path}, redirecting.`);
+                 // Si falla /api/me (token inválido/expirado), va a login.
+                 // Si falla otra ruta protegida (ej. /api/admin/* por rol incorrecto), va a home.
+                 window.location.href = (path === '/me') ? '/login' : '/home';
+                 throw new Error(res.status === 401 ? 'No autorizado' : 'Prohibido');
+             }
+
+            // --- Manejo de otros errores HTTP ---
+            if(!res.ok){
+                let errorMsg = `Error ${res.status}`;
+                try{
+                    // Intenta leer el mensaje de error del JSON de respuesta
+                    const errorData = await res.json();
+                    errorMsg = errorData?.error || errorData?.message || `Error ${res.status}`;
+                } catch(_){
+                    // Si no hay JSON o falla al leerlo, usa el texto de estado
+                    errorMsg = `Error ${res.status} - ${res.statusText}`;
+                }
+                throw new Error(errorMsg);
+            }
+
+            // --- Manejo de respuestas exitosas ---
+            const contentType = res.headers.get('content-type') || '';
+            // Si la respuesta es 204 No Content o no tiene tipo de contenido, devuelve null
+            if (res.status === 204 || contentType === '') {
+                return null;
+            }
+            // Si la respuesta es JSON, parsea y devuelve el objeto
+            if (contentType.includes('application/json')) {
+                return res.json();
+            }
+            // Si no, devuelve el texto plano
+            return res.text();
+
+        } catch (error) {
+             console.error(`API call failed for ${path}:`, error.message);
+             // Solo relanza el error si NO fue un error 401/403 (porque esos ya redirigieron)
+             if (error.message !== 'No autorizado' && error.message !== 'Prohibido') {
+                  throw error; // Permite que Promise.all falle si es un error diferente
+             }
+             // Si fue 401/403, la redirección ya ocurrió, simplemente detenemos la cadena de promesas.
+             return Promise.reject(error);
+        }
+    }
+    // ===>>> FIN HELPER FUNCTIONS <<<===
+
+
+    // === Verificación de Rol Admin ===
+    try {
+        console.log("Verificando rol de administrador...");
+        const userData = await api('/me');
+        currentUserId = userData?.userId; // Guarda el ID del admin logueado
+        if (!userData || userData.role !== 'admin') {
+            alert('Acceso denegado. Solo los administradores pueden ver esta página. Redirigiendo a /home.');
+            window.location.href = '/home';
+            return; // Detiene la ejecución si no es admin
+        }
+        console.log("Acceso de administrador confirmado.");
+        // Si es admin, llama a la función que carga todo el panel
+        await initializeAdminPanel();
+
+    } catch (error) {
+        // El helper 'api' ya maneja la redirección en caso de error 401/403 al llamar a /me
+        console.error("Error durante la verificación de rol (posiblemente ya redirigido):", error.message);
+        return; // Detiene la ejecución aquí si falla la verificación inicial
+    }
+    // === Fin Verificación ===
+
+
+    // --- Funciones de Carga de Datos ---
+    async function loadAdminKPIs() {
+        console.log("Cargando KPIs de admin...");
+        try {
+            const summary = await api('/admin/metrics/summary'); // GET /api/admin/metrics/summary
+            if (!summary) return; // Si la API falla o devuelve null
+
+            document.getElementById('kpiTotalUsers').textContent = summary.usersCount ?? '--';
+            document.getElementById('kpiTotalExercises').textContent = summary.exercisesCount ?? '--';
+            document.getElementById('kpiTotalRoutines').textContent = summary.routinesCount ?? '--';
+            document.getElementById('kpiTotalWorkouts').textContent = summary.workoutSessionsCount ?? '--';
+            console.log("KPIs cargados.");
+        } catch (error) {
+            console.error("Error al cargar KPIs de admin:", error.message);
+            // Muestra error en los KPIs para feedback visual
+            document.getElementById('kpiTotalUsers').textContent = 'Error';
+            document.getElementById('kpiTotalExercises').textContent = 'Error';
+            document.getElementById('kpiTotalRoutines').textContent = 'Error';
+            document.getElementById('kpiTotalWorkouts').textContent = 'Error';
+        }
+    }
+
+    async function loadUserList(emailFilter = '') { // Añade parámetro opcional
+        const tbody = document.getElementById('userListTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Cargando usuarios...</td></tr>';
+
+        try {
+            // Construye la URL de la API con el filtro si existe
+            let apiUrl = '/admin/users';
+            if (emailFilter) {
+                // Añade el parámetro de query ?email=... codificado
+                apiUrl += `?email=${encodeURIComponent(emailFilter)}`;
+            }
+
+            const users = await api(apiUrl); // Llama a la API (con o sin filtro)
+
+            if (!users || users.length === 0) {
+                const message = emailFilter ? 'No se encontraron usuarios con ese email.' : 'No hay usuarios registrados.';
+                tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">${message}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = ''; // Limpia tabla
+            users.forEach(user => {
+                // ... (código para crear la fila <tr> sin cambios) ...
+                 const tr = document.createElement('tr');
+                 tr.innerHTML = `
+                     <td><small>${user.id}</small></td>
+                     <td>${user.email}</td>
+                     <td><span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-secondary'}">${user.role}</span></td>
+                     <td class="text-end">
+                       <button class="btn btn-sm btn-outline-primary me-1 btn-change-role" data-user-id="${user.id}" data-current-role="${user.role}" title="Cambiar Rol"><i class="bi bi-person-badge"></i></button>
+                       <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-user" data-user-id="${user.id}" title="Editar Usuario (No implementado)"><i class="bi bi-pencil-fill"></i></button>
+                       <button class="btn btn-sm btn-outline-danger btn-delete-user" data-user-id="${user.id}" data-user-email="${user.email}" title="Eliminar Usuario"><i class="bi bi-trash-fill"></i></button>
+                     </td>`;
+                 tbody.appendChild(tr);
+            });
+            console.log(`${users.length} usuarios cargados ${emailFilter ? 'filtrados por "' + emailFilter + '"' : ''}.`);
+
+        } catch (error) {
+            console.error("Error al cargar la lista de usuarios:", error.message);
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Error al cargar usuarios: ${error.message}</td></tr>`;
+        }
+    }
+const userSearchInput = document.getElementById('userSearchEmail');
+    let searchTimeout; // Para debounce (esperar a que el usuario termine de escribir)
+
+    userSearchInput?.addEventListener('input', () => {
+        clearTimeout(searchTimeout); // Cancela el timeout anterior si existe
+        searchTimeout = setTimeout(() => {
+            const searchTerm = userSearchInput.value.trim();
+            loadUserList(searchTerm); // Llama a loadUserList con el término de búsqueda
+        }, 300); // Espera 300ms después de la última tecla antes de buscar
+    });
+    async function loadExerciseList(nameFilter = '') { // Añade parámetro opcional
+        const tbody = document.getElementById('exerciseListTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando ejercicios...</td></tr>';
+
+        try {
+            // Construye la URL de la API con el filtro si existe
+            // Usamos el parámetro 'q' que espera la API GET /exercises
+            let apiUrl = '/exercises?limit=100'; // Mantenemos el límite alto por ahora
+            if (nameFilter) {
+                apiUrl += `&q=${encodeURIComponent(nameFilter)}`; // Añade &q=...
+            }
+
+            const response = await api(apiUrl); // Llama a la API (con o sin filtro)
+            const exercises = response?.items || []; 
+
+            if (!exercises || exercises.length === 0) {
+                 const message = nameFilter ? 'No se encontraron ejercicios con ese nombre.' : 'No hay ejercicios creados.';
+                 tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${message}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = ''; // Limpia tabla
+            exercises.forEach(ex => {
+                 if (ex.is_deleted) return; 
+
+                 // ... (código para crear la fila <tr> sin cambios) ...
+                 const tr = document.createElement('tr');
+                 tr.innerHTML = `
+                     <td>${ex.name}</td>
+                     <td><span class="badge bg-info text-dark">${ex.category || 'N/A'}</span></td>
+                     <td><span class="badge bg-warning text-dark">${ex.muscle_group || 'N/A'}</span></td>
+                     <td><span class="badge bg-light text-dark">${ex.difficulty || 'N/A'}</span></td>
+                     <td class="text-end">
+                       <button class="btn btn-sm btn-outline-secondary me-1 btn-edit-exercise" 
+                               data-exercise-id="${ex.id}" 
+                               data-bs-toggle="modal" 
+                               data-bs-target="#exerciseModal" 
+                               title="Editar Ejercicio">
+                         <i class="bi bi-pencil-fill"></i>
+                       </button>
+                       <button class="btn btn-sm btn-outline-danger btn-delete-exercise" 
+                               data-exercise-id="${ex.id}" 
+                               data-exercise-name="${ex.name}" 
+                               title="Eliminar Ejercicio">
+                         <i class="bi bi-trash-fill"></i>
+                       </button>
+                     </td>
+                 `;
+                 tbody.appendChild(tr);
+            });
+            console.log(`${exercises.length} ejercicios cargados ${nameFilter ? 'filtrados por "' + nameFilter + '"' : ''} (sin incluir borrados).`);
+
+        } catch (error) {
+            console.error("Error al cargar ejercicios:", error.message);
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar ejercicios: ${error.message}</td></tr>`;
+        }
+    }
+// === NUEVO: Listener para el Input de Búsqueda de Ejercicios ===
+    const exerciseSearchInput = document.getElementById('exerciseSearchName');
+    let exerciseSearchTimeout; // Para debounce
+
+    exerciseSearchInput?.addEventListener('input', () => {
+        clearTimeout(exerciseSearchTimeout); 
+        exerciseSearchTimeout = setTimeout(() => {
+            const searchTerm = exerciseSearchInput.value.trim();
+            loadExerciseList(searchTerm); // Llama a loadExerciseList con el filtro de nombre
+        }, 300); // Espera 300ms
+    });
+
+    async function loadSystemLogs() {
+        const container = document.getElementById('logListContainer');
+        if (!container) return;
+        container.innerHTML = '<p class="text-center text-muted">Cargando logs...</p>';
+        try {
+            const logs = await api('/admin/logs'); // GET /api/admin/logs
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted">No hay logs registrados.</p>';
+                return;
+            }
+            container.innerHTML = '';
+            logs.forEach(log => {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                 const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Fecha inválida';
+                 const userIdShort = log.user_id ? log.user_id.substring(0, 8) + '...' : 'Sistema';
+                entry.innerHTML = `[${timestamp}] User: ${userIdShort} -> ${log.action || 'Acción desconocida'}`;
+                container.appendChild(entry);
+            });
+            console.log(`${logs.length} logs cargados.`);
+        } catch (error) {
+            console.error("Error al cargar logs:", error.message);
+            container.innerHTML = `<p class="text-center text-danger">Error al cargar logs: ${error.message}</p>`;
+        }
+    }
+    // --- Fin Funciones de Carga ---
+
+
+    // --- Listeners para Acciones ---
+    // Listener Tabla Usuarios (Cambiar Rol, Eliminar)
+    document.getElementById('userListTableBody')?.addEventListener('click', async e => {
+        // Cambiar Rol
+        const btnRole = e.target.closest('.btn-change-role');
+        if (btnRole) {
+            const userId = btnRole.dataset.userId;
+            const currentRole = btnRole.dataset.currentRole;
+            const newRole = prompt(`Cambiar rol para usuario ${userId}.\nRol actual: ${currentRole}\nNuevo rol (admin/user):`, currentRole === 'admin' ? 'user' : 'admin');
+            if (newRole && (newRole.toLowerCase() === 'admin' || newRole.toLowerCase() === 'user') && newRole.toLowerCase() !== currentRole) {
+                try {
+                    await api(`/admin/users/${userId}/role`, { method: 'PUT', body: JSON.stringify({ role: newRole.toLowerCase() }) });
+                    alert('Rol actualizado.');
+                    await loadUserList(); // Recarga
+                } catch (err) { alert('Error al cambiar rol: ' + err.message); }
+            } else if (newRole) { alert('Rol inválido o sin cambios.'); }
+            return;
+        }
+        // Eliminar Usuario
+        const btnDelete = e.target.closest('.btn-delete-user');
+        if (btnDelete) {
+             const userId = btnDelete.dataset.userId;
+             const userEmail = btnDelete.dataset.userEmail;
+             if (!confirm(`¿Estás seguro de ELIMINAR al usuario ${userEmail} (${userId})? Esta acción es PERMANENTE.`)) return;
+             try {
+                 await api(`/users/${userId}`, { method: 'DELETE' }); // Usa API de usuario protegida por admin
+                 alert(`Usuario ${userEmail} eliminado.`);
+                 await loadUserList();
+                 await loadAdminKPIs(); // Actualiza conteo
+             } catch (err) { alert('Error al eliminar usuario: ' + err.message); }
+             return;
+        }
+        // Editar Usuario (Placeholder)
+        const btnEditUser = e.target.closest('.btn-edit-user');
+        if (btnEditUser) {
+            alert('La edición detallada de usuarios aún no está implementada en esta interfaz.');
+        }
+    });
+
+    // Listeners Ejercicios (Abrir Modal Crear/Editar, Eliminar, Guardar Form)
+    const exerciseModalEl = document.getElementById('exerciseModal');
+    const exerciseModal = exerciseModalEl ? new bootstrap.Modal(exerciseModalEl) : null;
+    const exerciseForm = document.getElementById('exerciseForm');
+
+    document.getElementById('btnAddExercise')?.addEventListener('click', () => { // Botón Añadir Ejercicio
+        document.getElementById('exerciseModalLabel').textContent = 'Añadir Nuevo Ejercicio';
+        document.getElementById('exerciseId').value = '';
+        if(exerciseForm) exerciseForm.reset();
+    });
+
+    document.getElementById('exerciseListTableBody')?.addEventListener('click', async e => { // Tabla de Ejercicios
+        // Botón Editar Ejercicio
+        const btnEdit = e.target.closest('.btn-edit-exercise');
+        if (btnEdit) {
+            const exerciseId = btnEdit.dataset.exerciseId;
+            if (!exerciseId) return;
+            document.getElementById('exerciseModalLabel').textContent = 'Editar Ejercicio';
+            document.getElementById('exerciseId').value = exerciseId;
+            if(exerciseForm) exerciseForm.reset();
+            try {
+                 const exData = await api(`/exercises/${exerciseId}`); // GET /api/exercises/:id
+                 if (!exData) throw new Error("Ejercicio no encontrado");
+                 // Llena el form (asegúrate que los IDs coincidan)
+                 document.getElementById('exName').value = exData.name || '';
+                 document.getElementById('exCategory').value = exData.category || '';
+                 document.getElementById('exMuscleGroup').value = exData.muscle_group || '';
+                 document.getElementById('exDifficulty').value = exData.difficulty || '';
+                 document.getElementById('exDescription').value = exData.description || '';
+                 document.getElementById('exMediaUrl').value = exData.media_url || '';
+                 document.getElementById('exInstructions').value = (exData.instructions || []).join('\n');
+                 // Modal se abre por data-bs-toggle
+            } catch(err) {
+                 alert("Error al cargar datos del ejercicio: " + err.message);
+                 if (exerciseModal) exerciseModal.hide();
+                 document.getElementById('exerciseId').value = '';
+            }
+            return; // Importante para no procesar eliminar al mismo tiempo
+        }
+        // Botón Eliminar Ejercicio
+        const btnDelete = e.target.closest('.btn-delete-exercise');
+        if (btnDelete) {
+            const exerciseId = btnDelete.dataset.exerciseId;
+            const exerciseName = btnDelete.dataset.exerciseName;
+            if (!exerciseId || !confirm(`¿Estás seguro de ELIMINAR el ejercicio "${exerciseName}"?`)) return;
+            try {
+                await api(`/exercises/${exerciseId}`, { method: 'DELETE' }); // DELETE /api/exercises/:id
+                alert(`Ejercicio "${exerciseName}" eliminado.`);
+                await loadExerciseList();
+                await loadAdminKPIs(); // Actualiza conteo
+            } catch(err) { alert("Error al eliminar ejercicio: " + err.message); }
+        }
+    });
+
+    exerciseForm?.addEventListener('submit', async e => { // Submit del Formulario Ejercicio
+        e.preventDefault();
+        const exerciseId = document.getElementById('exerciseId').value;
+        const isEditing = !!exerciseId;
+        // Recolecta datos
+        const name = document.getElementById('exName').value.trim();
+        const category = document.getElementById('exCategory').value;
+        const muscleGroup = document.getElementById('exMuscleGroup').value;
+        const difficulty = document.getElementById('exDifficulty').value;
+        const description = document.getElementById('exDescription').value.trim();
+        const mediaUrl = document.getElementById('exMediaUrl').value.trim();
+        const instructions = document.getElementById('exInstructions').value.split('\n').map(l => l.trim()).filter(l => l);
+        // Validación
+        if (!name || !category || !muscleGroup || !difficulty) {
+            alert("Por favor, completa los campos obligatorios (*)."); return;
+        }
+        // Payload (¡OJO! Los nombres deben coincidir con los DTOs de Go)
+        let payload = {
+            name: name,
+            category: category,
+            muscle_group: muscleGroup, // DTO usa snake_case
+            difficulty: difficulty,
+            description: description || undefined,
+            media_url: mediaUrl || undefined, // DTO usa snake_case
+            instructions: instructions.length > 0 ? instructions : undefined,
+             // Solo en CREAR (POST) se necesita created_by_user_id
+             created_by_user_id: !isEditing ? currentUserId : undefined
+        };
+        Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]); // Limpia undefined
+
+        const method = isEditing ? 'PUT' : 'POST';
+        const endpoint = isEditing ? `/exercises/${exerciseId}` : '/exercises';
+        const successMsg = isEditing ? 'Ejercicio actualizado.' : 'Ejercicio creado.';
+
+        try {
+            await api(endpoint, { method: method, body: JSON.stringify(payload) });
+            alert(successMsg);
+            if (exerciseModal) exerciseModal.hide();
+            await loadExerciseList();
+            if (!isEditing) await loadAdminKPIs(); // Actualiza KPIs si es nuevo
+        } catch (err) { alert("Error al guardar ejercicio: " + err.message); }
+    });
+    // --- Fin Listeners ---
+
+
+    // --- Inicialización del Panel ---
+    async function initializeAdminPanel() {
+        console.log("Inicializando Panel de Admin...");
+        // Carga todo en paralelo
+        await Promise.all([
+            loadAdminKPIs(),
+            loadUserList(),
+            loadExerciseList(),
+            loadSystemLogs()
+        ]).catch(err => {
+             // Si alguna llamada falla por 401/403, la redirección ya ocurrió.
+             // Si es otro error, lo mostramos.
+             if (err.message !== 'No autorizado' && err.message !== 'Prohibido'){
+                 console.error("Fallo en la carga inicial de datos del admin:", err);
+                 // Podrías mostrar un error general en la página
+             }
+        });
+        console.log("Panel de Admin: Carga inicial de datos intentada.");
+    }
+    // (La llamada a initializeAdminPanel está dentro del try/catch de verificación de rol)
+
+}); // Fin DOMContentLoaded
+</script>
+{{end}}

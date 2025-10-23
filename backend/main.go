@@ -305,6 +305,18 @@ func main() {
 		}
 	}
 
+	adminGroup := r.Group("/admin")
+	{
+		adminGroup.GET("/", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "admin_dashboard", gin.H{
+				"Title":     "Panel de Administración",
+				"Content":   "content_admin_dashboard",
+				"FullWidth": true, // <--- AÑADE ESTA LÍNEA
+			})
+		})
+	}
+	// === FIN NUEVA RUTA ===
+
 	// --- 🔊 Servidor HTTP ---
 	log.Printf("Servidor escuchando en :%s", cfg.Port)
 	if err := r.Run(":" + cfg.Port); err != nil {
