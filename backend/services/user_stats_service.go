@@ -37,14 +37,42 @@ func (s *UserStatsService) GetWorkoutSummary(actor Actor, from, to *time.Time) (
 
 	ctx := context.Background()
 
-	sessions, err := s.repository.FindSessions(ctx, actor.UserID, from, to)
+	// --- CAMBIO 1: Ajustar fechas para cálculo de mejora ---
+	now := time.Now()
+	// Período actual (últimos 30 días por defecto si no se especifican from/to)
+	currentTo := now
+	if to != nil {
+		currentTo = *to
+	}
+	currentFrom := currentTo.AddDate(0, 0, -30)
+	if from != nil {
+		currentFrom = *from
+		// Asegura que el período no sea mayor a 30 días para el cálculo simple
+		if currentTo.Sub(currentFrom) > 30*24*time.Hour {
+			currentFrom = currentTo.AddDate(0, 0, -30) // Limita a 30 días si es mayor
+		}
+	}
+
+	// Período anterior (los 30 días antes del período actual)
+	previousTo := currentFrom
+	previousFrom := previousTo.AddDate(0, 0, -30)
+
+	// Fechas para buscar en la BD (abarca ambos períodos)
+	dbSearchFrom := previousFrom
+	dbSearchTo := currentTo
+	// --- FIN CAMBIO 1 ---
+
+	// Busca sesiones en el rango extendido (60 días)
+	sessions, err := s.repository.FindSessions(ctx, actor.UserID, &dbSearchFrom, &dbSearchTo)
 	if err != nil {
 		return dto.WorkoutSummaryResponse{}, err
 	}
 
 	sessionIDs := make([]primitive.ObjectID, 0, len(sessions))
+	sessionDateMap := make(map[primitive.ObjectID]time.Time) // Guardamos fecha de cada sesión
 	for _, session := range sessions {
 		sessionIDs = append(sessionIDs, session.ID)
+		sessionDateMap[session.ID] = session.StartTime // Usamos StartTime para asignar a período
 	}
 
 	entries, err := s.repository.FindEntriesBySessions(ctx, sessionIDs)
@@ -52,63 +80,97 @@ func (s *UserStatsService) GetWorkoutSummary(actor Actor, from, to *time.Time) (
 		return dto.WorkoutSummaryResponse{}, err
 	}
 
+	// --- CAMBIO 2: Agregación separada por período para mejora ---
+	type periodMaxWeights struct {
+		currentMax  float64
+		previousMax float64
+	}
+	exerciseMaxWeights := make(map[primitive.ObjectID]*periodMaxWeights)
+	// --- FIN CAMBIO 2 ---
+
 	type exerciseAccumulator struct {
 		totalSets    int
 		totalReps    int
 		totalWeight  float64
 		totalTimeSec int
-		maxWeight    float64
-		maxReps      int
-		maxTime      int
+		maxWeight    float64 // Máximo del período 'current'
+		maxReps      int     // Máximo del período 'current'
+		maxTime      int     // Máximo del período 'current'
 	}
-
-	exerciseAgg := make(map[primitive.ObjectID]*exerciseAccumulator)
+	exerciseAggCurrent := make(map[primitive.ObjectID]*exerciseAccumulator) // Para los KPIs normales
 
 	for _, entry := range entries {
-		acc := exerciseAgg[entry.ExerciseID]
-		if acc == nil {
-			acc = &exerciseAccumulator{}
-			exerciseAgg[entry.ExerciseID] = acc
+		if entry.WeightUsed == nil || *entry.WeightUsed <= 0 { // Solo consideramos entradas con peso positivo
+			continue
 		}
 
-		acc.totalSets++
-		if entry.RepsDone != nil {
-			acc.totalReps += *entry.RepsDone
-			if *entry.RepsDone > acc.maxReps {
-				acc.maxReps = *entry.RepsDone
-			}
+		sessionTime := sessionDateMap[entry.WorkoutSessionID]
+		isCurrentPeriod := !sessionTime.Before(currentFrom) && sessionTime.Before(currentTo)
+		isPreviousPeriod := !sessionTime.Before(previousFrom) && sessionTime.Before(previousTo)
+
+		// --- CAMBIO 3: Calcular máximos por período ---
+		maxData := exerciseMaxWeights[entry.ExerciseID]
+		if maxData == nil {
+			maxData = &periodMaxWeights{}
+			exerciseMaxWeights[entry.ExerciseID] = maxData
 		}
-		if entry.WeightUsed != nil {
-			if entry.RepsDone != nil {
-				acc.totalWeight += math.Abs(*entry.WeightUsed) * float64(*entry.RepsDone)
-			} else {
-				acc.totalWeight += math.Abs(*entry.WeightUsed)
+		if isCurrentPeriod && *entry.WeightUsed > maxData.currentMax {
+			maxData.currentMax = *entry.WeightUsed
+		}
+		if isPreviousPeriod && *entry.WeightUsed > maxData.previousMax {
+			maxData.previousMax = *entry.WeightUsed
+		}
+		// --- FIN CAMBIO 3 ---
+
+		// --- Agregación normal (solo para el período actual 'from' a 'to') ---
+		if isCurrentPeriod {
+			acc := exerciseAggCurrent[entry.ExerciseID]
+			if acc == nil {
+				acc = &exerciseAccumulator{}
+				exerciseAggCurrent[entry.ExerciseID] = acc
 			}
+
+			acc.totalSets++
+			if entry.RepsDone != nil {
+				acc.totalReps += *entry.RepsDone
+				if *entry.RepsDone > acc.maxReps {
+					acc.maxReps = *entry.RepsDone
+				}
+			}
+			// Calculo de volumen total (sin cambios)
+			weightValue := math.Abs(*entry.WeightUsed)
+			if entry.RepsDone != nil {
+				acc.totalWeight += weightValue * float64(*entry.RepsDone)
+			} else {
+				acc.totalWeight += weightValue
+			}
+			// Max weight *dentro* del período actual
 			if *entry.WeightUsed > acc.maxWeight {
 				acc.maxWeight = *entry.WeightUsed
 			}
-		}
-		if entry.TimeSec != nil {
-			acc.totalTimeSec += *entry.TimeSec
-			if *entry.TimeSec > acc.maxTime {
-				acc.maxTime = *entry.TimeSec
+			if entry.TimeSec != nil {
+				acc.totalTimeSec += *entry.TimeSec
+				if *entry.TimeSec > acc.maxTime {
+					acc.maxTime = *entry.TimeSec
+				}
 			}
 		}
 	}
 
-	exerciseIDs := make([]primitive.ObjectID, 0, len(exerciseAgg))
-	for id := range exerciseAgg {
-		exerciseIDs = append(exerciseIDs, id)
+	// Obtener info de ejercicios (sin cambios)
+	exerciseIDsCurrent := make([]primitive.ObjectID, 0, len(exerciseAggCurrent))
+	for id := range exerciseAggCurrent {
+		exerciseIDsCurrent = append(exerciseIDsCurrent, id)
 	}
-
-	exercisesInfo, err := s.repository.FindExercisesByIDs(ctx, exerciseIDs)
+	exercisesInfo, err := s.repository.FindExercisesByIDs(ctx, exerciseIDsCurrent)
 	if err != nil {
 		return dto.WorkoutSummaryResponse{}, err
 	}
 
-	byExercise := make([]dto.WorkoutSummaryExercise, 0, len(exerciseAgg))
-	prs := make([]dto.WorkoutPersonalRecord, 0, len(exerciseAgg))
-	for id, acc := range exerciseAgg {
+	// Construir respuesta de ByExercise y PRs (solo con datos del período actual)
+	byExercise := make([]dto.WorkoutSummaryExercise, 0, len(exerciseAggCurrent))
+	prs := make([]dto.WorkoutPersonalRecord, 0, len(exerciseAggCurrent))
+	for id, acc := range exerciseAggCurrent {
 		info := exercisesInfo[id]
 		byExercise = append(byExercise, dto.WorkoutSummaryExercise{
 			ExerciseID:   id.Hex(),
@@ -122,29 +184,35 @@ func (s *UserStatsService) GetWorkoutSummary(actor Actor, from, to *time.Time) (
 		prs = append(prs, dto.WorkoutPersonalRecord{
 			ExerciseID: id.Hex(),
 			Name:       info.Name,
-			MaxWeight:  acc.maxWeight,
+			MaxWeight:  acc.maxWeight, // Max del período actual
 			MaxReps:    acc.maxReps,
 			MaxTimeSec: acc.maxTime,
 		})
 	}
-
+	// Ordenar (sin cambios)
 	sort.Slice(byExercise, func(i, j int) bool {
-		if math.Abs(byExercise[i].TotalWeight-byExercise[j].TotalWeight) > 0.01 {
-			return byExercise[i].TotalWeight > byExercise[j].TotalWeight
+		// Order by total weight desc, then name asc
+		if byExercise[i].TotalWeight == byExercise[j].TotalWeight {
+			return byExercise[i].Name < byExercise[j].Name
 		}
-		return byExercise[i].TotalSets > byExercise[j].TotalSets
+		return byExercise[i].TotalWeight > byExercise[j].TotalWeight
 	})
-
 	sort.Slice(prs, func(i, j int) bool {
-		if math.Abs(prs[i].MaxWeight-prs[j].MaxWeight) > 0.01 {
-			return prs[i].MaxWeight > prs[j].MaxWeight
+		// Order by max weight desc, then name asc
+		if prs[i].MaxWeight == prs[j].MaxWeight {
+			return prs[i].Name < prs[j].Name
 		}
-		return prs[i].MaxReps > prs[j].MaxReps
+		return prs[i].MaxWeight > prs[j].MaxWeight
 	})
 
+	// Agrupar por período (ByPeriod - solo con sesiones del período actual 'from' a 'to')
 	periodMap := map[string]*dto.WorkoutSummaryPeriod{}
 	for _, session := range sessions {
-		key, label := buildWeekBucket(session.StartTime)
+		// Filtra sesiones fuera del rango 'currentFrom' a 'currentTo'
+		if session.StartTime.Before(currentFrom) || !session.StartTime.Before(currentTo) {
+			continue
+		}
+		key, label := buildWeekBucket(session.StartTime) // O usa buildMonthBucket si prefieres
 		bucket := periodMap[key]
 		if bucket == nil {
 			bucket = &dto.WorkoutSummaryPeriod{Period: key, Label: label}
@@ -152,7 +220,7 @@ func (s *UserStatsService) GetWorkoutSummary(actor Actor, from, to *time.Time) (
 		}
 		bucket.Sessions++
 	}
-
+	// Construir byPeriod (sin cambios en la lógica de ordenación)
 	byPeriod := make([]dto.WorkoutSummaryPeriod, 0, len(periodMap))
 	periodKeys := make([]string, 0, len(periodMap))
 	for k := range periodMap {
@@ -163,10 +231,30 @@ func (s *UserStatsService) GetWorkoutSummary(actor Actor, from, to *time.Time) (
 		byPeriod = append(byPeriod, *periodMap[key])
 	}
 
+	// --- CAMBIO 4: Calcular Mejora Promedio ---
+	var totalPercentageChange float64
+	var improvementCount int
+	var improvementPercent *float64 // Usa puntero para poder ser nil
+
+	for _, weights := range exerciseMaxWeights {
+		if weights.previousMax > 0 && weights.currentMax > 0 { // Solo si hay datos en ambos períodos
+			percentageChange := ((weights.currentMax / weights.previousMax) - 1) * 100
+			totalPercentageChange += percentageChange
+			improvementCount++
+		}
+	}
+
+	if improvementCount > 0 {
+		avgImprovement := totalPercentageChange / float64(improvementCount)
+		improvementPercent = &avgImprovement // Asigna el valor calculado
+	}
+	// --- FIN CAMBIO 4 ---
+
 	return dto.WorkoutSummaryResponse{
-		ByExercise: byExercise,
-		ByPeriod:   byPeriod,
-		PRs:        prs,
+		ByExercise:         byExercise,
+		ByPeriod:           byPeriod,
+		PRs:                prs,
+		ImprovementPercent: improvementPercent, // <-- Añade el resultado
 	}, nil
 }
 
@@ -386,7 +474,10 @@ func (s *UserStatsService) GetExerciseProgress(actor Actor, exerciseID primitive
 func buildWeekBucket(t time.Time) (string, string) {
 	year, week := t.ISOWeek()
 	key := fmt.Sprintf("%d-W%02d", year, week)
-	return key, key
+	startOfWeek := startOfISOWeek(t)
+	// Podrías formatear la etiqueta de forma más amigable si quieres
+	label := fmt.Sprintf("Sem %d (%s)", week, startOfWeek.Format("02 Jan"))
+	return key, label
 }
 
 func buildMonthBucket(t time.Time) (string, string, time.Time) {
@@ -397,9 +488,10 @@ func buildMonthBucket(t time.Time) (string, string, time.Time) {
 
 func startOfISOWeek(t time.Time) time.Time {
 	weekday := int(t.Weekday())
-	if weekday == 0 {
+	if weekday == 0 { // Sunday
 		weekday = 7
 	}
+	// Monday is 1, Sunday is 7
 	start := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	return start.AddDate(0, 0, 1-weekday)
 }

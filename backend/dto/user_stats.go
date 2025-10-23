@@ -1,9 +1,10 @@
 package dto
 
 type WorkoutSummaryResponse struct {
-	ByExercise []WorkoutSummaryExercise `json:"byExercise"`
-	ByPeriod   []WorkoutSummaryPeriod   `json:"byPeriod"`
-	PRs        []WorkoutPersonalRecord  `json:"prs"`
+	ByExercise         []WorkoutSummaryExercise `json:"byExercise"`
+	ByPeriod           []WorkoutSummaryPeriod   `json:"byPeriod"`
+	PRs                []WorkoutPersonalRecord  `json:"prs"`
+	ImprovementPercent *float64                 `json:"improvementPercent,omitempty"` // <-- AÑADIR ESTA LÍNEA
 }
 
 type WorkoutSummaryExercise struct {
