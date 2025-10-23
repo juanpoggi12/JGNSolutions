@@ -1,14 +1,20 @@
+// juanpoggi12/jgnsolutions/JGNSolutions-7c48b53190321ccfabc6877d44ae535f756457c5/backend/handlers/workout_session_handler.go
 package handlers
 
 import (
+	"log" // Import log package
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
+	"github.com/juanpoggi12/JGNSolutions/backend/utils" // Import utils package
+
+	"errors" // Import errors package
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo" // Import mongo package for ErrNoDocuments
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -28,23 +34,48 @@ func (h *WorkoutSessionHandler) CreateSession(c *gin.Context) {
 	userID := c.GetString("userId")
 
 	actor := services.Actor{
-		UserID: parseObjectID(userID),
+		UserID: parseObjectID(userID), // Assumes parseObjectID handles errors appropriately
 		Role:   role,
 	}
+	log.Printf("[Handler.CreateSession] Received request from actor %s (role %s)", actor.UserID.Hex(), actor.Role)
 
 	var req dto.WorkoutSessionCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
+		log.Printf("[Handler.CreateSession] Invalid JSON data: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: " + err.Error()})
 		return
 	}
+	log.Printf("[Handler.CreateSession] Request data bound successfully.")
 
-	created, err := h.sessionService.Create(actor, req)
+	// Call the service create function
+	createdModel, err := h.sessionService.Create(actor, req)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		// Log the error from the service on the server side
+		log.Printf("[Handler.CreateSession] Error received from sessionService.Create: %v", err)
+		// Return a generic 500 error to the client to avoid leaking details
+		// Consider specific status codes for certain errors if needed (e.g., 400 for validation)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo crear la sesión de entrenamiento"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, created)
+	// --- Log ID Verification ---
+	// Verify the ID in the model returned by the service *before* converting to DTO
+	if createdModel.ID.IsZero() {
+		// This should theoretically not happen if the service/repo verification works, but check again
+		log.Printf("[Handler.CreateSession] CRITICAL ERROR: Service returned success, but WorkoutSession model ID is Zero!")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno al generar ID de sesión"})
+		return
+	}
+	log.Printf("[Handler.CreateSession] Service call successful. Model ID received: %s", createdModel.ID.Hex())
+	// --- End Log ID Verification ---
+
+	// Convert the returned model (which includes the new ID) to the response DTO
+	responseDTO := utils.ConvertWorkoutSessionModelToResponse(createdModel)
+	log.Printf("[Handler.CreateSession] Converted model to response DTO. DTO ID: %s", responseDTO.ID)
+
+	// Send the DTO back to the client
+	log.Printf("[Handler.CreateSession] Sending StatusCreated with DTO.")
+	c.JSON(http.StatusCreated, responseDTO)
 }
 
 // GET /api/workout-sessions/:id → obtener una sesión
@@ -60,17 +91,30 @@ func (h *WorkoutSessionHandler) GetSessionByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		log.Printf("[Handler.GetSessionByID] Invalid ID format: %s", idStr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de sesión inválido"})
 		return
 	}
+	log.Printf("[Handler.GetSessionByID] Request for session %s by actor %s", id.Hex(), actor.UserID.Hex())
 
-	session, err := h.sessionService.GetByID(actor, id)
+	sessionModel, err := h.sessionService.GetByID(actor, id)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		log.Printf("[Handler.GetSessionByID] Error from service GetByID for session %s: %v", id.Hex(), err)
+		// Handle specific errors from service (e.g., not found, permission denied)
+		if err.Error() == "sesión no encontrada" {
+			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		} else if err.Error() == "no tienes permiso para acceder a esta sesión" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener la sesión"})
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, session)
+	// Convert model to DTO before sending
+	responseDTO := utils.ConvertWorkoutSessionModelToResponse(*sessionModel)
+	log.Printf("[Handler.GetSessionByID] Session %s found and authorized. Returning DTO.", id.Hex())
+	c.JSON(http.StatusOK, responseDTO)
 }
 
 // PUT /api/workout-sessions/:id → actualizar sesión
@@ -83,26 +127,42 @@ func (h *WorkoutSessionHandler) UpdateSession(c *gin.Context) {
 		Role:   role,
 	}
 
-	var req dto.WorkoutSessionUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		log.Printf("[Handler.UpdateSession] Invalid ID format: %s", idStr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de sesión inválido"})
 		return
 	}
+	log.Printf("[Handler.UpdateSession] Request to update session %s by actor %s", id.Hex(), actor.UserID.Hex())
 
-	updated, err := h.sessionService.Update(actor, id, req)
+	var req dto.WorkoutSessionUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[Handler.UpdateSession] Invalid JSON data for session %s: %v", id.Hex(), err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos de actualización inválidos: " + err.Error()})
+		return
+	}
+	log.Printf("[Handler.UpdateSession] Update request data bound successfully for session %s.", id.Hex())
+
+	updatedModel, err := h.sessionService.Update(actor, id, req)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		log.Printf("[Handler.UpdateSession] Error from service Update for session %s: %v", id.Hex(), err)
+		if err.Error() == "sesión no encontrada para actualizar" {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Sesión no encontrada"})
+		} else if err.Error() == "no tienes permiso para modificar esta sesión" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else if err.Error() == "error en los datos de actualización" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()}) // Propagate bad request from service
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al actualizar la sesión"})
+		}
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	// Convert updated model to DTO
+	responseDTO := utils.ConvertWorkoutSessionModelToResponse(updatedModel)
+	log.Printf("[Handler.UpdateSession] Session %s updated successfully. Returning DTO.", id.Hex())
+	c.JSON(http.StatusOK, responseDTO)
 }
 
 // DELETE /api/workout-sessions/:id → eliminar sesión
@@ -118,15 +178,25 @@ func (h *WorkoutSessionHandler) DeleteSession(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := primitive.ObjectIDFromHex(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
+		log.Printf("[Handler.DeleteSession] Invalid ID format: %s", idStr)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de sesión inválido"})
 		return
 	}
+	log.Printf("[Handler.DeleteSession] Request to delete session %s by actor %s", id.Hex(), actor.UserID.Hex())
 
 	if err := h.sessionService.Delete(actor, id); err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		log.Printf("[Handler.DeleteSession] Error from service Delete for session %s: %v", id.Hex(), err)
+		if err.Error() == "sesión no encontrada para eliminar" || errors.Is(err, mongo.ErrNoDocuments) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Sesión no encontrada"})
+		} else if err.Error() == "no tienes permiso para eliminar esta sesión" {
+			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al eliminar la sesión"})
+		}
 		return
 	}
 
+	log.Printf("[Handler.DeleteSession] Session %s deleted successfully.", id.Hex())
 	c.JSON(http.StatusOK, gin.H{"message": "Sesión eliminada correctamente"})
 }
 
@@ -139,20 +209,51 @@ func (h *WorkoutSessionHandler) SearchSessions(c *gin.Context) {
 		UserID: parseObjectID(userID),
 		Role:   role,
 	}
+	log.Printf("[Handler.SearchSessions] Request from actor %s (role %s)", actor.UserID.Hex(), actor.Role)
 
+	// Build filter based on query params - Example (adapt as needed)
 	filter := bson.M{}
-	if routine := c.Query("routine_id"); routine != "" {
-		if oid, err := primitive.ObjectIDFromHex(routine); err == nil {
+	if routineIDStr := c.Query("routine_id"); routineIDStr != "" {
+		if oid, err := primitive.ObjectIDFromHex(routineIDStr); err == nil {
 			filter["routineId"] = oid
+		} else {
+			log.Printf("[Handler.SearchSessions] Invalid routine_id query param: %s", routineIDStr)
+			// Optionally return bad request or ignore invalid filter
 		}
 	}
+	// Add other filters like date ranges, etc.
+	// Example: date filter using utils.BuildWorkoutSessionSearchFilter
+	/*
+	   searchDTO := dto.WorkoutSessionSearchRequest{
+	       RoutineID:    c.Query("routine_id"),
+	       StartedAfter: c.Query("started_after"), // Expects RFC3339
+	       StartedBefore: c.Query("started_before"),// Expects RFC3339
+	   }
+	   filter, err := utils.BuildWorkoutSessionSearchFilter(searchDTO, "") // Pass actor ID if needed by util
+	   if err != nil {
+	       c.JSON(http.StatusBadRequest, gin.H{"error": "Parámetros de fecha inválidos"})
+	       return
+	   }
+	*/
 
+	// Add pagination options if needed
 	opts := options.Find()
-	results, err := h.sessionService.Search(actor, filter, opts)
+	// Example: opts.SetLimit(20).SetSkip(page * 20)
+
+	log.Printf("[Handler.SearchSessions] Calling service Search with filter: %v", filter)
+	resultsModels, err := h.sessionService.Search(actor, filter, opts)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("[Handler.SearchSessions] Error from service Search: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error al buscar sesiones"})
 		return
 	}
 
-	c.JSON(http.StatusOK, results)
+	// Convert results from model slice to DTO slice
+	resultsDTOs := make([]dto.WorkoutSessionResponse, 0, len(resultsModels))
+	for _, model := range resultsModels {
+		resultsDTOs = append(resultsDTOs, utils.ConvertWorkoutSessionModelToResponse(model))
+	}
+
+	log.Printf("[Handler.SearchSessions] Found %d sessions. Returning DTO list.", len(resultsDTOs))
+	c.JSON(http.StatusOK, resultsDTOs)
 }

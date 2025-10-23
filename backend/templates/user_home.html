@@ -821,20 +821,23 @@ const btnLogout = document.getElementById('btnLogout');
     /**
      * Carga el historial de sesiones de entrenamiento en la tabla
      */
+    /**
+     * Carga el historial de sesiones de entrenamiento en la tabla
+     */
     async function cargarHistorial() {
         const tbody = document.getElementById('tbHistorial');
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando historial...</td></tr>';
-        
+
         try {
-            // GET /api/workout-sessions/search
-            const sessions = await api('/workout-sessions/search'); 
-            
+            // GET /api/workout-sessions/search (usa el DTO de respuesta WorkoutSessionResponse)
+            const sessions = await api('/workout-sessions/search'); // sessions ahora es un array de WorkoutSessionResponse
+
             if (!sessions || sessions.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No has registrado entrenamientos.</td></tr>';
                 return;
             }
-            
+
             // Mapea IDs de rutinas a Nombres (usando el cache que ya tenemos)
             const routineMap = __USER_ROUTINES__.reduce((acc, r) => {
                 acc[r.id] = r.name;
@@ -842,26 +845,45 @@ const btnLogout = document.getElementById('btnLogout');
             }, {});
 
             tbody.innerHTML = ''; // Limpia la tabla
-            
-            // Ordena por fecha de inicio (más nuevas primero)
-            sessions.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
 
-            for (const s of sessions) {
+            // Ordena por fecha de inicio (más nuevas primero)
+            // Usa fecha_hora_inicio del DTO
+            sessions.sort((a, b) => new Date(b.fecha_hora_inicio) - new Date(a.fecha_hora_inicio));
+
+            for (const s of sessions) { // 's' es ahora un objeto WorkoutSessionResponse
                 const tr = document.createElement('tr');
-                
-                const routineName = s.routineId ? (routineMap[s.routineId] || 'Rutina Eliminada') : 'Entrenamiento Libre';
-                const startTime = new Date(s.startTime).toLocaleString();
-                const endTime = s.endTime.startsWith('0001-01-01') ? '—' : new Date(s.endTime).toLocaleString();
-                const isCompleted = !s.endTime.startsWith('0001-01-01');
-                
-                const statusPill = isCompleted 
+
+                // Accede a routine_id del DTO
+                const routineName = s.routine_id ? (routineMap[s.routine_id] || 'Rutina Eliminada') : 'Entrenamiento Libre';
+                // Accede a fecha_hora_inicio del DTO
+                const startTime = new Date(s.fecha_hora_inicio).toLocaleString();
+
+                // --- INICIO: CORRECCIÓN ---
+                // Verifica si fecha_hora_fin existe y es una string válida antes de usar startsWith
+                let endTime = '—'; // Default a '—'
+                let isCompleted = false; // Default a false
+
+                // Accede a fecha_hora_fin del DTO
+                if (s.fecha_hora_fin && typeof s.fecha_hora_fin === 'string') {
+                     // Check if it's the "zero" date string used by Go's default time.Time
+                    isCompleted = !s.fecha_hora_fin.startsWith('0001-01-01');
+                    if (isCompleted) {
+                        endTime = new Date(s.fecha_hora_fin).toLocaleString();
+                    }
+                } else {
+                     // Handle cases where fecha_hora_fin might be null, undefined, or not a string
+                     console.warn(`[cargarHistorial] Session ID ${s.id} has missing or invalid fecha_hora_fin:`, s.fecha_hora_fin);
+                }
+                // --- FIN: CORRECCIÓN ---
+
+                const statusPill = isCompleted
                     ? `<span class="pill pill-green"><span class="icon-dot dot-green"></span> Completado</span>`
                     : `<span class="pill pill-amber"><span class="icon-dot dot-amber"></span> En Curso</span>`;
-                
+
                 tr.innerHTML = `
                     <td>
                         <div class="fw-semibold">${routineName}</div>
-                        <div class="small text-muted">${s.notes || 'Sin notas'}</div>
+                        <div class="small text-muted">${s.notas_generales || 'Sin notas'}</div>
                     </td>
                     <td>${startTime}</td>
                     <td>${endTime}</td>
@@ -879,7 +901,7 @@ const btnLogout = document.getElementById('btnLogout');
             }
 
         } catch (e) {
-            console.error("Error cargando historial:", e.message);
+            console.error("Error cargando historial:", e.message); // Mantén el log del error
             tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar historial: ${e.message}</td></tr>`;
         }
     }
@@ -919,130 +941,196 @@ const btnLogout = document.getElementById('btnLogout');
 /**
      * Carga una sesión existente y abre el modal de entrenamiento activo para continuarla.
      */
-    async function reanudarEntrenamiento(sessionId) {
-        console.log("Reanudando/Viendo sesión:", sessionId);
-        if (!sessionId) return;
-        let isReadOnly = false;
+    /**
+ * Carga una sesión existente y abre el modal de entrenamiento activo para continuarla o verla.
+ */
+async function reanudarEntrenamiento(sessionId) {
+    console.log("[reanudar] Reanudando/Viendo sesión:", sessionId);
+    if (!sessionId) {
+        console.error("[reanudar] Error: Se llamó sin sessionId.");
+        return;
+    }
 
-        try {
-            // 1. Obtener datos de sesión y entradas
-            const [sessionData, entriesData] = await Promise.all([
-                api(`/workout-sessions/${sessionId}`),
-                // Asegúrate que tu API espera 'workoutSessionId' como query param
-                api(`/workout-entries/search?workoutSessionId=${sessionId}`) 
-            ]);
+    // /// ---- INICIO BLOQUE DE REINICIO MEJORADO (PARA VISTA/REANUDACIÓN) ---- ///
+    console.log("[reanudar] Reiniciando estado de sesión y UI antes de cargar datos existentes...");
+    __CURRENT_WORKOUT_SESSION__ = null; // Borra la sesión anterior completa
+    __CURRENT_EXERCISE_INDEX__ = -1; // Resetea el índice del ejercicio
 
-            if (!sessionData) throw new Error("No se encontró la sesión.");
+    // Limpia visualmente el logger y timeline ANTES de cualquier llamada API
+    const nameEl = document.getElementById('currentExerciseName');
+    const targetEl = document.getElementById('currentExerciseTarget');
+    const setsCont = document.getElementById('setsContainer');
+    const timelineList = document.getElementById('workoutExerciseList');
+    const formEl = document.getElementById('formLogSet');
+    const logSessionInput = document.getElementById('logSessionId');
+    const logExInput = document.getElementById('logExerciseId');
+    const logSetNumInput = document.getElementById('logSetNumber');
+    const modalTitle = document.getElementById('modalEntrenamientoActivoLabel');
+    const btnFinish = document.getElementById('btnFinalizarEntrenamiento');
+    const btnClose = document.getElementById('btnCerrarEntrenamiento'); // Botón Cerrar
 
-            // --- DETECCIÓN MODO LECTURA ---
-            const isCompleted = sessionData.endTime && !sessionData.endTime.startsWith('0001-01-01'); // Usa endTime (del modelo)
-            if (isCompleted) {
-               
-                isReadOnly = true; // Establece el modo lectura si está completada
+    // Restablece la UI a un estado de carga/inicial
+    if(modalTitle) modalTitle.textContent = 'Cargando Entrenamiento...';
+    if(btnFinish) btnFinish.style.display = 'block'; // Mostrar por defecto, se ajustará después
+    if(btnClose) btnClose.textContent = 'Cerrar'; // Texto por defecto
+    if(nameEl) nameEl.textContent = 'Cargando...';
+    if(targetEl) targetEl.textContent = 'Por favor espera.';
+    if(setsCont) setsCont.innerHTML = ''; // Limpia las series anteriores
+    if(timelineList) timelineList.innerHTML = '<div class="text-muted small">Cargando ejercicios...</div>'; // Limpia timeline
+    if(formEl) formEl.style.display = 'none'; // Oculta el form inicialmente
+    if(logSessionInput) logSessionInput.value = sessionId; // Pre-popula con el ID que estamos cargando
+    if(logExInput) logExInput.value = '';
+    if(logSetNumInput) logSetNumInput.value = '1';
+
+    // /// ---- FIN BLOQUE DE REINICIO MEJORADO ---- ///
+
+
+    let isReadOnly = false; // Inicializa como false
+
+    try {
+        // 1. Obtener datos de sesión y entradas (logs)
+        console.log(`[reanudar] Fetching session data for ${sessionId}`);
+        const [sessionData, entriesData] = await Promise.all([
+            api(`/workout-sessions/${sessionId}`), // GET /api/workout-sessions/:id -> devuelve WorkoutSessionResponse DTO
+            api(`/workout-entries/search?workoutSessionId=${sessionId}`) // GET /api/workout-entries/search -> devuelve []WorkoutEntry Model
+        ]).catch(err => {
+             console.error("[reanudar] Error fetching session or entries:", err);
+             throw new Error("No se pudo cargar la información de la sesión o sus entradas.");
+        });
+
+        if (!sessionData) throw new Error("No se encontró la sesión.");
+        console.log("[reanudar] Session data fetched:", sessionData); // sessionData es WorkoutSessionResponse DTO
+        console.log("[reanudar] Entries data fetched:", entriesData); // entriesData es []WorkoutEntry Model
+
+        // Determina si la sesión está completada (y por lo tanto, es solo lectura)
+        // Usa fecha_hora_fin del DTO sessionData
+        let isCompleted = false;
+        if (sessionData.fecha_hora_fin && typeof sessionData.fecha_hora_fin === 'string' && !sessionData.fecha_hora_fin.startsWith('0001-01-01')) {
+            isCompleted = true;
+        }
+        isReadOnly = isCompleted; // Establece isReadOnly basado en isCompleted
+        console.log(`[reanudar] Checking completion: fecha_hora_fin='${sessionData.fecha_hora_fin}', typeof=${typeof sessionData.fecha_hora_fin}, startsWithZero=${sessionData.fecha_hora_fin?.startsWith('0001-01-01')}. Result: isCompleted=${isCompleted}, isReadOnly=${isReadOnly}`);
+
+
+        // Obtiene el routineId. Usa routine_id del DTO sessionData
+        const routineId = sessionData.routine_id || null;
+        if (!routineId) {
+            console.error(`[reanudar] Error crítico: La sesión cargada (ID: ${sessionData.id}) no tiene routine_id asociado. Data recibida:`, sessionData);
+            alert(`Error: La sesión con ID ${sessionData.id} no está vinculada a una rutina válida y no se puede cargar.`);
+            throw new Error(`Esta sesión (ID: ${sessionData.id}) no está vinculada a una rutina válida.`);
+        }
+         console.log("[reanudar] Routine ID for this session:", routineId);
+
+        // 2. Preparar estado global para ESTA sesión
+        __CURRENT_WORKOUT_SESSION__ = {
+            sessionId: sessionData.id,
+            routineId: routineId,
+            exercises: [], // Se llenará a continuación
+            logs: {},      // <<<--- INICIALIZA VACÍO para esta carga
+            isReadOnly: isReadOnly // Usa el valor calculado
+        };
+        if(logSessionInput) logSessionInput.value = sessionData.id;
+
+        // 3. Mapea los logs (entradas) obtenidos al estado local. CRUCIAL que esté limpio.
+         console.log("[reanudar] Populating logs cache...");
+        (entriesData || []).forEach(entry => { // entry es WorkoutEntry Model
+            const entryExerciseId = entry.exerciseId; // camelCase del modelo
+            const entrySetNumber = entry.setNumber; // camelCase del modelo
+
+            if (!entryExerciseId || entrySetNumber === undefined || entrySetNumber === null) {
+                console.warn("[reanudar] Skipping entry with missing exerciseId or setNumber:", entry);
+                return;
             }
 
-            // --- CORRECCIÓN CLAVE: Obtener routineId correctamente ---
-            // Tu API /workout-sessions/:id devuelve routine_id o routineId? Ajusta según corresponda.
-            // Asumiendo que devuelve 'routine_id' como en tu DTO:
-            const routineId = sessionData.routineId || null; 
-           
-            // --- FIN CORRECCIÓN ---
+            if (!__CURRENT_WORKOUT_SESSION__.logs[entryExerciseId]) {
+                __CURRENT_WORKOUT_SESSION__.logs[entryExerciseId] = {};
+            }
 
+            // Guarda los datos usando camelCase consistente internamente
+            __CURRENT_WORKOUT_SESSION__.logs[entryExerciseId][entrySetNumber] = {
+                id: entry.id,
+                setNumber: entrySetNumber, // Clave interna camelCase
+                repsDone: entry.repsDone,
+                weightUsed: entry.weightUsed,
+                timeSec: entry.timeSec,
+                perceivedEffort: entry.perceivedEffort
+            };
+        });
+        console.log("[reanudar] Logs cache populated:", JSON.parse(JSON.stringify(__CURRENT_WORKOUT_SESSION__.logs))); // Loguea copia
 
-            // 2. Preparar estado global
-          __CURRENT_WORKOUT_SESSION__ = {
-      sessionId: sessionData.id,
-      routineId: routineId,
-      exercises: [],
-      logs: {},
-      // isFree ya no existe
-      isReadOnly: isReadOnly
-  };
-            // Mapea logs (sin cambios)
-            (entriesData || []).forEach(entry => {
-                // Usamos camelCase (entry.exerciseId, entry.setNumber) porque así viene de la API (models.WorkoutEntry)
-                if (!entry.exerciseId || !entry.setNumber) return; 
-                const exerciseIdKey = entry.exerciseId;
-                const setNum = entry.setNumber;
+        // 4. Cargar la estructura de ejercicios de la rutina asociada
+        console.log("[reanudar] Loading exercises structure from routine:", routineId);
+        // La API devuelve []RoutineExerciseResponse DTO
+        const routineExercises = await api(`/routines/exercises/search?routine_id=${routineId}`);
+        routineExercises.sort((a, b) => (a.order || 0) - (b.order || 0)); // Ordena por 'order'
 
-                if (!__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]) {
-                    __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] = {};
-                }
-                
-                // Guardamos la data del entry. Asegúrate de usar camelCase
-                // para que renderSetLogger (con el Fix 1) pueda leerlo.
-                __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey][setNum] = {
-                    id: entry.id,
-                    set_number: setNum,
-                    repsDone: entry.repsDone, // <-- camelCase
-                    weightUsed: entry.weightUsed, // <-- camelCase
-                    timeSec: entry.timeSec,
-                    perceivedEffort: entry.perceivedEffort
-                };
+        const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => {
+             acc[ex.id] = ex.name; return acc;
+        }, {});
+
+        // Construye la lista de ejercicios para la sesión, calculando completedSets A PARTIR DE LOS LOGS CARGADOS
+        __CURRENT_WORKOUT_SESSION__.exercises = routineExercises.map((re, index) => { // re es RoutineExerciseResponse DTO
+            const exerciseId = re.exercise_id; // snake_case del DTO
+            const targetSets = re.sets || '?';
+            const targetReps = re.reps || '?';
+            const targetWeight = re.target_weight ?? null; // snake_case del DTO
+
+            const loggedSetsForThisExercise = __CURRENT_WORKOUT_SESSION__.logs[exerciseId] || {};
+            const completedSetsCount = Object.keys(loggedSetsForThisExercise).length;
+            console.log(`[reanudar] Exercise ${exerciseId}: Found ${completedSetsCount} logged sets.`);
+
+            return {
+                routineExerciseId: re.id,
+                exerciseId: exerciseId,
+                name: exerciseMap[exerciseId] || 'Ejercicio Desconocido',
+                order: re.order || (index + 1),
+                targetSets: targetSets,
+                targetReps: targetReps,
+                targetWeight: targetWeight,
+                completedSets: completedSetsCount, // <<<--- USA EL CONTEO REAL DE LOS LOGS CARGADOS
+                originalIndex: index
+             };
+        });
+         console.log("[reanudar] Exercises structure loaded and completedSets calculated:", __CURRENT_WORKOUT_SESSION__.exercises);
+
+        // 5. Renderizar la UI y abrir el modal
+        renderWorkoutTimeline(); // Renderiza la lista izquierda con el progreso correcto
+
+        // Ajusta título y botones según si es solo lectura
+        if (modalTitle) modalTitle.textContent = isReadOnly ? 'Detalles del Entrenamiento' : 'Entrenamiento en Curso';
+        if (btnFinish) btnFinish.style.display = isReadOnly ? 'none' : 'block'; // Oculta Finalizar si es solo lectura
+        if (btnClose) btnClose.textContent = isReadOnly ? 'Cerrar Vista' : 'Cerrar'; // Cambia texto del botón Cerrar
+
+        if (modalEntrenamientoActivo) modalEntrenamientoActivo.show(); // Abre el modal
+
+        // 6. Activar el ejercicio correcto
+        let firstIndexToShow = 0; // Por defecto, muestra el primer ejercicio en modo lectura
+        if (!isReadOnly) {
+            // Si está en curso, busca el primer ejercicio NO completado
+            firstIndexToShow = __CURRENT_WORKOUT_SESSION__.exercises.findIndex(ex => {
+               const targetS = (ex.targetSets === '?') ? Infinity : (ex.targetSets || 0);
+               return ex.completedSets < targetS;
             });
-            if(logSessionIdInput) logSessionIdInput.value = sessionData.id;
-
-            // 3. Cargar ejercicios (rutina O reconstruir libre)
-            if (routineId) {
-             console.log("Cargando rutina:", routineId);
-             const routineExercises = await api(`/routines/exercises/search?routine_id=${routineId}`);
-             routineExercises.sort((a,b) => a.order - b.order);
-             const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => (acc[ex.id] = ex.name, acc), {});
-             __CURRENT_WORKOUT_SESSION__.exercises = routineExercises.map((re, index) => {
-                 const exerciseIdKey = re.exercise_id || re.exerciseId;
-                 const loggedSetsCount = __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] ? Object.keys(__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]).length : 0;
-                 // Asegúrate que los nombres de propiedad coincidan con tu DTO RoutineExerciseResponse
-                return {
-                    routineExerciseId: re.id,
-                    exerciseId: exerciseIdKey,
-                    name: exerciseMap[exerciseIdKey] || 'Ejercicio Desconocido',
-                    order: re.order,
-                    targetSets: re.sets,
-                    targetReps: re.reps,
-                    targetWeight: re.target_weight ?? null,
-                    completedSets: loggedSetsCount,
-                    originalIndex: index
-                };
-             });
-        } else {
-             // Si llega aquí, es una sesión antigua sin routineId (antes de quitar libre)
-             // O un error. Lo manejamos mostrando un mensaje y sin ejercicios.
-             console.warn("Sesión sin ID de rutina encontrada. No se pueden cargar ejercicios.");
-             __CURRENT_WORKOUT_SESSION__.exercises = []; // Lista vacía
-             // Podrías añadir un mensaje en la UI si lo deseas
-             if(currentExerciseName) currentExerciseName.textContent = "Error";
-             if(currentExerciseTarget) currentExerciseTarget.textContent = "Esta sesión no tiene una rutina asociada.";
-             if(setsContainer) setsContainer.innerHTML = '';
+            // Si todos están completados pero la sesión no está finalizada
+            if (firstIndexToShow === -1 && __CURRENT_WORKOUT_SESSION__.exercises.length > 0) {
+                firstIndexToShow = __CURRENT_WORKOUT_SESSION__.exercises.length - 1; // Muestra el último
+            } else if (firstIndexToShow === -1) { // Si no hay ejercicios o algo raro
+                firstIndexToShow = 0;
+            }
+        } else if (__CURRENT_WORKOUT_SESSION__.exercises.length === 0) {
+             firstIndexToShow = -1; // No hay nada que mostrar si no hay ejercicios
         }
 
-        renderWorkoutTimeline();
-        const modalTitle = document.getElementById('modalEntrenamientoActivoLabel'); const btnFinish = document.getElementById('btnFinalizarEntrenamiento');
-        if (modalTitle) modalTitle.textContent = isReadOnly ? 'Detalles del Entrenamiento' : 'Entrenamiento en Curso';
-        if (btnFinish) btnFinish.style.display = isReadOnly ? 'none' : 'block';
-
-        const addExSection = document.getElementById('addExerciseSection');
-            if (addExSection) addExSection.style.display = 'none'; // <-- CORREGIDO: Ocultar siempre
-
-        let firstIndexToShow = 0;
-        if (__CURRENT_WORKOUT_SESSION__.exercises.length === 0) {
-             firstIndexToShow = -1; // No hay nada que mostrar si no hay ejercicios
-             // Si era una sesión sin rutina, ya mostramos el mensaje de error arriba.
-        } else if (!isReadOnly) {
-            firstIndexToShow = __CURRENT_WORKOUT_SESSION__.exercises.findIndex(ex => ex.completedSets < (ex.targetSets === '?' ? Infinity : (ex.targetSets || 0)));
-            if (firstIndexToShow === -1) { // Todos completados
-                 firstIndexToShow = __CURRENT_WORKOUT_SESSION__.exercises.length - 1; // Muestra el último
-            }
-        } // Si es readOnly, firstIndexToShow sigue siendo 0 (muestra el primero)
-
-        if (modalEntrenamientoActivo) modalEntrenamientoActivo.show();
+         console.log("[reanudar] Activating exercise at index:", firstIndexToShow);
         activarEjercicio(firstIndexToShow); // Activa el índice calculado
 
-        } catch (e) {
-            alert('Error al cargar detalles/reanudar entrenamiento: ' + e.message);
-            console.error("Error detallado:", e);
-            __CURRENT_WORKOUT_SESSION__ = null;
-        }
+    } catch (e) {
+        alert('Error al cargar detalles/reanudar entrenamiento: ' + e.message);
+        console.error("[reanudar] Error detallado:", e);
+        __CURRENT_WORKOUT_SESSION__ = null; // Limpia estado si falla
+        if (modalEntrenamientoActivo) modalEntrenamientoActivo.hide(); // Cierra el modal si falla la carga
     }
+}
     /**
      * Carga las rutinas del usuario en el modal de "Iniciar Entrenamiento"
      */
@@ -1098,85 +1186,127 @@ const btnLogout = document.getElementById('btnLogout');
     /**
      * Inicia la sesión de entrenamiento (Crea la WorkoutSession y abre el Modal 2)
      */
+  /**
+     * Inicia la sesión de entrenamiento (Crea la WorkoutSession y abre el Modal 2)
+     */
    async function iniciarEntrenamiento(routineId, routineName) {
-    console.log(`Iniciando rutina: ${routineName} (${routineId})`);
-    if (!routineId) { // Añadir validación por si acaso
-        alert("Error: Se requiere seleccionar una rutina.");
-        return;
-    }
-// /// ---- INICIO CÓDIGO AÑADIDO: REINICIO DE ESTADO ---- ///
-    console.log("Reiniciando estado de sesión actual...");
+    console.log(`Iniciando rutina: ${routineName} (${routineId || 'Libre'})`); // Ajuste para mostrar 'Libre' si no hay ID
+
+    // /// ---- INICIO BLOQUE DE REINICIO MEJORADO ---- ///
+    console.log("Reiniciando estado de sesión actual y limpiando UI...");
     __CURRENT_WORKOUT_SESSION__ = null; // Borra la sesión anterior completa
     __CURRENT_EXERCISE_INDEX__ = -1; // Resetea el índice del ejercicio
 
-    // Limpia visualmente el logger y timeline antes de cargar lo nuevo
+    // Limpia visualmente el logger y timeline ANTES de cualquier llamada API
     const nameEl = document.getElementById('currentExerciseName');
     const targetEl = document.getElementById('currentExerciseTarget');
     const setsCont = document.getElementById('setsContainer');
     const timelineList = document.getElementById('workoutExerciseList');
     const formEl = document.getElementById('formLogSet');
+    const logSessionInput = document.getElementById('logSessionId');
+    const logExInput = document.getElementById('logExerciseId');
+    const logSetNumInput = document.getElementById('logSetNumber');
+    const modalTitle = document.getElementById('modalEntrenamientoActivoLabel');
+    const btnFinish = document.getElementById('btnFinalizarEntrenamiento');
+    // const addExSection = document.getElementById('addExerciseSection'); // Ya no existe en tu versión
 
+    if(modalTitle) modalTitle.textContent = 'Entrenamiento en Curso'; // Título por defecto
+    if(btnFinish) btnFinish.style.display = 'block'; // Asegura que el botón finalizar sea visible
     if(nameEl) nameEl.textContent = 'Cargando...';
     if(targetEl) targetEl.textContent = 'Por favor espera.';
     if(setsCont) setsCont.innerHTML = ''; // Limpia las series anteriores
     if(timelineList) timelineList.innerHTML = '<div class="text-muted small">Cargando ejercicios...</div>'; // Limpia timeline
     if(formEl) formEl.style.display = 'none'; // Oculta el form inicialmente
-    // /// ---- FIN CÓDIGO AÑADIDO ---- ///
+    if(logSessionInput) logSessionInput.value = ''; // Limpia IDs ocultos
+    if(logExInput) logExInput.value = '';
+    if(logSetNumInput) logSetNumInput.value = '1';
+    // if(addExSection) addExSection.style.display = 'none'; // Asegura ocultar si volviera a existir
+
+    // /// ---- FIN BLOQUE DE REINICIO MEJORADO ---- ///
+
+
+    // Si es entrenamiento libre (ya no soportado según tu código, pero por si acaso)
+    if (!routineId) {
+        alert("La función de entrenamiento libre ha sido deshabilitada. Por favor, selecciona una rutina.");
+        // Podrías decidir si quieres crear una sesión SIN routine_id aquí,
+        // pero tu código actual parece requerirlo.
+         console.warn("Intento de iniciar entrenamiento libre (no soportado).");
+         // Limpiamos UI por si acaso
+         if(nameEl) nameEl.textContent = 'Selecciona Rutina';
+         if(targetEl) targetEl.textContent = 'Entrenamiento libre no disponible.';
+         if(timelineList) timelineList.innerHTML = '';
+        return; // Detiene la ejecución si no hay rutina
+    }
+
 
     try {
-        const payload = { start_time: new Date().toISOString(), routine_id: routineId }; // routine_id siempre presente
+        // Crea la nueva sesión en el backend
+        const payload = {
+            start_time: new Date().toISOString(),
+            routine_id: routineId // Siempre incluimos el routine_id
+        };
         const session = await api('/workout-sessions', { method: 'POST', body: JSON.stringify(payload) });
 
-        // Simplificado: ya no necesita 'isFree'
-        __CURRENT_WORKOUT_SESSION__ = { sessionId: session.id, routineId: routineId, exercises: [], logs: {}, isReadOnly: false };
-        if(logSessionIdInput) logSessionIdInput.value = session.id;
+        // Inicializa el estado local para la NUEVA sesión
+        __CURRENT_WORKOUT_SESSION__ = {
+            sessionId: session.id,
+            routineId: routineId, // Guardamos el ID de la rutina
+            exercises: [],        // Se llenará a continuación
+            logs: {},             // Logs empiezan vacíos para la nueva sesión
+            isReadOnly: false     // Una nueva sesión nunca es de solo lectura
+        };
+        if(logSessionInput) logSessionInput.value = session.id; // Actualiza input oculto
 
-        // Cargar ejercicios de la rutina (lógica existente)
+        // Cargar ejercicios de la rutina seleccionada
         console.log("Cargando ejercicios para rutina:", routineId);
         const routineExercises = await api(`/routines/exercises/search?routine_id=${routineId}`);
-        routineExercises.sort((a, b) => a.order - b.order);
-        const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => (acc[ex.id] = ex.name, acc), {});
+        // Ordena por el campo 'order'
+        routineExercises.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        // Mapea la información necesaria del catálogo de ejercicios (usa el caché)
+        const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => {
+             acc[ex.id] = ex.name; return acc;
+        }, {});
+
+        // Prepara la lista de ejercicios para la sesión actual
         __CURRENT_WORKOUT_SESSION__.exercises = routineExercises.map((re, index) => {
-            const exerciseIdKey = re.exercise_id || re.exerciseId;
-            const loggedSetsCount = __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] ? Object.keys(__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]).length : 0;
-             // Asegúrate que los nombres de propiedad coincidan con tu DTO RoutineExerciseResponse
+            // Asegúrate de acceder a las propiedades correctas (pueden ser snake_case o camelCase según la API)
+            const exerciseId = re.exercise_id || re.exerciseId;
+            const targetWeight = re.target_weight ?? re.targetWeight ?? null; // Maneja ambos casos y default a null
+
             return {
-                routineExerciseId: re.id,
-                exerciseId: exerciseIdKey,
-                name: exerciseMap[exerciseIdKey] || 'Ejercicio Desconocido',
-                order: re.order,
-                targetSets: re.sets,
-                targetReps: re.reps,
-                targetWeight: re.target_weight ?? null, // Usa ?? para default null si es undefined/null
-                completedSets: loggedSetsCount,
-                originalIndex: index
+                routineExerciseId: re.id, // ID de la *asociación* rutina-ejercicio
+                exerciseId: exerciseId,   // ID del *ejercicio* en sí
+                name: exerciseMap[exerciseId] || 'Ejercicio Desconocido',
+                order: re.order || (index + 1),
+                targetSets: re.sets || '?', // Usa '?' si no está definido
+                targetReps: re.reps || '?', // Usa '?' si no está definido
+                targetWeight: targetWeight, // Puede ser null
+                completedSets: 0, // Nuevo entrenamiento, empieza en 0
+                originalIndex: index // Guardamos el índice original por si acaso
              };
         });
-        console.log("Ejercicios cargados:", __CURRENT_WORKOUT_SESSION__.exercises);
+        console.log("Ejercicios cargados para la sesión:", __CURRENT_WORKOUT_SESSION__.exercises);
 
 
-        renderWorkoutTimeline();
-        if (modalEntrenamientoActivo) modalEntrenamientoActivo.show();
+        // Renderiza la UI del modal de entrenamiento
+        renderWorkoutTimeline(); // Muestra la lista de ejercicios a la izquierda
+        if (modalEntrenamientoActivo) modalEntrenamientoActivo.show(); // Muestra el modal
 
-        // Ocultar siempre la sección de añadir ejercicio
-        const addExerciseSection = document.getElementById('addExerciseSection');
-        if(addExerciseSection) addExerciseSection.style.display = 'none';
-
-        // Activar el primer ejercicio si existe
+        // Activar el primer ejercicio si la rutina no está vacía
         if (__CURRENT_WORKOUT_SESSION__.exercises.length > 0) {
-             activarEjercicio(0);
+             activarEjercicio(0); // Muestra el primer ejercicio en el logger
         } else {
-             // Rutina vacía: Mostrar mensaje apropiado en el logger
-             if(currentExerciseName) currentExerciseName.textContent = "Rutina Vacía";
-             if(currentExerciseTarget) currentExerciseTarget.textContent = "Añade ejercicios a esta rutina desde la pestaña 'Rutinas'.";
-             if(setsContainer) setsContainer.innerHTML = ''; // Limpiar logger
-             const saveButton = formLogSet?.querySelector('button[type="submit"]');
-             if (saveButton) saveButton.style.display = 'none'; // Ocultar botón guardar
+             // Manejo si la rutina está vacía
+             if(nameEl) nameEl.textContent = "Rutina Vacía";
+             if(targetEl) targetEl.textContent = "Añade ejercicios a esta rutina desde la pestaña 'Rutinas'.";
+             if(setsCont) setsCont.innerHTML = ''; // Limpiar logger
+             if(formEl) formEl.style.display = 'none'; // Ocultar formulario
              __CURRENT_EXERCISE_INDEX__ = -1; // No hay ejercicio activo
         }
     } catch (e) {
         alert('Error al iniciar entrenamiento: ' + e.message);
-        console.error(e);
+        console.error("Error detallado:", e);
         __CURRENT_WORKOUT_SESSION__ = null; // Limpiar estado si falla
          if (modalEntrenamientoActivo) modalEntrenamientoActivo.hide(); // Ocultar modal si falla
     }
@@ -1238,54 +1368,81 @@ function renderWorkoutTimeline() {
  * Activa un ejercicio en el logger (panel derecho del Modal 2)
  */
 function activarEjercicio(index) {
-     // Verifica si estamos en modo solo lectura
-     const isReadOnly = __CURRENT_WORKOUT_SESSION__ && __CURRENT_WORKOUT_SESSION__.isReadOnly;
+        console.log(`[activarEjercicio] START - Activating index: ${index}`);
 
-    // Ajusta el índice si es necesario (maneja caso de array vacío)
-    if (!__CURRENT_WORKOUT_SESSION__ || !__CURRENT_WORKOUT_SESSION__.exercises || __CURRENT_WORKOUT_SESSION__.exercises.length === 0) {
-        index = -1; // No hay ejercicio para activar
-    } else if (index < 0 || index >= __CURRENT_WORKOUT_SESSION__.exercises.length) {
-        console.log("Índice de ejercicio fuera de rango, seleccionando el último válido o ninguno.");
-        index = __CURRENT_WORKOUT_SESSION__.exercises.length - 1; // Selecciona el último si el índice es inválido
-         if (!isReadOnly && index >= 0) { // Solo si no es read-only y hay ejercicios
-             if(confirm("¡Has completado todos los ejercicios! ¿Quieres finalizar el entrenamiento?")) {
-                 finalizarEntrenamiento();
-                 return; // Salimos para no activar nada más
-             }
-         }
+        // Elementos de la UI del logger
+        const nameEl = document.getElementById('currentExerciseName');
+        const targetEl = document.getElementById('currentExerciseTarget');
+        const formEl = document.getElementById('formLogSet');
+        const setsCont = document.getElementById('setsContainer'); // Obtener el contenedor de sets
+
+        // --- INICIO: Limpieza explícita del logger ---
+        console.log("[activarEjercicio] Clearing logger UI (name, target, sets container)...");
+        if (nameEl) nameEl.textContent = 'Cargando ejercicio...';
+        if (targetEl) targetEl.textContent = '';
+        if (setsCont) setsCont.innerHTML = ''; // Limpiar sets ANTES de cualquier otra cosa
+        if (formEl) formEl.style.display = 'none'; // Ocultar form por defecto
+        // --- FIN: Limpieza explícita ---
+
+
+        // Verifica si el índice es válido y si hay datos de sesión/ejercicios
+        if (!__CURRENT_WORKOUT_SESSION__ || !__CURRENT_WORKOUT_SESSION__.exercises || __CURRENT_WORKOUT_SESSION__.exercises.length === 0) {
+            console.warn("[activarEjercicio] No session or exercises available. Setting index to -1.");
+            index = -1; // No hay ejercicio para activar
+        } else if (index < 0 || index >= __CURRENT_WORKOUT_SESSION__.exercises.length) {
+            console.warn(`[activarEjercicio] Index ${index} out of range (0-${__CURRENT_WORKOUT_SESSION__.exercises.length - 1}). Handling edge case.`);
+             // Comportamiento anterior: seleccionaba el último. ¿Es deseado?
+             // Considera si es mejor ir al primero o mostrar un estado "finalizado".
+             // Por ahora, mantenemos ir al último si ya pasó el rango.
+             index = __CURRENT_WORKOUT_SESSION__.exercises.length - 1;
+             // Quizás añadir lógica para preguntar si finalizar aquí si no es readOnly?
+             // if (!__CURRENT_WORKOUT_SESSION__.isReadOnly && index >= 0) { ... }
+        }
+
+        __CURRENT_EXERCISE_INDEX__ = index; // Actualiza el índice global DESPUÉS de validarlo
+        console.log(`[activarEjercicio] Global index set to: ${__CURRENT_EXERCISE_INDEX__}`);
+
+
+        if (__CURRENT_EXERCISE_INDEX__ === -1) { // Caso: No hay ejercicio activo
+            console.log("[activarEjercicio] No active exercise (index -1). Displaying empty state.");
+            if(nameEl) nameEl.textContent = 'Selecciona un ejercicio';
+            if(targetEl) targetEl.textContent = 'No hay ejercicios en esta rutina o sesión.';
+            // setsCont ya está limpio. formEl ya está oculto.
+        } else { // Caso: Hay un ejercicio activo válido
+            const ex = __CURRENT_WORKOUT_SESSION__.exercises[__CURRENT_EXERCISE_INDEX__];
+            const exerciseId = ex.exerciseId;
+            const nextSetNumber = ex.completedSets + 1;
+            console.log(`[activarEjercicio] Activating exercise: ID=${exerciseId}, Name=${ex.name}, Index=${__CURRENT_EXERCISE_INDEX__}`);
+
+            // Actualiza inputs ocultos del formulario
+            const logExInput = document.getElementById('logExerciseId');
+            const logSetNumInput = document.getElementById('logSetNumber');
+            if(logExInput) logExInput.value = exerciseId;
+            if(logSetNumInput) logSetNumInput.value = nextSetNumber;
+
+            // Actualiza nombre y objetivo visible
+            if(nameEl) nameEl.textContent = ex.name;
+            const targetText = (ex.targetSets && ex.targetSets !== '?' && ex.targetReps && ex.targetReps !== '?')
+                ? `Objetivo: ${ex.targetSets} series de ${ex.targetReps} reps`
+                : (ex.targetSets && ex.targetSets !== '?')
+                    ? `Objetivo: ${ex.targetSets} series`
+                    : 'Registra tus series'; // Mensaje genérico
+            if(targetEl) targetEl.textContent = targetText;
+
+            // Muestra el formulario (renderSetLogger decidirá si mostrar inputs o mensaje de completado)
+            if(formEl) formEl.style.display = 'block';
+            console.log("[activarEjercicio] Form display set to block.");
+
+            // Llama a renderSetLogger para mostrar los sets loggeados y/o el input para el siguiente
+            console.log("[activarEjercicio] Calling renderSetLogger...");
+            renderSetLogger();
+        }
+
+        // Re-renderiza la sidebar izquierda para marcar el ejercicio activo (sin cambios)
+        console.log("[activarEjercicio] Calling renderWorkoutTimeline...");
+        renderWorkoutTimeline();
+        console.log("[activarEjercicio] END");
     }
-    
-    __CURRENT_EXERCISE_INDEX__ = index; // Actualiza el índice global
-
-    // Elementos de la UI del logger
-    const nameEl = document.getElementById('currentExerciseName');
-    const targetEl = document.getElementById('currentExerciseTarget');
-    const formEl = document.getElementById('formLogSet');
-
-    if (index === -1) { // No hay ejercicio activo (ej. libre sin añadir, o rutina vacía)
-        if(nameEl) nameEl.textContent = 'Rutina Vacía';
-      if(targetEl) targetEl.textContent = 'No hay ejercicios.';
-        if(formEl) formEl.style.display = 'none';
-    } else { // Hay un ejercicio activo
-        const ex = __CURRENT_WORKOUT_SESSION__.exercises[index];
-        
-        if(logExerciseIdInput) logExerciseIdInput.value = ex.exerciseId;
-        if(logSetNumberInput) logSetNumberInput.value = ex.completedSets + 1; 
-        
-        if(nameEl) nameEl.textContent = ex.name;
-        // Muestra target si existe
-        const targetText = (ex.targetSets && ex.targetReps) 
-            ? `Objetivo: ${ex.targetSets} series de ${ex.targetReps} reps`
-            : 'Registra tus series'; // Mensaje genérico si no hay target
-        if(targetEl) targetEl.textContent = targetText;
-        
-        if(formEl) formEl.style.display = 'block'; // Muestra el form
-
-        renderSetLogger(); // Renderiza los inputs para el set actual
-    }
-
-    renderWorkoutTimeline(); // Re-renderiza la sidebar para marcar el activo
-}
 
     /**
      * Renderiza los inputs para la serie actual
@@ -1293,67 +1450,139 @@ function activarEjercicio(index) {
     /**
  * Renderiza los inputs para la serie actual (o los logs si es read-only)
  */
-function renderSetLogger() {
-    const isReadOnly = __CURRENT_WORKOUT_SESSION__ && __CURRENT_WORKOUT_SESSION__.isReadOnly;
-    const index = __CURRENT_EXERCISE_INDEX__;
-    
-    if (index === -1 || !__CURRENT_WORKOUT_SESSION__ || !__CURRENT_WORKOUT_SESSION__.exercises) {
-        if(setsContainer) setsContainer.innerHTML = '<p class="text-muted">Selecciona o añade un ejercicio.</p>';
-         // Oculta el botón de guardar si no hay ejercicio activo
-         const saveButton = formLogSet?.querySelector('button[type="submit"]');
-         if (saveButton) saveButton.style.display = 'none';
-        return;
-    }
-    
-    const ex = __CURRENT_WORKOUT_SESSION__.exercises[index];
-    const setNumber = ex.completedSets + 1;
-    const targetS = ex.targetSets || '?'; // Target sets
-    
-    // Elementos del formulario
-    const container = document.getElementById('setsContainer');
-    const saveButton = formLogSet?.querySelector('button[type="submit"]');
+/**
+     * Renderiza los inputs para la serie actual (o los logs si es read-only)
+     */
+    function renderSetLogger() {
+        console.log("[renderSetLogger] START"); // Log inicio función
 
-    if (!container) return;
-        container.innerHTML = ''; // Limpia contenedor de sets
+        const isReadOnly = __CURRENT_WORKOUT_SESSION__ && __CURRENT_WORKOUT_SESSION__.isReadOnly;
+        const index = __CURRENT_EXERCISE_INDEX__;
+        const container = document.getElementById('setsContainer');
+        const saveButton = formLogSet?.querySelector('button[type="submit"]');
 
-        // Muestra los sets YA loggeados para este ejercicio
-        const loggedSets = __CURRENT_WORKOUT_SESSION__?.logs[ex?.exerciseId] || {}; // Usa ? por seguridad
-        // Ordena los números de set por si acaso
-        const setNumbers = Object.keys(loggedSets).map(Number).sort((a, b) => a - b); 
+        if (!container) {
+            console.error("[renderSetLogger] Error: setsContainer element not found.");
+            return;
+        }
+        // Limpia explícitamente el contenedor al inicio de CADA renderización
+        console.log("[renderSetLogger] Clearing setsContainer innerHTML.");
+        container.innerHTML = '';
 
-        // for (let i = 1; i <= ex.completedSets; i++) { // Bucle antiguo no fiable si los logs no están completos
-        for (const i of setNumbers) {
-            const log = loggedSets[i]; if (!log) continue;
-            const reps = log.repsDone ?? '?'; // <-- USA CAMELCASE
-            const weight = log.weightUsed ?? null; // <-- USA CAMELCASE
-            const weightText = (weight !== null && weight !== undefined) ? `${weight} kg` : 'Solo reps';
-            container.innerHTML += `<div class="set-row"><span class="text-muted">Set ${i}</span><span>${reps} reps</span><span>${weightText}</span><span class="text-success small"><i class="bi bi-check-circle-fill"></i> Hecho</span></div>`;
+        // Verifica si hay datos válidos de sesión y ejercicio
+        if (index === -1 || !__CURRENT_WORKOUT_SESSION__ || !__CURRENT_WORKOUT_SESSION__.exercises || !__CURRENT_WORKOUT_SESSION__.exercises[index]) {
+            console.warn("[renderSetLogger] No active exercise or session data. Displaying empty message.");
+            container.innerHTML = '<p class="text-muted">Selecciona un ejercicio.</p>';
+            if (saveButton) {
+                 console.log("[renderSetLogger] Hiding save button (no active exercise).");
+                 saveButton.style.display = 'none';
+            }
+            console.log("[renderSetLogger] END (no active exercise)");
+            return;
         }
 
-        // Muestra el form para el siguiente set (lógica sin cambios, pero ahora se basa en completedSets actualizado correctamente)
-        if (!isReadOnly && (targetS === '?' || ex.completedSets < targetS)) {
-            // ... (código existente para añadir el HTML del input) ...
-             const nextSetNumber = ex.completedSets + 1; // El número del set a registrar
-             const defaultReps = ex.targetReps || 10;
-             const defaultWeightValue = (ex.targetWeight !== null && ex.targetWeight !== undefined) ? ex.targetWeight : 0; // Usar 0 si no hay objetivo
-             
+        // Obtiene datos del ejercicio actual
+        const ex = __CURRENT_WORKOUT_SESSION__.exercises[index];
+        const exerciseId = ex.exerciseId;
+        const targetS = ex.targetSets || '?'; // Target sets
+        console.log(`[renderSetLogger] Rendering for Exercise ID: ${exerciseId}, Name: ${ex.name}, Target Sets: ${targetS}, Completed Sets (state): ${ex.completedSets}`);
+
+        // --- INICIO: Loguear el estado de los logs ANTES de usarlos ---
+        const sessionLogs = __CURRENT_WORKOUT_SESSION__?.logs; // Objeto de logs completo para la sesión
+        const logsForThisExercise = sessionLogs ? sessionLogs[exerciseId] : null; // Logs específicos para este ejercicio
+        // Loguea una copia para evitar problemas con referencias mutables en la consola
+        console.log(`[renderSetLogger] Logs object for current session (${__CURRENT_WORKOUT_SESSION__?.sessionId}):`, JSON.parse(JSON.stringify(sessionLogs || {})));
+        console.log(`[renderSetLogger] Logs specifically for exercise ${exerciseId}:`, JSON.parse(JSON.stringify(logsForThisExercise || {})));
+        // --- FIN: Loguear estado ---
+
+
+        // Muestra los sets YA loggeados para este ejercicio
+        if (logsForThisExercise) {
+            // Obtiene los números de set loggeados y los ordena numéricamente
+            const setNumbers = Object.keys(logsForThisExercise).map(Number).sort((a, b) => a - b);
+            console.log(`[renderSetLogger] Found ${setNumbers.length} logged set numbers for ${exerciseId}:`, setNumbers);
+
+            // Itera sobre los números de set ordenados
+            for (const i of setNumbers) {
+                const log = logsForThisExercise[i]; // Obtiene el objeto log para el set 'i'
+                if (!log) {
+                    // Esto no debería ocurrir si setNumbers viene de Object.keys, pero es una salvaguarda
+                    console.warn(`[renderSetLogger] Log data unexpectedly missing for set ${i}, skipping.`);
+                    continue;
+                }
+                // Lee los datos del log usando camelCase (como se guardó en reanudarEntrenamiento)
+                const reps = log.repsDone ?? '?'; // Usa '? ' si repsDone es null o undefined
+                const weight = log.weightUsed ?? null; // Usa null si weightUsed es null o undefined
+                const weightText = (weight !== null) ? `${weight} kg` : 'Solo reps'; // Formato para mostrar
+
+                // Loguea los datos que se van a renderizar para este set
+                console.log(`[renderSetLogger] Rendering logged set ${i}: Reps=${reps}, Weight=${weight}`);
+
+                // Añade el HTML al contenedor para mostrar el set loggeado
+                container.innerHTML += `<div class="set-row"><span class="text-muted">Set ${i}</span><span>${reps} reps</span><span>${weightText}</span><span class="text-success small"><i class="bi bi-check-circle-fill"></i> Hecho</span></div>`;
+            }
+        } else {
+             // Si no hay logs para este ejercicio en el estado actual
+             console.log(`[renderSetLogger] No logs found in the current state object for exercise ${exerciseId}.`);
+        }
+
+
+        // Decide si mostrar el formulario para registrar el SIGUIENTE set
+        // Condiciones: No estar en modo solo lectura Y (el objetivo es '?' O aún no se alcanzó el número de sets objetivo)
+        const shouldShowNextSetInput = !isReadOnly && (targetS === '?' || ex.completedSets < targetS);
+        console.log(`[renderSetLogger] Should show next set input? isReadOnly=${isReadOnly}, targetS=${targetS}, completedSets=${ex.completedSets} -> ${shouldShowNextSetInput}`);
+
+        if (shouldShowNextSetInput) {
+             const nextSetNumber = ex.completedSets + 1; // El número del set que se va a registrar
+
+             // Determina valores por defecto para los inputs
+             const defaultReps = (ex.targetReps && ex.targetReps !== '?') ? ex.targetReps : 10; // Usa target o 10
+             let defaultWeightValue = (ex.targetWeight !== null && ex.targetWeight !== undefined) ? ex.targetWeight : 0; // Usa target o 0
+
+             // Intenta usar el peso del último set completado como default si existe
+             if (logsForThisExercise && ex.completedSets > 0) {
+                const lastLoggedSet = logsForThisExercise[ex.completedSets]; // Accede al último set loggeado
+                if (lastLoggedSet && lastLoggedSet.weightUsed !== null && lastLoggedSet.weightUsed !== undefined) {
+                    defaultWeightValue = lastLoggedSet.weightUsed;
+                }
+             }
+
+             console.log(`[renderSetLogger] Rendering input form for next set ${nextSetNumber}. Default Reps=${defaultReps}, Default Weight=${defaultWeightValue}`);
+             // Añade el HTML para los inputs del siguiente set
              container.innerHTML += `
                  <div class="set-row">
                      <label for="log_set_${nextSetNumber}" class="form-label fw-bold">Set ${nextSetNumber}</label>
                      <input type="number" class="form-control" id="log_reps_${nextSetNumber}" placeholder="Reps" value="${defaultReps}" required>
-                     <input type="number" step="0.5" min="0" class="form-control" id="log_weight_${nextSetNumber}" placeholder="Peso (kg)" value="${defaultWeightValue}" required> ${ex.targetReps ? `<span class="text-muted small">@ ${ex.targetReps} reps` : ''}</span>
+                     <input type="number" step="0.5" min="0" class="form-control" id="log_weight_${nextSetNumber}" placeholder="Peso (kg)" value="${defaultWeightValue}" required>
+                     ${(ex.targetReps && ex.targetReps !== '?') ? `<span class="text-muted small">@ ${ex.targetReps} reps</span>` : ''}
                  </div>
              `;
-            if (saveButton) saveButton.style.display = 'block'; 
-        } else { 
-            // ... (código existente para ocultar botón/mostrar mensaje completado) ...
-             if (targetS !== '?' && ex.completedSets >= targetS) {
+            // Muestra el botón de guardar
+            if (saveButton) {
+                console.log("[renderSetLogger] Showing save button.");
+                saveButton.style.display = 'block';
+                saveButton.disabled = false; // Asegura que esté habilitado
+            }
+        } else { // No se muestra input para el siguiente set
+             if (isReadOnly) {
+                  // Si es solo lectura, no se muestra input ni mensaje de completado (ya se mostraron los logs)
+                  console.log("[renderSetLogger] Session is read-only. Not showing input form.");
+             } else if (targetS !== '?' && ex.completedSets >= targetS) {
+                  // Si se alcanzaron los sets objetivo
+                  console.log("[renderSetLogger] All target sets completed. Showing completion message.");
                   container.innerHTML += '<p class="text-success mt-2">¡Todas las series completadas para este ejercicio!</p>';
+             } else {
+                  // Otro caso (podría ser si targetS es '?' y se decide no mostrar más inputs)
+                  console.log("[renderSetLogger] Condition not met to show next set input.");
              }
-             if (saveButton) saveButton.style.display = 'none';
+             // Oculta el botón de guardar si no hay input para el siguiente set
+             if (saveButton) {
+                 console.log("[renderSetLogger] Hiding save button.");
+                 saveButton.style.display = 'none';
+             }
         }
+        console.log("[renderSetLogger] END"); // Log fin función
     }
-
 
 
     // Listener para el Formulario de Loggear Serie (Modal 2)
