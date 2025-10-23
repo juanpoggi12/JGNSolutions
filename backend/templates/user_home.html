@@ -173,7 +173,18 @@
             </div>
             <div class="row g-3">
               <div class="col-12 col-lg-6"><canvas id="chartFrecuencia" height="220"></canvas></div>
-              <div class="col-12 col-lg-6"><canvas id="chartProgreso" height="220"></canvas></div>
+              <div class="col-12 col-lg-6">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="mb-0">Progreso por Ejercicio</h6>
+                  <select id="selectProgresoEjercicio" class="form-select form-select-sm" style="max-width: 250px;">
+                    <option value="">Selecciona un ejercicio...</option>
+                    </select>
+                </div>
+               <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="chartProgresoTiempo" style="height: 100%; width: 100%;"></canvas>
+                </div>
+                <div id="progresoTiempoMensaje" class="text-center text-muted small mt-2" style="display: none;"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -248,7 +259,9 @@
                   <label class="form-label small">Peso Obj. (kg)</label>
                   <input id="formPesoObjetivo" type="number" step="0.1" min="0" class="form-control form-control-sm" placeholder="Opcional">
                 </div>
-                
+                <div class="col-6 col-md-3">
+                  <button type="submit" class="btn btn-sm btn-dark w-100"><i class="bi bi-plus-lg me-1"></i> Agregar</button>
+                </div>
             
               </form>
               </div>
@@ -290,6 +303,9 @@
               <div class="card-body">
                 <div class="h5 mb-3">Estado de cuenta</div><div class="d-flex align-items-center gap-2"><span class="pill pill-green"><span class="icon-dot dot-green"></span> Activa</span></div><div class="text-muted small mt-2">Email de acceso</div>
                 <div id="configUserEmail" class="fw-semibold">—</div>
+                <button id="btnLogout" class="btn btn-outline-danger mt-3 w-100">
+                    <i class="bi bi-box-arrow-right me-1"></i> Cerrar Sesión
+                </button>
               </div>
             </div>
           </div>
@@ -321,7 +337,8 @@
   <div class="modal-dialog modal-fullscreen-md-down"> <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="modalEntrenamientoActivoLabel">Entrenamiento en Curso</h5>
-        <div> <button id="btnCerrarEntrenamiento" type="button" class="btn btn-secondary me-2">Cerrar</button>
+        <div class="d-flex">
+          <button id="btnCerrarEntrenamiento" type="button" class="btn btn-secondary me-2">Cerrar</button>
           <button id="btnFinalizarEntrenamiento" type="button" class="btn btn-success">Finalizar</button>
         </div>
       </div>
@@ -404,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let __CURRENT_WORKOUT_SESSION__ = null; // { sessionId, routineId, exercises: [] }
     let __CURRENT_EXERCISE_INDEX__ = -1;
     let chartFrecuencia = null;
+    let chartProgresoTiempo = null;
     let chartProgreso = null;
     let currentUserId = null; 
 
@@ -484,7 +502,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
     });
+const btnLogout = document.getElementById('btnLogout');
+    btnLogout?.addEventListener('click', async () => {
+        if (!confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+            return;
+        }
+        try {
+            // Llama al endpoint de logout (POST /api/auth/logout)
+            await api('/auth/logout', { method: 'POST' });
 
+            // Limpia tokens de CUALQUIER almacenamiento
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('accessTokenExp');
+            sessionStorage.removeItem('accessToken');
+            sessionStorage.removeItem('accessTokenExp');
+
+            // Muestra mensaje y redirige
+            alert('Has cerrado sesión.');
+            window.location.href = '/login'; // Redirige a la página de login
+
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
+            // Aunque falle la llamada API (ej. token ya inválido), limpia localmente y redirige
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('accessTokenExp');
+            sessionStorage.removeItem('accessToken');
+            sessionStorage.removeItem('accessTokenExp');
+            alert('Error al intentar cerrar sesión en el servidor. Se limpiará la sesión local.');
+            window.location.href = '/login';
+        }
+    });
     // ======= PERFIL (carga y guardado) =======
     // (Esta sección no cambia, es la de la Pestaña Configuración)
     const btnGuardarPerfil = document.getElementById('btnGuardarPerfil');
@@ -610,7 +657,102 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ======= 📊📈 IMPLEMENTACIÓN DASHBOARD (STATS & HISTORIAL)  =======
-    
+    async function cargarGraficoProgresoTiempo(exerciseId) {
+        const canvas = document.getElementById('chartProgresoTiempo');
+        const mensajeEl = document.getElementById('progresoTiempoMensaje');
+        if (!canvas || !mensajeEl) return;
+        const ctx = canvas.getContext('2d');
+
+        // Limpia gráfico anterior y oculta mensaje
+        if (chartProgresoTiempo) {
+            chartProgresoTiempo.destroy();
+            chartProgresoTiempo = null;
+        }
+        mensajeEl.style.display = 'none';
+        mensajeEl.textContent = '';
+        canvas.style.display = 'block'; // Asegura que el canvas sea visible
+
+        if (!exerciseId) {
+            mensajeEl.textContent = 'Selecciona un ejercicio para ver su progreso.';
+            mensajeEl.style.display = 'block';
+            canvas.style.display = 'none'; // Oculta canvas si no hay ejercicio
+            return;
+        }
+
+        mensajeEl.textContent = 'Cargando progreso...';
+        mensajeEl.style.display = 'block';
+        canvas.style.display = 'none';
+
+        try {
+            // Llama a la API GET /api/stats/user/progress?exerciseId=...
+            // Podrías añadir fechas &from= &to= si tuvieras inputs para ello
+            const progressData = await api(`/stats/user/progress?exerciseId=${exerciseId}`);
+
+            if (!progressData || !progressData.labels || progressData.labels.length === 0) {
+                mensajeEl.textContent = 'No hay datos de progreso registrados para este ejercicio.';
+                mensajeEl.style.display = 'block';
+                canvas.style.display = 'none';
+                return;
+            }
+
+            mensajeEl.style.display = 'none'; // Oculta mensaje de carga
+            canvas.style.display = 'block'; // Muestra canvas
+
+            // Encuentra el nombre del ejercicio (usando el caché)
+            const ejercicioInfo = __CATALOGO_EJERCICIOS__.find(ex => ex.id === exerciseId);
+            const exerciseName = ejercicioInfo ? ejercicioInfo.name : 'Ejercicio';
+
+            // Crear el gráfico de líneas con Chart.js
+            chartProgresoTiempo = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: progressData.labels, // Fechas (eje X)
+                    datasets: [{
+                        label: `Peso Máx. (${exerciseName} - kg)`, // Leyenda
+                        data: progressData.weight, // Datos de peso (eje Y)
+                        borderColor: '#111827', // Color de la línea
+                        backgroundColor: 'rgba(17, 24, 39, 0.1)', // Relleno suave (opcional)
+                        tension: 0.1, // Curva suave
+                        fill: true, // Rellenar área bajo la línea
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true, // Empezar eje Y en 0
+                            title: { display: true, text: 'Peso Máx. (kg)' }
+                        },
+                        x: {
+                             title: { display: true, text: 'Fecha Entrenamiento' }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true, // Muestra la leyenda
+                            position: 'top',
+                        },
+                        tooltip: { // Muestra info al pasar el mouse
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    interaction: { // Mejora interacción en móvil
+                         mode: 'nearest',
+                         axis: 'x',
+                         intersect: false
+                    }
+                }
+            });
+            console.log("Gráfico de progreso cargado para:", exerciseName);
+
+        } catch (error) {
+            console.error("Error al cargar gráfico de progreso:", error.message);
+            mensajeEl.textContent = `Error al cargar datos: ${error.message}`;
+            mensajeEl.style.display = 'block';
+            canvas.style.display = 'none';
+        }
+    }
     /**
      * Carga todas las estadísticas del dashboard (KPIs y Gráficos)
      */
@@ -668,56 +810,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // --- 3. Gráfico: Frecuencia (chartFrecuencia) ---
-            const ctxFreq = document.getElementById('chartFrecuencia')?.getContext('2d');
-            if (ctxFreq && freqData) {
-                const labels = freqData.buckets.map(b => b.label);
-                const data = freqData.buckets.map(b => b.count);
-
-                if (chartFrecuencia) chartFrecuencia.destroy(); // Limpia gráfico anterior
-                chartFrecuencia = new Chart(ctxFreq, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Sesiones por Semana',
-                            data: data,
-                            backgroundColor: '#111827',
-                            borderRadius: 4,
-                        }]
-                    },
-                    options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                });
-            }
-
-            // --- 4. Gráfico: Progreso (chartProgreso) ---
-            const ctxProg = document.getElementById('chartProgreso')?.getContext('2d');
-            if (ctxProg && summaryData) {
-                // Agrupamos por grupo muscular
-                const muscleGroups = {};
-                (summaryData.byExercise || []).forEach(ex => {
-                    const group = ex.muscleGroup || 'Otro';
-                    if (!muscleGroups[group]) muscleGroups[group] = 0;
-                    muscleGroups[group] += (ex.totalWeight || 0); // Sumamos por peso total movido
-                });
-
-                const labels = Object.keys(muscleGroups);
-                const data = Object.values(muscleGroups);
-
-                if (chartProgreso) chartProgreso.destroy(); // Limpia gráfico anterior
-                chartProgreso = new Chart(ctxProg, {
-                    type: 'doughnut',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Volumen por Grupo Muscular (kg)',
-                            data: data,
-                            backgroundColor: ['#111827', '#6b7280', '#ef4444', '#f59e0b', '#10b981', '#3b82f6'],
-                        }]
-                    },
-                    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-                });
-            }
+           
 
             console.log("Estadísticas cargadas.");
         } catch (error) {
@@ -842,16 +935,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!sessionData) throw new Error("No se encontró la sesión.");
 
             // --- DETECCIÓN MODO LECTURA ---
-            const isCompleted = sessionData.fecha_hora_fin && !sessionData.fecha_hora_fin.startsWith('0001-01-01');
+            const isCompleted = sessionData.endTime && !sessionData.endTime.startsWith('0001-01-01'); // Usa endTime (del modelo)
             if (isCompleted) {
-                console.log("Sesión completada, abriendo en modo solo lectura.");
-                isReadOnly = true;
+               
+                isReadOnly = true; // Establece el modo lectura si está completada
             }
 
             // --- CORRECCIÓN CLAVE: Obtener routineId correctamente ---
             // Tu API /workout-sessions/:id devuelve routine_id o routineId? Ajusta según corresponda.
             // Asumiendo que devuelve 'routine_id' como en tu DTO:
-            const routineId = sessionData.routine_id || null; 
+            const routineId = sessionData.routineId || null; 
            
             // --- FIN CORRECCIÓN ---
 
@@ -1011,6 +1104,25 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Error: Se requiere seleccionar una rutina.");
         return;
     }
+// /// ---- INICIO CÓDIGO AÑADIDO: REINICIO DE ESTADO ---- ///
+    console.log("Reiniciando estado de sesión actual...");
+    __CURRENT_WORKOUT_SESSION__ = null; // Borra la sesión anterior completa
+    __CURRENT_EXERCISE_INDEX__ = -1; // Resetea el índice del ejercicio
+
+    // Limpia visualmente el logger y timeline antes de cargar lo nuevo
+    const nameEl = document.getElementById('currentExerciseName');
+    const targetEl = document.getElementById('currentExerciseTarget');
+    const setsCont = document.getElementById('setsContainer');
+    const timelineList = document.getElementById('workoutExerciseList');
+    const formEl = document.getElementById('formLogSet');
+
+    if(nameEl) nameEl.textContent = 'Cargando...';
+    if(targetEl) targetEl.textContent = 'Por favor espera.';
+    if(setsCont) setsCont.innerHTML = ''; // Limpia las series anteriores
+    if(timelineList) timelineList.innerHTML = '<div class="text-muted small">Cargando ejercicios...</div>'; // Limpia timeline
+    if(formEl) formEl.style.display = 'none'; // Oculta el form inicialmente
+    // /// ---- FIN CÓDIGO AÑADIDO ---- ///
+
     try {
         const payload = { start_time: new Date().toISOString(), routine_id: routineId }; // routine_id siempre presente
         const session = await api('/workout-sessions', { method: 'POST', body: JSON.stringify(payload) });
@@ -1113,10 +1225,9 @@ function renderWorkoutTimeline() {
         item.appendChild(badgeSpan);
         
         item.addEventListener('click', () => {
-             // Asegura que no estemos en modo solo lectura antes de activar
-             if (!(__CURRENT_WORKOUT_SESSION__ && __CURRENT_WORKOUT_SESSION__.isReadOnly)) {
-                 activarEjercicio(index);
-             }
+             // Eliminamos la restricción de isReadOnly aquí. 
+             // Permitimos el clic, y la función activarEjercicio manejará el estado Read-Only de los inputs.
+             activarEjercicio(index);
         });
         listEl.appendChild(item);
     });
@@ -1224,13 +1335,13 @@ function renderSetLogger() {
             // ... (código existente para añadir el HTML del input) ...
              const nextSetNumber = ex.completedSets + 1; // El número del set a registrar
              const defaultReps = ex.targetReps || 10;
-             const defaultWeight = ex.targetWeight !== null && ex.targetWeight !== undefined ? ex.targetWeight : '';
+             const defaultWeightValue = (ex.targetWeight !== null && ex.targetWeight !== undefined) ? ex.targetWeight : 0; // Usar 0 si no hay objetivo
+             
              container.innerHTML += `
                  <div class="set-row">
                      <label for="log_set_${nextSetNumber}" class="form-label fw-bold">Set ${nextSetNumber}</label>
                      <input type="number" class="form-control" id="log_reps_${nextSetNumber}" placeholder="Reps" value="${defaultReps}" required>
-                     <input type="number" step="0.5" class="form-control" id="log_weight_${nextSetNumber}" placeholder="Peso (kg)" value="${defaultWeight}">
-                      ${ex.targetReps ? `<span class="text-muted small">@ ${ex.targetReps} reps</span>` : ''}
+                     <input type="number" step="0.5" min="0" class="form-control" id="log_weight_${nextSetNumber}" placeholder="Peso (kg)" value="${defaultWeightValue}" required> ${ex.targetReps ? `<span class="text-muted small">@ ${ex.targetReps} reps` : ''}</span>
                  </div>
              `;
             if (saveButton) saveButton.style.display = 'block'; 
@@ -1246,24 +1357,26 @@ function renderSetLogger() {
 
 
     // Listener para el Formulario de Loggear Serie (Modal 2)
-   
-      formLogSet.addEventListener('submit', async e => {
-        e.preventDefault();
+   // user_home.html, encuentra y reemplaza el bloque completo formLogSet.addEventListener('submit', ...)
 
-        // Verifica que haya una sesión y ejercicio activos
-        if (!__CURRENT_WORKOUT_SESSION__ || __CURRENT_EXERCISE_INDEX__ < 0) {
-          console.error("Intento de guardar set sin sesión o ejercicio activo.");
-          return;
-        }
+      formLogSet.addEventListener('submit', async e => {
+        e.preventDefault();
 
-        const ex = __CURRENT_WORKOUT_SESSION__.exercises[__CURRENT_EXERCISE_INDEX__];
-        const setNumber = ex.completedSets + 1;
+        // 1. Verificaciones y Extracción de valores de los inputs
+        if (!__CURRENT_WORKOUT_SESSION__ || __CURRENT_EXERCISE_INDEX__ < 0) {
+          console.error("Intento de guardar set sin sesión o ejercicio activo.");
+          return;
+        }
 
-        const repsInput = document.getElementById(`log_reps_${setNumber}`);
-        const weightInput = document.getElementById(`log_weight_${setNumber}`);
+        const ex = __CURRENT_WORKOUT_SESSION__.exercises[__CURRENT_EXERCISE_INDEX__];
+        const setNumber = ex.completedSets + 1;
 
-        // Validación de inputs
-        const reps = parseInt(repsInput && repsInput.value);
+        // IDs dinámicos de los inputs del set actual
+        const repsInput = document.getElementById(`log_reps_${setNumber}`);
+        const weightInput = document.getElementById(`log_weight_${setNumber}`);
+
+        // Extracción y validación de inputs
+        const reps = parseInt(repsInput && repsInput.value);
         const weightStr = weightInput && weightInput.value ? weightInput.value.trim() : '';
         const weight = weightStr !== '' ? parseFloat(weightStr) : null;
 
@@ -1277,63 +1390,71 @@ function renderSetLogger() {
           return;
         }
 
-        // Prepara payload (asegúrate que los nombres coincidan con el DTO de Go)
-        const payload = {
-          workout_session_id: __CURRENT_WORKOUT_SESSION__.sessionId,
-          exercise_id: ex.exerciseId,
-          set_number: setNumber,
-          reps_done: reps,
-          // Envía null si weight es null
-          weight_used: (weight !== null && !isNaN(weight)) ? weight : null
-        };
+        // 2. Prepara payload (usa snake_case para el DTO de Go)
+        const payload = {
+          workout_session_id: __CURRENT_WORKOUT_SESSION__.sessionId,
+          exercise_id: ex.exerciseId,
+          set_number: setNumber,
+          reps_done: reps,
+          weight_used: (weight !== null && !isNaN(weight)) ? weight : null
+        };
 
-        // Deshabilita el botón mientras guarda
-        const saveButton = formLogSet.querySelector('button[type="submit"]');
-        if (saveButton) saveButton.disabled = true;
+        const saveButton = formLogSet.querySelector('button[type="submit"]');
+        if (saveButton) saveButton.disabled = true;
 
-        try {
-          const savedEntry = await api('/workout-entries', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-          });
+        try {
+          // 3. Llamada a la API
+          const savedEntry = await api('/workout-entries', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
 
-          if (savedEntry) {
-            const exerciseIdKey = savedEntry.exercise_id || savedEntry.exerciseId || ex.exerciseId;
-            const savedSetNumber = savedEntry.set_number || savedEntry.setNumber || setNumber;
+          // 4. Lógica de canonicalización de la caché
+          const source = savedEntry || payload;
+          
+          // Intenta extraer la data de la fuente (API response o payload)
+          const repsData = source.RepsDone || source.repsDone || source.reps_done || payload.reps_done;
+          const weightData = source.WeightUsed || source.weightUsed || source.weight_used || payload.weight_used;
+          
+          const exerciseIdKey = source.exercise_id || source.exerciseId || ex.exerciseId;
+          const savedSetNumber = source.set_number || source.SetNumber || setNumber;
 
-            if (!__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]) {
-              __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] = {};
-            }
-            __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey][savedSetNumber] = savedEntry;
+          if (!__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]) {
+            __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] = {};
+          }
+          
+          // Creamos la entrada canónica (camelCase) para el caché local
+          const canonicalEntry = {
+            id: source.ID || source.id || 'temp-id-' + Date.now(),
+            setNumber: savedSetNumber,
+            repsDone: repsData,     // <-- CORREGIDO: AHORA EN CAMELCASE
+            weightUsed: weightData, // <-- CORREGIDO: AHORA EN CAMELCASE
+            timeSec: source.TimeSec || source.time_sec || 0,
+          };
 
-            // Actualiza completedSets en la estructura del ejercicio actual
-            if (exerciseIdKey === ex.exerciseId) {
-              ex.completedSets = Math.max(ex.completedSets, Object.keys(__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]).length);
-            }
+          // Guarda la entrada canónica en la caché local
+          __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey][savedSetNumber] = canonicalEntry;
 
-            console.log("Log local actualizado para set", savedSetNumber, ":", savedEntry);
-          } else {
-            // Fallback: actualizar localmente con lo enviado
-            if (!__CURRENT_WORKOUT_SESSION__.logs[ex.exerciseId]) __CURRENT_WORKOUT_SESSION__.logs[ex.exerciseId] = {};
-            __CURRENT_WORKOUT_SESSION__.logs[ex.exerciseId][setNumber] = payload;
-            ex.completedSets = Math.max(ex.completedSets, setNumber);
-            console.warn("La API de guardar set no devolvió datos, se actualizó el log localmente.");
-          }
+          // Actualiza completedSets
+          if (exerciseIdKey === ex.exerciseId) {
+            ex.completedSets = Math.max(ex.completedSets, Object.keys(__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]).length);
+          }
 
-          // Refrescar UI del logger
-          renderSetLogger();
-          renderWorkoutTimeline();
-          await cargarHistorial(); // opcional: refrescar historial
-          await cargarStats();     // opcional: refrescar KPIs
-        } catch (err) {
-          console.error("Error guardando serie:", err);
-          alert('Error al guardar la serie: ' + (err.message || err));
-        } finally {
-          if (saveButton) saveButton.disabled = false;
-        }
-      });
-    
+          console.log("Log local actualizado para set", savedSetNumber, ":", canonicalEntry);
 
+          // 5. Refrescar UI
+          renderSetLogger();
+          renderWorkoutTimeline();
+          await cargarHistorial();
+          await cargarStats();
+          
+        } catch (err) {
+          console.error("Error guardando serie:", err);
+          alert('Error al guardar la serie: ' + (err.message || err));
+        } finally {
+          if (saveButton) saveButton.disabled = false;
+        }
+      });
     /**
      * Finaliza el entrenamiento (cierra el modal, actualiza la sesión)
      */
@@ -1649,6 +1770,40 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
         console.log("Inicializando aplicación...");
         try {
             await cargarPerfil(); 
+            await cargarCatalogoEjercicios();
+
+            // /// CÓDIGO NUEVO para poblar y escuchar el dropdown de progreso ///
+            const selectProgreso = document.getElementById('selectProgresoEjercicio');
+            if (selectProgreso) {
+                // Limpia opciones previas (excepto la primera "Selecciona...")
+                selectProgreso.length = 1;
+                // Llena con ejercicios del catálogo cacheado
+                (__CATALOGO_EJERCICIOS__ || []).forEach(ex => {
+                    const option = document.createElement('option');
+                    option.value = ex.id;
+                    option.textContent = ex.name;
+                    selectProgreso.appendChild(option);
+                });
+
+                // Añade listener para cuando cambie la selección
+                selectProgreso.addEventListener('change', (event) => {
+                    const selectedExerciseId = event.target.value;
+                    cargarGraficoProgresoTiempo(selectedExerciseId); // Llama a la función del gráfico
+                });
+
+                // Opcional: Carga inicial del gráfico (puedes dejarlo vacío o cargar el primero)
+                 cargarGraficoProgresoTiempo(null); // Inicia sin ejercicio seleccionado
+                // O si quieres cargar el primero por defecto (si hay ejercicios):
+                // if (__CATALOGO_EJERCICIOS__ && __CATALOGO_EJERCICIOS__.length > 0) {
+                //    selectProgreso.value = __CATALOGO_EJERCICIOS__[0].id; // Selecciona el primero en el dropdown
+                //    cargarGraficoProgresoTiempo(__CATALOGO_EJERCICIOS__[0].id); // Carga el gráfico para el primero
+                // } else {
+                //    cargarGraficoProgresoTiempo(null); // No hay ejercicios, inicia vacío
+                // }
+
+            } else {
+                console.warn("Elemento select 'selectProgresoEjercicio' no encontrado.");
+            }
             if (!currentUserId) { throw new Error("Fallo al obtener ID de usuario."); } 
 
             // Carga el resto en paralelo

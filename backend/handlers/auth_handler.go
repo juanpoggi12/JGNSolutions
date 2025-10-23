@@ -37,6 +37,24 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	c.Status(http.StatusCreated)
 }
+func (h *AuthHandler) ResetPassword(c *gin.Context) {
+	var req dto.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos: Asegúrate de enviar email y newPassword (mínimo 8 caracteres)."})
+		return
+	}
+
+	err := h.service.ResetPassword(c.Request.Context(), req)
+	if err != nil {
+		// El servicio devuelve un error genérico si el email no existe,
+		// así evitamos dar pistas a atacantes.
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Éxito - No devolvemos contenido, solo status OK.
+	c.Status(http.StatusOK)
+}
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginReq

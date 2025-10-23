@@ -130,6 +130,7 @@ func (r *UserRepository) FindByEmailOrUsername(identifier string) (*models.User,
 }
 
 func (repository UserRepository) UpdatePassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error) {
+	// ... implementación existente ...
 	collection := repository.collection()
 	filtro := bson.M{"_id": id}
 	actualizacion := bson.M{

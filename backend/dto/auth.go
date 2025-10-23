@@ -15,3 +15,8 @@ type LoginResp struct {
 	AccessToken string `json:"accessToken"`
 	ExpiresIn   int64  `json:"expiresIn"`
 }
+
+type ResetPasswordRequest struct {
+	Email       string `json:"email" binding:"required,email"`
+	NewPassword string `json:"newPassword" binding:"required,min=8"`
+}

@@ -177,6 +177,7 @@ func main() {
 			apiAuth.POST("/login", authHandler.Login)
 			apiAuth.POST("/refresh", authHandler.Refresh)
 			apiAuth.POST("/logout", authHandler.Logout)
+			apiAuth.POST("/reset-password", authHandler.ResetPassword)
 		}
 
 		api.GET("/me", middleware.AuthMiddleware(jwtCfg), func(c *gin.Context) {
@@ -251,6 +252,13 @@ func main() {
 			apiWorkoutSessions.GET("/search", workoutSessionHandler.SearchSessions) // búsqueda
 		}
 
+		r.GET("/change-password", func(c *gin.Context) {
+			c.HTML(http.StatusOK, "change-password", gin.H{ // Renderiza la nueva plantilla
+				"Title":   "Reestablecer Contraseña",
+				"Content": "content_change_password", // Usa el nombre del define del contenido
+				// No necesita FullWidth si quieres mantener el estilo de login/register
+			})
+		})
 		// --- Rutas de rutinas ---
 		apiRoutines := api.Group("/routines")
 		apiRoutines.Use(middleware.AuthMiddleware(jwtCfg)) // todas requieren JWT válido

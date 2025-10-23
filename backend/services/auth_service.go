@@ -18,6 +18,7 @@ type userAuthRepository interface {
 	Create(ctx context.Context, user *models.User) error
 	FindByEmail(ctx context.Context, email string) (*models.User, error)
 	FindByID(ctx context.Context, id primitive.ObjectID) (*models.User, error)
+	UpdatePassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error)
 }
 
 type sessionAuthRepository interface {
@@ -107,6 +108,47 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 	return nil
 }
 
+func (s *AuthService) ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error {
+	// 1. Buscar usuario por email
+	user, err := s.users.FindByEmail(ctx, req.Email)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			// Es importante no revelar si el email existe o no por seguridad.
+			// Podrías retornar un error genérico o simplemente no hacer nada y retornar nil.
+			// Por simplicidad, retornaremos un error indicando que no se pudo procesar.
+			return errors.New("no se pudo procesar la solicitud para este email")
+		}
+		// Otro error de base de datos
+		return err
+	}
+
+	// (Opcional: Podrías añadir validaciones extra, como verificar si el usuario está activo)
+	// if !user.IsActive {
+	// 	 return errors.New("usuario inactivo")
+	// }
+
+	// 2. Hashear la nueva contraseña
+	hashedPassword, err := utils.HashPassword(req.NewPassword)
+	if err != nil {
+		return errors.New("error al procesar la nueva contraseña")
+	}
+
+	// 3. Actualizar la contraseña en la base de datos usando el ID del usuario encontrado
+	_, err = s.users.UpdatePassword(user.ID, hashedPassword)
+	if err != nil {
+		return errors.New("error al actualizar la contraseña en la base de datos")
+	}
+
+	// 4. (Opcional) Registrar log
+	if s.logService != nil {
+		s.logService.RecordAction(user.ID, "password_reset")
+	}
+
+	// (Opcional avanzado: Podrías invalidar sesiones activas para este usuario aquí)
+
+	return nil // Éxito
+}
+
 func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip string) (string, int64, func(http.ResponseWriter), error) {
 	user, err := s.users.FindByEmail(ctx, req.Email)
 	if err != nil {
@@ -165,7 +207,6 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip
 
 	return accessToken, int64(accessTTL.Seconds()), setCookie, nil
 }
-
 
 func (s *AuthService) Refresh(ctx context.Context, plainRefresh, userAgent, ip string) (string, int64, func(http.ResponseWriter), error) {
 	session, err := s.findSessionByRefresh(ctx, plainRefresh)

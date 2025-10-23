@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
+	"github.com/juanpoggi12/JGNSolutions/backend/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,8 +44,9 @@ func (h *WorkoutEntryHandler) CreateEntry(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
 		return
 	}
+	responseDTO := utils.ConvertWorkoutEntryModelToResponse(created)
+	c.JSON(http.StatusCreated, responseDTO)
 
-	c.JSON(http.StatusCreated, created)
 }
 
 // GET /api/workout-entries/:id → obtener una entrada por ID
