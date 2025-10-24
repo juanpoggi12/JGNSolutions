@@ -47,6 +47,33 @@
         </div>
       </div>
     </div>
+    </div> <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6">
+      <div class="card card-lite">
+        <div class="card-header">
+          <h5 class="mb-0">Ejercicios Más Populares</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush" id="topExercisesList">
+            <li class="list-group-item text-muted">Cargando...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      <div class="card card-lite">
+        <div class="card-header">
+          <h5 class="mb-0">Rutinas Más Populares</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush" id="topRoutinesList">
+             <li class="list-group-item text-muted">Cargando...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card card-lite mb-4"> ```
   </div>
 
   <div class="card card-lite mb-4">
@@ -92,6 +119,39 @@
       <div class="mb-3">
         <label for="exerciseSearchName" class="form-label">Buscar por Nombre:</label>
         <input type="text" class="form-control" id="exerciseSearchName" placeholder="Escribe un nombre...">
+      </div>
+      <div class="row g-3 mb-3 align-items-end">
+        <div class="col-md-4">
+          <label for="exerciseFilterCategory" class="form-label">Categoría:</label>
+          <select class="form-select form-select-sm" id="exerciseFilterCategory">
+            <option value="">Todas</option>
+            <option value="FUERZA">Fuerza</option>
+            <option value="CARDIO">Cardio</option>
+            <option value="FLEXIBILIDAD">Flexibilidad</option>
+            <option value="OTRA">Otra</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="exerciseFilterMuscleGroup" class="form-label">Grupo Muscular:</label>
+          <select class="form-select form-select-sm" id="exerciseFilterMuscleGroup">
+             <option value="">Todos</option>
+             <option value="PECHO">Pecho</option>
+             <option value="ESPALDA">Espalda</option>
+             <option value="PIERNA">Pierna</option>
+             <option value="HOMBRO">Hombro</option>
+             <option value="BRAZO">Brazo</option>
+             <option value="CORE">Core</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label for="exerciseFilterDifficulty" class="form-label">Dificultad:</label>
+          <select class="form-select form-select-sm" id="exerciseFilterDifficulty">
+            <option value="">Todas</option>
+            <option value="BAJA">Baja</option>
+            <option value="MEDIA">Media</option>
+            <option value="ALTA">Alta</option>
+          </select>
+        </div>
       </div>
     <div class="card-body">
       <div class="table-responsive">
@@ -380,7 +440,7 @@ const userSearchInput = document.getElementById('userSearchEmail');
             loadUserList(searchTerm); // Llama a loadUserList con el término de búsqueda
         }, 300); // Espera 300ms después de la última tecla antes de buscar
     });
-    async function loadExerciseList(nameFilter = '') { // Añade parámetro opcional
+   async function loadExerciseList(nameFilter = '', categoryFilter = '', muscleGroupFilter = '', difficultyFilter = '') { // Añade parámetro opcional
         const tbody = document.getElementById('exerciseListTableBody');
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando ejercicios...</td></tr>';
@@ -388,17 +448,32 @@ const userSearchInput = document.getElementById('userSearchEmail');
         try {
             // Construye la URL de la API con el filtro si existe
             // Usamos el parámetro 'q' que espera la API GET /exercises
-            let apiUrl = '/exercises?limit=100'; // Mantenemos el límite alto por ahora
-            if (nameFilter) {
-                apiUrl += `&q=${encodeURIComponent(nameFilter)}`; // Añade &q=...
-            }
+            let apiUrl = '/exercises?limit=100'; // Puedes ajustar el límite si quieres paginación
+
+    // Añade filtros si tienen valor
+    if (nameFilter) {
+        apiUrl += `&q=${encodeURIComponent(nameFilter)}`; // Filtro por nombre
+    }
+    if (categoryFilter) {
+        apiUrl += `&category=${encodeURIComponent(categoryFilter)}`; // Filtro por categoría
+    }
+    if (muscleGroupFilter) {
+        apiUrl += `&muscleGroup=${encodeURIComponent(muscleGroupFilter)}`; // Filtro por grupo muscular (ojo: camelCase aquí)
+    }
+    if (difficultyFilter) {
+        apiUrl += `&difficulty=${encodeURIComponent(difficultyFilter)}`; // Filtro por dificultad
+    }
+
+    console.log("API URL para ejercicios:", apiUrl);
 
             const response = await api(apiUrl); // Llama a la API (con o sin filtro)
             const exercises = response?.items || []; 
 
             if (!exercises || exercises.length === 0) {
-                 const message = nameFilter ? 'No se encontraron ejercicios con ese nombre.' : 'No hay ejercicios creados.';
-                 tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${message}</td></tr>`;
+                 const message = (nameFilter || categoryFilter || muscleGroupFilter || difficultyFilter)
+                 ? 'No se encontraron ejercicios con esos filtros.'
+                 : 'No hay ejercicios creados.';
+tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${message}</td></tr>`;
                 return;
             }
 
@@ -431,8 +506,7 @@ const userSearchInput = document.getElementById('userSearchEmail');
                  `;
                  tbody.appendChild(tr);
             });
-            console.log(`${exercises.length} ejercicios cargados ${nameFilter ? 'filtrados por "' + nameFilter + '"' : ''} (sin incluir borrados).`);
-
+          console.log(`${exercises.length} ejercicios cargados (Filtros: N='${nameFilter}', C='${categoryFilter}', M='${muscleGroupFilter}', D='${difficultyFilter}') (sin incluir borrados).`);
         } catch (error) {
             console.error("Error al cargar ejercicios:", error.message);
             tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar ejercicios: ${error.message}</td></tr>`;
@@ -440,15 +514,31 @@ const userSearchInput = document.getElementById('userSearchEmail');
     }
 // === NUEVO: Listener para el Input de Búsqueda de Ejercicios ===
     const exerciseSearchInput = document.getElementById('exerciseSearchName');
-    let exerciseSearchTimeout; // Para debounce
+    const exerciseFilterCategory = document.getElementById('exerciseFilterCategory');
+const exerciseFilterMuscleGroup = document.getElementById('exerciseFilterMuscleGroup');
+const exerciseFilterDifficulty = document.getElementById('exerciseFilterDifficulty');
+  
 
-    exerciseSearchInput?.addEventListener('input', () => {
-        clearTimeout(exerciseSearchTimeout); 
-        exerciseSearchTimeout = setTimeout(() => {
-            const searchTerm = exerciseSearchInput.value.trim();
-            loadExerciseList(searchTerm); // Llama a loadExerciseList con el filtro de nombre
-        }, 300); // Espera 300ms
-    });
+   // Función unificada para cargar la lista con todos los filtros actuales
+        function triggerExerciseLoadWithFilters() {
+            const name = exerciseSearchInput?.value.trim() || '';
+            const category = exerciseFilterCategory?.value || '';
+            const muscleGroup = exerciseFilterMuscleGroup?.value || '';
+            const difficulty = exerciseFilterDifficulty?.value || '';
+            loadExerciseList(name, category, muscleGroup, difficulty);
+        }
+
+        // Listener para el input de nombre (con debounce)
+        let exerciseSearchTimeout;
+        exerciseSearchInput?.addEventListener('input', () => {
+            clearTimeout(exerciseSearchTimeout);
+            exerciseSearchTimeout = setTimeout(triggerExerciseLoadWithFilters, 300); // Llama a la función unificada
+        });
+
+        // Listeners para los selects (sin debounce, actualiza al cambiar)
+        exerciseFilterCategory?.addEventListener('change', triggerExerciseLoadWithFilters);
+        exerciseFilterMuscleGroup?.addEventListener('change', triggerExerciseLoadWithFilters);
+        exerciseFilterDifficulty?.addEventListener('change', triggerExerciseLoadWithFilters);
 
     async function loadSystemLogs() {
         const container = document.getElementById('logListContainer');
@@ -464,9 +554,11 @@ const userSearchInput = document.getElementById('userSearchEmail');
             logs.forEach(log => {
                 const entry = document.createElement('div');
                 entry.className = 'log-entry';
-                 const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Fecha inválida';
-                 const userIdShort = log.user_id ? log.user_id.substring(0, 8) + '...' : 'Sistema';
-                entry.innerHTML = `[${timestamp}] User: ${userIdShort} -> ${log.action || 'Acción desconocida'}`;
+                 // --- CORRECCIÓN: Usar PascalCase ---
+             const timestamp = log.Timestamp ? new Date(log.Timestamp).toLocaleString() : 'Fecha inválida'; // Usar log.Timestamp
+             const userIdShort = log.UserID ? log.UserID.substring(0, 8) + '...' : 'Sistema'; // Usar log.UserID
+            entry.innerHTML = `[${timestamp}] User: ${userIdShort} -> ${log.Action || 'Acción desconocida'}`; // Usar log.Action
+             // --- FIN CORRECCIÓN ---
                 container.appendChild(entry);
             });
             console.log(`${logs.length} logs cargados.`);
@@ -475,7 +567,72 @@ const userSearchInput = document.getElementById('userSearchEmail');
             container.innerHTML = `<p class="text-center text-danger">Error al cargar logs: ${error.message}</p>`;
         }
     }
-    // --- Fin Funciones de Carga ---
+   
+    async function loadTopExercises(limit = 5) { // Carga top 5 por defecto
+        const list = document.getElementById('topExercisesList');
+        if (!list) return;
+        list.innerHTML = '<li class="list-group-item text-muted">Cargando ejercicios populares...</li>';
+        try {
+            // Llama a la API GET /api/admin/exercises/top?limit=...
+            const exercises = await api(`/admin/exercises/top?limit=${limit}`);
+
+            if (!exercises || exercises.length === 0) {
+                list.innerHTML = '<li class="list-group-item text-muted">No hay datos de uso de ejercicios.</li>';
+                return;
+            }
+
+            list.innerHTML = ''; // Limpia la lista
+            exercises.forEach(ex => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                // El DTO devuelve exercise_id, name, usage_count
+                li.textContent = ex.name || `Ejercicio ID: ${ex.exercise_id}`; // Muestra nombre o ID si falta
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-primary rounded-pill';
+                badge.textContent = ex.usage_count; // Muestra el contador
+                li.appendChild(badge);
+                list.appendChild(li);
+            });
+            console.log(`Top ${exercises.length} ejercicios cargados.`);
+
+        } catch (error) {
+            console.error("Error al cargar top ejercicios:", error.message);
+            list.innerHTML = `<li class="list-group-item text-danger">Error: ${error.message}</li>`;
+        }
+    }
+
+    async function loadTopRoutines(limit = 5) { // Carga top 5 por defecto
+        const list = document.getElementById('topRoutinesList');
+        if (!list) return;
+        list.innerHTML = '<li class="list-group-item text-muted">Cargando rutinas populares...</li>';
+        try {
+            // Llama a la API GET /api/admin/routines/top?limit=...
+            const routines = await api(`/admin/routines/top?limit=${limit}`);
+
+            if (!routines || routines.length === 0) {
+                list.innerHTML = '<li class="list-group-item text-muted">No hay datos de uso de rutinas.</li>';
+                return;
+            }
+
+            list.innerHTML = ''; // Limpia la lista
+            routines.forEach(r => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                // El DTO devuelve routine_id, name, usage_count
+                li.textContent = r.name || `Rutina ID: ${r.routine_id}`; // Muestra nombre o ID si falta
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-info rounded-pill text-dark'; // Color diferente
+                badge.textContent = r.usage_count; // Muestra el contador
+                li.appendChild(badge);
+                list.appendChild(li);
+            });
+            console.log(`Top ${routines.length} rutinas cargadas.`);
+
+        } catch (error) {
+            console.error("Error al cargar top rutinas:", error.message);
+            list.innerHTML = `<li class="list-group-item text-danger">Error: ${error.message}</li>`;
+        }
+    }
 
 
     // --- Listeners para Acciones ---
@@ -624,7 +781,9 @@ const userSearchInput = document.getElementById('userSearchEmail');
             loadAdminKPIs(),
             loadUserList(),
             loadExerciseList(),
-            loadSystemLogs()
+            loadSystemLogs(),
+            loadTopExercises(), // <-- AÑADIR LLAMADA
+            loadTopRoutines()
         ]).catch(err => {
              // Si alguna llamada falla por 401/403, la redirección ya ocurrió.
              // Si es otro error, lo mostramos.

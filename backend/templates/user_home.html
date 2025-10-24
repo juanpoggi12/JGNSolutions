@@ -111,7 +111,7 @@
             <i class="bi bi-person"></i> </div>
           <div>
             <div class="fw-semibold">Mi cuenta</div>
-            <div class="text-muted small">Usuario</div>
+            <div class="text-muted small" id="sidebarUserName">Usuario</div>
           </div>
         </div>
       </div>
@@ -141,28 +141,70 @@
       </div>
 
       <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3"><div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-activity"></i></div> <div> <div class="label">Frecuencia (prom.)</div> <div class="value" id="kpiFrecuencia">0</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-blue"><span class="icon-dot dot-green"></span> Últimas 8 sem.</span> </div> </div> </div></div>
+
         <div class="col-6 col-lg-3">
-  <div class="card card-lite">
-    <div class="card-body">
-      <div class="kpi">
-        <div class="icon"><i class="bi bi-graph-up-arrow"></i></div>
-        <div>
-          <div class="label">Mejora General (%)</div> <div class="value" id="kpiMejora">N/A</div> </div>
-      </div>
-      <div class="mt-2 small">
-        <span class="pill pill-green"><span class="icon-dot dot-green"></span> Últimos 30 días</span> </div>
-    </div>
-  </div>
-</div>
-        <div class="col-6 col-lg-3"><div class="card card-lite"> <div class="card-body"> <div class="kpi"> <div class="icon"><i class="bi bi-trophy"></i></div> <div> <div class="label">Top rutina</div> <div class="value" id="kpiTop">—</div> </div> </div> <div class="mt-2 small"> <span class="pill pill-amber"><span class="icon-dot dot-amber"></span> Más completada</span> </div> </div> </div></div>
+          <div class="card card-lite">
+             <div class="card-body">
+               <div class="kpi">
+                 <div class="icon"><i class="bi bi-activity"></i></div>
+                 <div>
+                   <div class="label">Frecuencia (prom.)</div>
+                   <div class="value" id="kpiFrecuencia">0</div>
+                 </div>
+               </div>
+               <div class="mt-2 small">
+                 <span class="pill pill-blue"><span class="icon-dot dot-green"></span> Últimas 8 sem.</span>
+               </div>
+             </div>
+          </div>
+        </div>
+
         <div class="col-6 col-lg-3">
-  <div class="card card-lite">
-    <div class="card-body">
-      <div class="text-muted small">Sesiones Totales</div> <div class="display-6 fw-semibold" id="kpiTotalSesiones">0</div> <div class="small text-muted">(Últimas 8 sem.)</div> 
-    </div>
-  </div>
-</div>
+          <div class="card card-lite">
+            <div class="card-body">
+              <div class="kpi">
+                <div class="icon"><i class="bi bi-graph-up-arrow"></i></div>
+                <div>
+                  <div class="label">Mejora General (%)</div>
+                  <div class="value d-flex align-items-center" id="kpiMejora">
+                    <span>N/A</span>
+                    </div>
+                  </div>
+              </div>
+              <div class="mt-2 small">
+                <span class="pill pill-green"><span class="icon-dot dot-green"></span> Últimos 30 días</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+          <div class="card card-lite">
+             <div class="card-body">
+               <div class="kpi">
+                 <div class="icon"><i class="bi bi-trophy"></i></div>
+                 <div>
+                   <div class="label">Top rutina</div>
+                   <div class="value" id="kpiTop">—</div>
+                 </div>
+               </div>
+               <div class="mt-2 small">
+                 <span class="pill pill-amber"><span class="icon-dot dot-amber"></span> Más completada</span>
+               </div>
+             </div>
+          </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+          <div class="card card-lite">
+            <div class="card-body">
+              <div class="text-muted small">Sesiones Totales</div>
+              <div class="display-6 fw-semibold" id="kpiTotalSesiones">0</div>
+              <div class="small text-muted">(Últimas 8 sem.)</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div id="tab-inicio" class="tab-pane active"> <div class="card card-lite mb-4">
@@ -356,7 +398,14 @@
           <h4 id="currentExerciseName">Selecciona un ejercicio</h4>
           <p class="text-muted" id="currentExerciseTarget">Series y reps objetivo aparecerán aquí.</p>
           <hr>
-          
+          <div id="currentExerciseDetails" class="mb-3" style="display: none;"> <p id="currentExerciseDescription" class="small"></p>
+            <div id="currentExerciseMedia" class="mb-2 text-center">
+              </div>
+            <h6>Instrucciones:</h6>
+            <ul id="currentExerciseInstructions" class="list-unstyled small">
+              </ul>
+          </div>
+          <form id="formLogSet" class="exercise-log-form">
           <form id="formLogSet" class="exercise-log-form">
             <input type="hidden" id="logSessionId" value="">
             <input type="hidden" id="logExerciseId" value="">
@@ -420,6 +469,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let __USER_ROUTINES__ = []; // Cache para las rutinas del usuario
     let __CURRENT_WORKOUT_SESSION__ = null; // { sessionId, routineId, exercises: [] }
     let __CURRENT_EXERCISE_INDEX__ = -1;
+    let __ALL_SESSIONS_CACHE__ = []; // Guardará todas las sesiones cargadas
+    let __CURRENT_HISTORY_FILTER__ = '';
     let chartFrecuencia = null;
     let chartProgresoTiempo = null;
     let chartProgreso = null;
@@ -564,7 +615,8 @@ const btnLogout = document.getElementById('btnLogout');
         const level = p?.level; 
         const goal = p?.goal; 
         const birthDate = p?.birthDate || '';
-        
+        const sidebarNameEl = document.getElementById('sidebarUserName'); if(sidebarNameEl) sidebarNameEl.textContent = name || 'Usuario'; // Actualiza el nombre en la sidebar
+    // --- FIN LÍNEA AÑADIDA ---
         const sidebarEmailEl=document.getElementById('sidebarUserEmail'); if(sidebarEmailEl) sidebarEmailEl.textContent=email||'—';
         const configEmailEl=document.getElementById('configUserEmail'); if(configEmailEl) configEmailEl.textContent=email||'—';
         const fNombre=document.getElementById('pfNombre'); if(fNombre) fNombre.value=name;
@@ -775,17 +827,54 @@ const btnLogout = document.getElementById('btnLogout');
             }
 
             // --- Mostrar Mejora (Esperando dato del backend) ---
-            const kpiMejoraEl = document.getElementById('kpiMejora');
+            const kpiMejoraEl = document.getElementById('kpiMejora'); // Contenedor div.value
             if (kpiMejoraEl) {
-                // ASUMIMOS que summaryData tendrá un campo 'improvementPercent' calculado en el backend
-                const mejora = summaryData?.improvementPercent;
+                const mejora = summaryData?.improvementPercent; // Obtiene el valor del backend
+                const valueSpan = kpiMejoraEl.querySelector('span'); // El span dentro del div
 
-                if (mejora !== null && mejora !== undefined && !isNaN(mejora)) {
-                    // Muestra el porcentaje con un signo + si es positivo
-                    kpiMejoraEl.textContent = (mejora >= 0 ? '+' : '') + mejora.toFixed(1) + '%';
+                // *** Verificación añadida: Asegurarse de que el span exista ***
+                if (!valueSpan) {
+                    console.error("Error: No se encontró el <span> dentro de #kpiMejora. ¿Se actualizó el HTML?");
+                    kpiMejoraEl.textContent = 'Error HTML'; // Mensaje de error visible
                 } else {
-                    kpiMejoraEl.textContent = 'N/A'; // Muestra N/A si el backend no lo envía
+                    let iconHTML = '';
+                    let textColorClass = 'text-muted'; // Color por defecto
+
+                    if (mejora !== null && mejora !== undefined && !isNaN(mejora)) {
+                        const mejoraFixed = mejora.toFixed(1);
+                        valueSpan.textContent = (mejora > 0 ? '+' : '') + mejoraFixed + '%'; // Muestra el número
+
+                        // Asigna color e icono según el valor
+                        if (mejora > 0.1) {
+                            textColorClass = 'text-success';
+                            iconHTML = '<i class="bi bi-arrow-up-short ms-1"></i>';
+                        } else if (mejora < -0.1) {
+                            textColorClass = 'text-danger';
+                            iconHTML = '<i class="bi bi-arrow-down-short ms-1"></i>';
+                        } else {
+                            textColorClass = 'text-muted'; // Cambio mínimo
+                        }
+                    } else {
+                        valueSpan.textContent = 'N/A'; // Texto para N/A
+                        textColorClass = 'text-muted';
+                    }
+
+                    // Limpiar clases de color anteriores y añadir la nueva AL CONTENEDOR
+                    kpiMejoraEl.classList.remove('text-success', 'text-danger', 'text-muted');
+                    kpiMejoraEl.classList.add(textColorClass);
+
+                    // Limpiar icono anterior (si lo hubiera) y añadir el nuevo DESPUÉS del span
+                    const existingIcon = kpiMejoraEl.querySelector('i');
+                    if (existingIcon) {
+                        existingIcon.remove();
+                    }
+                    if (iconHTML) {
+                        // Insertar el icono como HTML después del span
+                        valueSpan.insertAdjacentHTML('afterend', iconHTML);
+                    }
                 }
+            } else {
+                console.error("Error: Elemento #kpiMejora no encontrado.");
             }
 
             // --- 1. KPI: Top Rutina ---
@@ -825,86 +914,106 @@ const btnLogout = document.getElementById('btnLogout');
      * Carga el historial de sesiones de entrenamiento en la tabla
      */
     async function cargarHistorial() {
-        const tbody = document.getElementById('tbHistorial');
-        if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando historial...</td></tr>';
+    const tbody = document.getElementById('tbHistorial');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando historial...</td></tr>';
 
-        try {
-            // GET /api/workout-sessions/search (usa el DTO de respuesta WorkoutSessionResponse)
-            const sessions = await api('/workout-sessions/search'); // sessions ahora es un array de WorkoutSessionResponse
+    try {
+        // Siempre pide TODAS las sesiones
+        const sessions = await api('/workout-sessions/search');
+        __ALL_SESSIONS_CACHE__ = sessions || []; // Guarda en caché
 
-            if (!sessions || sessions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No has registrado entrenamientos.</td></tr>';
-                return;
-            }
+        // Ordena por fecha de inicio (más nuevas primero) - Usa fecha_hora_inicio del DTO
+        __ALL_SESSIONS_CACHE__.sort((a, b) => new Date(b.fecha_hora_inicio) - new Date(a.fecha_hora_inicio));
 
-            // Mapea IDs de rutinas a Nombres (usando el cache que ya tenemos)
-            const routineMap = __USER_ROUTINES__.reduce((acc, r) => {
-                acc[r.id] = r.name;
-                return acc;
-            }, {});
+        console.log(`Historial cargado con ${__ALL_SESSIONS_CACHE__.length} sesiones.`);
+        renderFilteredHistorial(); // Llama a la función que renderiza según el filtro
 
-            tbody.innerHTML = ''; // Limpia la tabla
-
-            // Ordena por fecha de inicio (más nuevas primero)
-            // Usa fecha_hora_inicio del DTO
-            sessions.sort((a, b) => new Date(b.fecha_hora_inicio) - new Date(a.fecha_hora_inicio));
-
-            for (const s of sessions) { // 's' es ahora un objeto WorkoutSessionResponse
-                const tr = document.createElement('tr');
-
-                // Accede a routine_id del DTO
-                const routineName = s.routine_id ? (routineMap[s.routine_id] || 'Rutina Eliminada') : 'Entrenamiento Libre';
-                // Accede a fecha_hora_inicio del DTO
-                const startTime = new Date(s.fecha_hora_inicio).toLocaleString();
-
-                // --- INICIO: CORRECCIÓN ---
-                // Verifica si fecha_hora_fin existe y es una string válida antes de usar startsWith
-                let endTime = '—'; // Default a '—'
-                let isCompleted = false; // Default a false
-
-                // Accede a fecha_hora_fin del DTO
-                if (s.fecha_hora_fin && typeof s.fecha_hora_fin === 'string') {
-                     // Check if it's the "zero" date string used by Go's default time.Time
-                    isCompleted = !s.fecha_hora_fin.startsWith('0001-01-01');
-                    if (isCompleted) {
-                        endTime = new Date(s.fecha_hora_fin).toLocaleString();
-                    }
-                } else {
-                     // Handle cases where fecha_hora_fin might be null, undefined, or not a string
-                     console.warn(`[cargarHistorial] Session ID ${s.id} has missing or invalid fecha_hora_fin:`, s.fecha_hora_fin);
-                }
-                // --- FIN: CORRECCIÓN ---
-
-                const statusPill = isCompleted
-                    ? `<span class="pill pill-green"><span class="icon-dot dot-green"></span> Completado</span>`
-                    : `<span class="pill pill-amber"><span class="icon-dot dot-amber"></span> En Curso</span>`;
-
-                tr.innerHTML = `
-                    <td>
-                        <div class="fw-semibold">${routineName}</div>
-                        <div class="small text-muted">${s.notas_generales || 'Sin notas'}</div>
-                    </td>
-                    <td>${startTime}</td>
-                    <td>${endTime}</td>
-                    <td>${statusPill}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm btn-outline-secondary" title="Ver Detalles" data-session-id="${s.id}">
-                            <i class="bi bi-eye-fill"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger ms-1 btn-eliminar-sesion" title="Eliminar" data-session-id="${s.id}">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            }
-
-        } catch (e) {
-            console.error("Error cargando historial:", e.message); // Mantén el log del error
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar historial: ${e.message}</td></tr>`;
-        }
+    } catch (e) {
+        console.error("Error cargando historial:", e.message);
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar historial: ${e.message}</td></tr>`;
+        __ALL_SESSIONS_CACHE__ = []; // Limpia caché en caso de error
     }
+}
+
+/**
+ * Renderiza la tabla de historial filtrando __ALL_SESSIONS_CACHE__
+ * según el valor de __CURRENT_HISTORY_FILTER__.
+ */
+function renderFilteredHistorial() {
+    const tbody = document.getElementById('tbHistorial');
+    if (!tbody) return;
+    tbody.innerHTML = ''; // Limpia tabla
+
+    const filteredSessions = __ALL_SESSIONS_CACHE__.filter(s => {
+        // Determina si la sesión está completada (igual que antes)
+        let isCompleted = false;
+        if (s.fecha_hora_fin && typeof s.fecha_hora_fin === 'string' && !s.fecha_hora_fin.startsWith('0001-01-01')) {
+            isCompleted = true;
+        }
+
+        // Aplica el filtro
+        if (__CURRENT_HISTORY_FILTER__ === 'completed') {
+            return isCompleted;
+        } else if (__CURRENT_HISTORY_FILTER__ === 'open') {
+            return !isCompleted;
+        } else {
+            return true; // Si el filtro es '' (Todos), muestra todo
+        }
+    });
+
+    if (filteredSessions.length === 0) {
+        let message = 'No has registrado entrenamientos.';
+        if (__CURRENT_HISTORY_FILTER__ === 'completed') message = 'No hay entrenamientos completados.';
+        if (__CURRENT_HISTORY_FILTER__ === 'open') message = 'No hay entrenamientos en curso.';
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${message}</td></tr>`;
+        return;
+    }
+
+    // Mapea IDs de rutinas a Nombres (usando el cache que ya tenemos)
+    const routineMap = __USER_ROUTINES__.reduce((acc, r) => {
+        acc[r.id] = r.name;
+        return acc;
+    }, {});
+
+    // Renderiza las filas filtradas (código de renderizado de <tr> igual que antes)
+    filteredSessions.forEach(s => {
+        const tr = document.createElement('tr');
+        const routineName = s.routine_id ? (routineMap[s.routine_id] || 'Rutina Eliminada') : 'Entrenamiento Libre';
+        const startTime = new Date(s.fecha_hora_inicio).toLocaleString();
+        let endTime = '—';
+        let isCompleted = false;
+        if (s.fecha_hora_fin && typeof s.fecha_hora_fin === 'string') {
+            isCompleted = !s.fecha_hora_fin.startsWith('0001-01-01');
+            if (isCompleted) {
+                endTime = new Date(s.fecha_hora_fin).toLocaleString();
+            }
+        }
+        const statusPill = isCompleted
+            ? `<span class="pill pill-green"><span class="icon-dot dot-green"></span> Completado</span>`
+            : `<span class="pill pill-amber"><span class="icon-dot dot-amber"></span> En Curso</span>`;
+
+        tr.innerHTML = `
+            <td>
+                <div class="fw-semibold">${routineName}</div>
+                <div class="small text-muted">${s.notas_generales || 'Sin notas'}</div>
+            </td>
+            <td>${startTime}</td>
+            <td>${endTime}</td>
+            <td>${statusPill}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-secondary" title="Ver Detalles" data-session-id="${s.id}">
+                    <i class="bi bi-eye-fill"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger ms-1 btn-eliminar-sesion" title="Eliminar" data-session-id="${s.id}">
+                    <i class="bi bi-trash-fill"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    console.log(`Historial renderizado con ${filteredSessions.length} sesiones (Filtro: '${__CURRENT_HISTORY_FILTER__ || 'Todos'}').`);
+}
 
     // Listener para botones en la tabla de historial (Ojo y Eliminar)
 // Listener para botones en la tabla de historial (Ojo y Eliminar)
@@ -997,7 +1106,7 @@ async function reanudarEntrenamiento(sessionId) {
              console.error("[reanudar] Error fetching session or entries:", err);
              throw new Error("No se pudo cargar la información de la sesión o sus entradas.");
         });
-
+console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData)); // Log the raw data
         if (!sessionData) throw new Error("No se encontró la sesión.");
         console.log("[reanudar] Session data fetched:", sessionData); // sessionData es WorkoutSessionResponse DTO
         console.log("[reanudar] Entries data fetched:", entriesData); // entriesData es []WorkoutEntry Model
@@ -1034,27 +1143,54 @@ async function reanudarEntrenamiento(sessionId) {
         // 3. Mapea los logs (entradas) obtenidos al estado local. CRUCIAL que esté limpio.
          console.log("[reanudar] Populating logs cache...");
         (entriesData || []).forEach(entry => { // entry es WorkoutEntry Model
-            const entryExerciseId = entry.exerciseId; // camelCase del modelo
-            const entrySetNumber = entry.setNumber; // camelCase del modelo
+            console.log("[reanudar] Populating logs cache... Initial state:", JSON.parse(JSON.stringify(__CURRENT_WORKOUT_SESSION__.logs))); // Log initial empty state
+(entriesData || []).forEach((entry, idx) => { // entry is WorkoutEntry Model
+    // --- START DEBUG LOGGING ---
+    const entrySessionId = entry.workoutSessionId; // Obtén el ID de sesión de esta entrada específica
 
-            if (!entryExerciseId || entrySetNumber === undefined || entrySetNumber === null) {
-                console.warn("[reanudar] Skipping entry with missing exerciseId or setNumber:", entry);
-                return;
-            }
+        // --- FILTRO DE CONTENCIÓN ---
+        if (entrySessionId !== __CURRENT_WORKOUT_SESSION__.sessionId) {
+            console.warn(`[reanudar populating loop ${idx}] IGNORANDO entrada de sesión incorrecta (${entrySessionId}) - Esperada: (${__CURRENT_WORKOUT_SESSION__.sessionId})`);
+            return; // SALTA esta entrada si no pertenece a la sesión actual
+        }
+    console.log(`[reanudar populating loop ${idx}] Processing entry:`, JSON.stringify(entry));
+    // Check property names directly from the logged entry object
+    // Estas propiedades VIENEN DEL MODELO Go 'WorkoutEntry'
+    const entryExerciseId = entry.exerciseId;
+    const entrySetNumber = entry.setNumber;
 
-            if (!__CURRENT_WORKOUT_SESSION__.logs[entryExerciseId]) {
-                __CURRENT_WORKOUT_SESSION__.logs[entryExerciseId] = {};
-            }
+    if (entryExerciseId === undefined || entrySetNumber === undefined || entryExerciseId === null || entrySetNumber === null) {
+        console.warn(`[reanudar populating loop ${idx}] Skipping entry due to missing or null exerciseId (${entryExerciseId}) or setNumber (${entrySetNumber}):`, entry);
+        return; // Skip this entry if essential keys are missing/null
+    }
+    // --- END DEBUG LOGGING ---
 
-            // Guarda los datos usando camelCase consistente internamente
-            __CURRENT_WORKOUT_SESSION__.logs[entryExerciseId][entrySetNumber] = {
-                id: entry.id,
-                setNumber: entrySetNumber, // Clave interna camelCase
-                repsDone: entry.repsDone,
-                weightUsed: entry.weightUsed,
-                timeSec: entry.timeSec,
-                perceivedEffort: entry.perceivedEffort
-            };
+    // Use the exercise ID string as the key for the logs object
+    const canonicalExerciseId = String(entryExerciseId); // Force to string to ensure consistent key type
+
+    if (!__CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId]) {
+        __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId] = {};
+        console.log(`[reanudar populating loop ${idx}] Initialized logs structure for exercise ${canonicalExerciseId}`);
+    }
+
+    // Guarda los datos usando camelCase consistente internamente, leyendo desde el modelo Go 'WorkoutEntry'
+    const logData = {
+        id: entry.id || 'temp-' + Date.now(), // Use ID from entry if available
+        setNumber: entrySetNumber,
+        repsDone: entry.repsDone ?? null,       // Lee 'repsDone' (camelCase from Go model)
+        weightUsed: entry.weightUsed ?? null,   // Lee 'weightUsed' (camelCase from Go model)
+        timeSec: entry.timeSec ?? null,         // Lee 'timeSec' (camelCase from Go model)
+        perceivedEffort: entry.perceivedEffort ?? null // Lee 'perceivedEffort' (camelCase from Go model)
+    };
+    // Almacena usando el ID canónico y el número de set como claves anidadas
+    __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId][entrySetNumber] = logData;
+
+    // --- MORE DEBUG LOGGING ---
+    console.log(`[reanudar populating loop ${idx}] Added log for Ex ${canonicalExerciseId}, Set ${entrySetNumber}:`, JSON.stringify(logData));
+    // Loguea el estado *parcial* del objeto para este ejercicio específico DENTRO del loop
+    console.log(`[reanudar populating loop ${idx}] Current state of logs['${canonicalExerciseId}']:`, JSON.parse(JSON.stringify(__CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId])));
+    // --- END MORE DEBUG LOGGING ---
+});
         });
         console.log("[reanudar] Logs cache populated:", JSON.parse(JSON.stringify(__CURRENT_WORKOUT_SESSION__.logs))); // Loguea copia
 
@@ -1070,27 +1206,45 @@ async function reanudarEntrenamiento(sessionId) {
 
         // Construye la lista de ejercicios para la sesión, calculando completedSets A PARTIR DE LOS LOGS CARGADOS
         __CURRENT_WORKOUT_SESSION__.exercises = routineExercises.map((re, index) => { // re es RoutineExerciseResponse DTO
-            const exerciseId = re.exercise_id; // snake_case del DTO
-            const targetSets = re.sets || '?';
-            const targetReps = re.reps || '?';
-            const targetWeight = re.target_weight ?? null; // snake_case del DTO
+    // --- START VERIFICATION BLOCK ---
+    // Ensure we use the CORRECT exercise ID format consistently for lookup
+    // The routine exercise DTO uses snake_case: re.exercise_id
+    const canonicalExerciseId = re.exercise_id; // Get the ID from the routine definition
 
-            const loggedSetsForThisExercise = __CURRENT_WORKOUT_SESSION__.logs[exerciseId] || {};
-            const completedSetsCount = Object.keys(loggedSetsForThisExercise).length;
-            console.log(`[reanudar] Exercise ${exerciseId}: Found ${completedSetsCount} logged sets.`);
+    // Perform the lookup using this canonical ID. Check existence robustly.
+    const loggedSetsForThisExercise = (__CURRENT_WORKOUT_SESSION__ && __CURRENT_WORKOUT_SESSION__.logs && __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId])
+                                        ? __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId]
+                                        : {}; // Default to empty object if logs or exercise entry doesn't exist
 
-            return {
-                routineExerciseId: re.id,
-                exerciseId: exerciseId,
-                name: exerciseMap[exerciseId] || 'Ejercicio Desconocido',
-                order: re.order || (index + 1),
-                targetSets: targetSets,
-                targetReps: targetReps,
-                targetWeight: targetWeight,
-                completedSets: completedSetsCount, // <<<--- USA EL CONTEO REAL DE LOS LOGS CARGADOS
-                originalIndex: index
-             };
-        });
+    // Calculate count reliably from the keys found in the looked-up object
+    const completedSetsCount = Object.keys(loggedSetsForThisExercise).length;
+
+    // Log explicitly what was found for debugging
+    console.log(`[reanudar calculation] Exercise ID ${canonicalExerciseId}: Found logs object:`, JSON.parse(JSON.stringify(loggedSetsForThisExercise)), ` Count: ${completedSetsCount}`);
+    // --- END VERIFICATION BLOCK ---
+
+    // --- Other properties ---
+    const targetSets = re.sets || '?';
+    const targetReps = re.reps || '?';
+    const targetWeight = re.target_weight ?? null;
+    const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => {
+         acc[ex.id] = ex.name; return acc;
+    }, {});
+    // --- End other properties ---
+
+    return {
+        routineExerciseId: re.id,
+        exerciseId: canonicalExerciseId, // Store the canonical ID
+        name: exerciseMap[canonicalExerciseId] || 'Ejercicio Desconocido',
+        order: re.order || (index + 1),
+        targetSets: targetSets,
+        targetReps: targetReps,
+        targetWeight: targetWeight,
+        completedSets: completedSetsCount, // <<<--- Usa el conteo calculado aquí
+        originalIndex: index
+     };
+});
+// Esta
          console.log("[reanudar] Exercises structure loaded and completedSets calculated:", __CURRENT_WORKOUT_SESSION__.exercises);
 
         // 5. Renderizar la UI y abrir el modal
@@ -1413,7 +1567,6 @@ function activarEjercicio(index) {
             const exerciseId = ex.exerciseId;
             const nextSetNumber = ex.completedSets + 1;
             console.log(`[activarEjercicio] Activating exercise: ID=${exerciseId}, Name=${ex.name}, Index=${__CURRENT_EXERCISE_INDEX__}`);
-
             // Actualiza inputs ocultos del formulario
             const logExInput = document.getElementById('logExerciseId');
             const logSetNumInput = document.getElementById('logSetNumber');
@@ -1428,13 +1581,69 @@ function activarEjercicio(index) {
                     ? `Objetivo: ${ex.targetSets} series`
                     : 'Registra tus series'; // Mensaje genérico
             if(targetEl) targetEl.textContent = targetText;
+// --- INICIO: CÓDIGO NUEVO PARA MOSTRAR DETALLES ---
+            const detailsContainer = document.getElementById('currentExerciseDetails');
+            const descriptionEl = document.getElementById('currentExerciseDescription');
+            const mediaEl = document.getElementById('currentExerciseMedia');
+            const instructionsEl = document.getElementById('currentExerciseInstructions');
 
+            // Busca los detalles completos del ejercicio en la caché
+            const fullExerciseData = __CATALOGO_EJERCICIOS__.find(e => e.id === exerciseId);
+
+            if (detailsContainer && descriptionEl && mediaEl && instructionsEl && fullExerciseData) {
+                // Mostrar descripción (si existe)
+                descriptionEl.textContent = fullExerciseData.description || '';
+                descriptionEl.style.display = fullExerciseData.description ? 'block' : 'none';
+
+                // Mostrar imagen o video (si existe URL)
+                mediaEl.innerHTML = ''; // Limpiar contenido previo
+                if (fullExerciseData.media_url) { // El DTO usa media_url
+                    // Detectar si es imagen o video (simple verificación por extensión)
+                    const url = fullExerciseData.media_url;
+                    if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
+                        mediaEl.innerHTML = `<img src="${url}" alt="${ex.name}" class="img-fluid rounded mb-2" style="max-height: 200px;">`;
+                    } else if (/\.(mp4|webm|ogg)$/i.test(url)) {
+                        // Podríamos añadir un video, pero un link es más simple por ahora
+                        mediaEl.innerHTML = `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary mb-2"><i class="bi bi-play-circle-fill me-1"></i> Ver Video</a>`;
+                        // O si quieres embeberlo (puede necesitar ajustes de tamaño/controles):
+                        // mediaEl.innerHTML = `<video controls muted loop playsinline src="${url}" class="img-fluid rounded mb-2" style="max-height: 200px;"></video>`;
+                    } else {
+                        // Si no es imagen/video conocido, mostrar un link genérico
+                         mediaEl.innerHTML = `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-link-45deg me-1"></i> Ver Media</a>`;
+                    }
+                }
+
+                // Mostrar instrucciones (si existen)
+                instructionsEl.innerHTML = ''; // Limpiar lista previa
+                const instructionsList = fullExerciseData.instructions || []; // El DTO usa instructions
+                if (instructionsList.length > 0) {
+                    instructionsList.forEach((step, i) => {
+                        const li = document.createElement('li');
+                        li.textContent = `${i + 1}. ${step}`;
+                        instructionsEl.appendChild(li);
+                    });
+                } else {
+                    // Opcional: Mostrar mensaje si no hay instrucciones
+                    // instructionsEl.innerHTML = '<li class="text-muted">No hay instrucciones específicas.</li>';
+                }
+
+                // Mostrar el contenedor de detalles
+                detailsContainer.style.display = 'block';
+
+            } else if (detailsContainer) {
+                 // Ocultar si no se encontraron datos o elementos
+                 detailsContainer.style.display = 'none';
+                 if (!fullExerciseData) {
+                    console.warn(`[activarEjercicio] No se encontraron detalles completos para exerciseId ${exerciseId} en __CATALOGO_EJERCICIOS__`);
+                 }
+            }
+            // --- FIN: CÓDIGO NUEVO ---
             // Muestra el formulario (renderSetLogger decidirá si mostrar inputs o mensaje de completado)
             if(formEl) formEl.style.display = 'block';
             console.log("[activarEjercicio] Form display set to block.");
 
             // Llama a renderSetLogger para mostrar los sets loggeados y/o el input para el siguiente
-            console.log("[activarEjercicio] Calling renderSetLogger...");
+           console.log("[activarEjercicio] Calling renderSetLogger...");
             renderSetLogger();
         }
 
@@ -1588,24 +1797,24 @@ function activarEjercicio(index) {
     // Listener para el Formulario de Loggear Serie (Modal 2)
    // user_home.html, encuentra y reemplaza el bloque completo formLogSet.addEventListener('submit', ...)
 
-      formLogSet.addEventListener('submit', async e => {
-        e.preventDefault();
+ formLogSet.addEventListener('submit', async e => {
+ e.preventDefault();
 
-        // 1. Verificaciones y Extracción de valores de los inputs
-        if (!__CURRENT_WORKOUT_SESSION__ || __CURRENT_EXERCISE_INDEX__ < 0) {
-          console.error("Intento de guardar set sin sesión o ejercicio activo.");
-          return;
-        }
+ // 1. Verificaciones y Extracción de valores de los inputs
+ if (!__CURRENT_WORKOUT_SESSION__ || __CURRENT_EXERCISE_INDEX__ < 0) {
+ console.error("Intento de guardar set sin sesión o ejercicio activo.");
+ return;
+ }
 
-        const ex = __CURRENT_WORKOUT_SESSION__.exercises[__CURRENT_EXERCISE_INDEX__];
-        const setNumber = ex.completedSets + 1;
+ const ex = __CURRENT_WORKOUT_SESSION__.exercises[__CURRENT_EXERCISE_INDEX__];
+ const setNumber = ex.completedSets + 1;
 
-        // IDs dinámicos de los inputs del set actual
-        const repsInput = document.getElementById(`log_reps_${setNumber}`);
-        const weightInput = document.getElementById(`log_weight_${setNumber}`);
+ // IDs dinámicos de los inputs del set actual
+ const repsInput = document.getElementById(`log_reps_${setNumber}`);
+ const weightInput = document.getElementById(`log_weight_${setNumber}`);
 
-        // Extracción y validación de inputs
-        const reps = parseInt(repsInput && repsInput.value);
+ // Extracción y validación de inputs
+const reps = parseInt(repsInput && repsInput.value);
         const weightStr = weightInput && weightInput.value ? weightInput.value.trim() : '';
         const weight = weightStr !== '' ? parseFloat(weightStr) : null;
 
@@ -1619,71 +1828,61 @@ function activarEjercicio(index) {
           return;
         }
 
-        // 2. Prepara payload (usa snake_case para el DTO de Go)
-        const payload = {
-          workout_session_id: __CURRENT_WORKOUT_SESSION__.sessionId,
-          exercise_id: ex.exerciseId,
-          set_number: setNumber,
-          reps_done: reps,
-          weight_used: (weight !== null && !isNaN(weight)) ? weight : null
-        };
+// 2. Prepara payload (usa snake_case para el DTO de Go)
+ const payload = {
+ workout_session_id: __CURRENT_WORKOUT_SESSION__.sessionId,
+exercise_id: ex.exerciseId,
+set_number: setNumber,
+ reps_done: reps,
+weight_used: (weight !== null && !isNaN(weight)) ? weight : null  };
 
-        const saveButton = formLogSet.querySelector('button[type="submit"]');
-        if (saveButton) saveButton.disabled = true;
+ const saveButton = formLogSet.querySelector('button[type="submit"]');
+ if (saveButton) saveButton.disabled = true;
 
-        try {
-          // 3. Llamada a la API
-          const savedEntry = await api('/workout-entries', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-          });
+ try {
+// 3. Llamada a la API
+ const savedEntry = await api('/workout-entries', {
+ method: 'POST',
+ body: JSON.stringify(payload)
+ });
 
-          // 4. Lógica de canonicalización de la caché
-          const source = savedEntry || payload;
-          
-          // Intenta extraer la data de la fuente (API response o payload)
-          const repsData = source.RepsDone || source.repsDone || source.reps_done || payload.reps_done;
-          const weightData = source.WeightUsed || source.weightUsed || source.weight_used || payload.weight_used;
-          
-          const exerciseIdKey = source.exercise_id || source.exerciseId || ex.exerciseId;
-          const savedSetNumber = source.set_number || source.SetNumber || setNumber;
+ // 4. Lógica de canonicalización de la caché
+const exerciseIdKey = ex.exerciseId; // Use the known camelCase ID from the active exercise
+      const savedSetNumber = setNumber;
 
-          if (!__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]) {
-            __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] = {};
-          }
-          
-          // Creamos la entrada canónica (camelCase) para el caché local
-          const canonicalEntry = {
-            id: source.ID || source.id || 'temp-id-' + Date.now(),
-            setNumber: savedSetNumber,
-            repsDone: repsData,     // <-- CORREGIDO: AHORA EN CAMELCASE
-            weightUsed: weightData, // <-- CORREGIDO: AHORA EN CAMELCASE
-            timeSec: source.TimeSec || source.time_sec || 0,
-          };
+if (!__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]) {
+        __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] = {};
+      }
 
-          // Guarda la entrada canónica en la caché local
-          __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey][savedSetNumber] = canonicalEntry;
+// Creamos la entrada canónica (camelCase) para el caché local
+ const canonicalEntry = {
+        id: savedEntry.id || 'temp-id-' + Date.now(), // 'id' key is consistent
+        setNumber: savedSetNumber,
+        repsDone: savedEntry.reps_done ?? null,     // Read snake_case ('reps_done'), store as camelCase ('repsDone')
+        weightUsed: savedEntry.weight_used ?? null, // Read snake_case ('weight_used'), store as camelCase ('weightUsed')
+        timeSec: savedEntry.time_sec ?? null,       // Read snake_case ('time_sec'), store as camelCase ('timeSec')
+        perceivedEffort: savedEntry.perceived_effort ?? null // Read snake_case ('perceived_effort'), store as camelCase ('perceivedEffort')
+      };
+__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey][savedSetNumber] = canonicalEntry;
 
-          // Actualiza completedSets
-          if (exerciseIdKey === ex.exerciseId) {
-            ex.completedSets = Math.max(ex.completedSets, Object.keys(__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]).length);
-          }
+ // Actualiza completedSets
+ex.completedSets = Math.max(ex.completedSets, Object.keys(__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]).length);
 
-          console.log("Log local actualizado para set", savedSetNumber, ":", canonicalEntry);
+ console.log(`Log local actualizado (camelCase) para set ${savedSetNumber}:`, canonicalEntry); // Log for debugging
 
-          // 5. Refrescar UI
-          renderSetLogger();
-          renderWorkoutTimeline();
-          await cargarHistorial();
-          await cargarStats();
-          
-        } catch (err) {
-          console.error("Error guardando serie:", err);
-          alert('Error al guardar la serie: ' + (err.message || err));
-        } finally {
-          if (saveButton) saveButton.disabled = false;
-        }
-      });
+ // 5. Refrescar UI
+renderSetLogger();        // Re-render the sets for the current exercise
+      renderWorkoutTimeline();  // Update the left-side exercise list (progress badges)
+      await cargarHistorial();  // Refresh the main history table
+      await cargarStats();      // Refresh the dashboard KPIs/Charts
+
+ } catch (err) {
+ console.error("Error guardando serie:", err);
+ alert('Error al guardar la serie: ' + (err.message || err));
+ } finally {
+if (saveButton) saveButton.disabled = false;
+ }
+});
     /**
      * Finaliza el entrenamiento (cierra el modal, actualiza la sesión)
      */
@@ -2054,7 +2253,30 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
             if(mainContent) { mainContent.innerHTML = `<div class="alert alert-danger m-4">Error cargando datos: ${error.message}. Por favor, <a href="/login">inicia sesión</a> de nuevo.</div>`; }
         }
     }
+const historyFilterContainer = document.querySelector('#tab-inicio .card-lite .d-flex.gap-2'); // Contenedor de los botones .chip
+if (historyFilterContainer) {
+    historyFilterContainer.addEventListener('click', (e) => {
+        const clickedButton = e.target.closest('.chip[data-estado]');
+        if (!clickedButton) return; // Si no se hizo clic en un botón de filtro
 
+        // Obtener el nuevo estado del filtro
+        const newFilterState = clickedButton.dataset.estado;
+
+        // Actualizar estado global
+        __CURRENT_HISTORY_FILTER__ = newFilterState;
+
+        // Actualizar clases 'active' en los botones
+        historyFilterContainer.querySelectorAll('.chip[data-estado]').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        clickedButton.classList.add('active');
+
+        // Volver a renderizar la tabla con el nuevo filtro
+        renderFilteredHistorial();
+    });
+} else {
+    console.warn("No se encontró el contenedor de filtros de historial.");
+}
     initializeApp(); // Iniciar la aplicación
 
 });
