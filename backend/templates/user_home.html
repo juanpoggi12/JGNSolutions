@@ -234,7 +234,7 @@
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
               <div><div class="h5 mb-0">Historial</div><small class="text-muted">Sesiones recientes</small></div>
-              <div class="d-flex gap-2">
+              <div id="historyFilterButtons" class="d-flex gap-2">
                 <button class="chip active" data-estado="">Todos</button>
                 <button class="chip" data-estado="completed">Completados</button>
                 <button class="chip" data-estado="open">En curso</button>
@@ -2253,7 +2253,8 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
             if(mainContent) { mainContent.innerHTML = `<div class="alert alert-danger m-4">Error cargando datos: ${error.message}. Por favor, <a href="/login">inicia sesión</a> de nuevo.</div>`; }
         }
     }
-const historyFilterContainer = document.querySelector('#tab-inicio .card-lite .d-flex.gap-2'); // Contenedor de los botones .chip
+// CAMBIA ESTA LÍNEA para usar getElementById con el nuevo ID
+const historyFilterContainer = document.getElementById('historyFilterButtons');
 if (historyFilterContainer) {
     historyFilterContainer.addEventListener('click', (e) => {
         const clickedButton = e.target.closest('.chip[data-estado]');
@@ -2272,10 +2273,12 @@ if (historyFilterContainer) {
         clickedButton.classList.add('active');
 
         // Volver a renderizar la tabla con el nuevo filtro
+        console.log(`Filter changed to: '${__CURRENT_HISTORY_FILTER__}'. Re-rendering history.`); // Log para confirmar
         renderFilteredHistorial();
     });
 } else {
-    console.warn("No se encontró el contenedor de filtros de historial.");
+    // Actualiza el mensaje de advertencia si el ID no se encuentra
+    console.warn("Element with ID 'historyFilterButtons' not found.");
 }
     initializeApp(); // Iniciar la aplicación
 
