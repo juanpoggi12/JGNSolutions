@@ -48,11 +48,17 @@ func (service *UserProfileService) CreateProfile(actor Actor, req dto.UserProfil
 		return models.UserProfile{}, err
 	}
 
-	_, err = service.repository.InsertProfile(perfil)
+	// ✅ Guardar en base y capturar el InsertedID
+	result, err := service.repository.InsertProfile(perfil)
 	if err != nil {
 		return models.UserProfile{}, err
 	}
 
+	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
+		perfil.ID = oid
+	}
+
+	// Log opcional
 	if service.logService != nil {
 		service.logService.RecordAction(actor.UserID, "perfil:creado "+actor.UserID.Hex())
 	}
@@ -108,7 +114,6 @@ func (service *UserProfileService) UpdateProfile(actor Actor, id string, req dto
 
 	return perfilActual, nil
 }
-
 
 // Eliminar un perfil (solo admin)
 func (service *UserProfileService) DeleteProfile(actor Actor, id string) error {

@@ -139,7 +139,7 @@ func (h *UserProfileHandler) CreateProfile(c *gin.Context) {
 	c.JSON(http.StatusCreated, created)
 }
 
-// DELETE /api/profile/:id → Eliminar perfil (solo admin o el mismo usuario)
+// DELETE /api/profile/:id → Eliminar perfil (solo admin)
 func (h *UserProfileHandler) DeleteProfile(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
@@ -150,18 +150,19 @@ func (h *UserProfileHandler) DeleteProfile(c *gin.Context) {
 		Role:   role,
 	}
 
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
+	// Solo los administradores pueden eliminar perfiles
+	if actor.Role != "admin" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "solo los administradores pueden eliminar perfiles"})
+		return
+	}
+
+	// Validar formato del ID
+	if _, err := primitive.ObjectIDFromHex(id); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
 		return
 	}
 
-	// Si no es admin y quiere borrar otro perfil, denegamos
-	if actor.Role != "admin" && actor.UserID != objectID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "no tienes permiso para eliminar este perfil"})
-		return
-	}
-
+	// Llamar al servicio
 	if err := h.userProfileService.DeleteProfile(actor, id); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
