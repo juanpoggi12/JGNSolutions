@@ -211,13 +211,14 @@
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
               <div><div class="h5 mb-0">Resumen</div><small class="text-muted">Frecuencia y progreso</small></div>
-              <div class="input-group" style="max-width:360px"><span class="input-group-text bg-white"><i class="bi bi-search"></i></span><input id="buscarHistorial" class="form-control" placeholder="Buscar por nota o fecha..."/></div>
+          
             </div>
             <div class="row g-3">
               <div class="col-12 col-lg-6"><canvas id="chartFrecuencia" height="220"></canvas></div>
               <div class="col-12 col-lg-6">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <h6 class="mb-0">Progreso por Ejercicio</h6>
+                  <input type="text" id="buscarProgresoEjercicio" class="form-control form-control-sm ms-2" placeholder="Buscar ejercicio..." style="max-width: 180px;">
                   <select id="selectProgresoEjercicio" class="form-select form-select-sm" style="max-width: 250px;">
                     <option value="">Selecciona un ejercicio...</option>
                     </select>
@@ -900,7 +901,7 @@ const btnLogout = document.getElementById('btnLogout');
             }
 
            
-
+await cargarGraficoFrecuencia();
             console.log("Estadísticas cargadas.");
         } catch (error) {
             console.error("Error fatal al cargar stats:", error.message);
@@ -2192,7 +2193,92 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
       }
     });
 
+async function cargarGraficoFrecuencia() {
+        const canvas = document.getElementById('chartFrecuencia');
+        if (!canvas) {
+            console.error("Canvas element 'chartFrecuencia' not found.");
+            return;
+        }
+        const ctx = canvas.getContext('2d');
 
+        // Limpia gráfico anterior si existe
+        if (chartFrecuencia) {
+            chartFrecuencia.destroy();
+            chartFrecuencia = null;
+        }
+
+        try {
+            // Llama a la API de frecuencia (puedes ajustar granularity o fechas si es necesario)
+            const freqData = await api('/stats/user/frequency?granularity=week'); // O 'month'
+
+            if (!freqData || !freqData.buckets || freqData.buckets.length === 0) {
+                console.log("No frequency data available to display.");
+                // Opcional: Mostrar un mensaje en lugar del gráfico
+                // ctx.fillText("No hay datos de frecuencia.", 10, 50);
+                return;
+            }
+
+            // Prepara los datos para Chart.js
+            const labels = freqData.buckets.map(b => b.label); // Etiquetas (ej: "Sem 42 (16 Oct)")
+            const dataCounts = freqData.buckets.map(b => b.count); // Valores (número de sesiones)
+
+            // Crea el gráfico de barras
+            chartFrecuencia = new Chart(ctx, {
+                type: 'bar', // Tipo de gráfico: barras
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sesiones por Semana', // Leyenda
+                        data: dataCounts,
+                        backgroundColor: '#111827', // Color de las barras
+                        borderColor: '#111827',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false, // Permite ajustar altura
+                    scales: {
+                        y: {
+                            beginAtZero: true, // Empezar eje Y en 0
+                            ticks: {
+                                // Asegurar que solo muestre enteros en el eje Y
+                                stepSize: 1
+                            },
+                            title: { display: true, text: 'Nº de Sesiones' }
+                        },
+                        x: {
+                             title: { display: true, text: 'Semana' } // O 'Mes' si usas granularity=month
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false // Ocultar leyenda si solo hay una barra
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y + ' sesiones';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            console.log("Gráfico de frecuencia cargado.");
+
+        } catch (error) {
+            console.error("Error al cargar gráfico de frecuencia:", error.message);
+            // Opcional: Mostrar mensaje de error en el canvas
+            // ctx.fillText("Error al cargar el gráfico.", 10, 50);
+        }
+    }
     // ======= Init =======
     async function initializeApp() {
         console.log("Inicializando aplicación...");
@@ -2201,8 +2287,11 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
             await cargarCatalogoEjercicios();
 
             // /// CÓDIGO NUEVO para poblar y escuchar el dropdown de progreso ///
-            const selectProgreso = document.getElementById('selectProgresoEjercicio');
-            if (selectProgreso) {
+           const selectProgreso = document.getElementById('selectProgresoEjercicio');
+            // >> AÑADE ESTA LÍNEA <<
+            const searchProgresoInput = document.getElementById('buscarProgresoEjercicio');
+
+            if (selectProgreso && searchProgresoInput) { // << MODIFICA ESTA LÍNEA para incluir searchProgresoInput
                 // Limpia opciones previas (excepto la primera "Selecciona...")
                 selectProgreso.length = 1;
                 // Llena con ejercicios del catálogo cacheado
@@ -2219,18 +2308,47 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
                     cargarGraficoProgresoTiempo(selectedExerciseId); // Llama a la función del gráfico
                 });
 
+                // >> AÑADE ESTE BLOQUE para el input de búsqueda <<
+                searchProgresoInput.addEventListener('input', () => {
+                    const searchTerm = searchProgresoInput.value.toLowerCase();
+                    const options = selectProgreso.options;
+                    let firstVisibleOptionValue = ""; // Para seleccionar la primera opción visible
+
+                    for (let i = 1; i < options.length; i++) { // Empezar en 1 para saltar "Selecciona..."
+                        const optionText = options[i].textContent.toLowerCase();
+                        const isVisible = optionText.includes(searchTerm);
+                        options[i].style.display = isVisible ? '' : 'none';
+
+                        // Guarda el valor de la primera opción que coincide
+                        if (isVisible && firstVisibleOptionValue === "") {
+                            firstVisibleOptionValue = options[i].value;
+                        }
+                    }
+
+                    // Opcional: Si hay búsqueda, selecciona la primera opción visible
+                    // y actualiza el gráfico, o vuelve a "Selecciona..." si no hay coincidencias.
+                    if (searchTerm && firstVisibleOptionValue) {
+                       // selectProgreso.value = firstVisibleOptionValue; // Descomenta si quieres que seleccione automáticamente
+                       // cargarGraficoProgresoTiempo(firstVisibleOptionValue); // Descomenta si quieres que actualice el gráfico
+                    } else if (!searchTerm) {
+                       // Si se borra la búsqueda, vuelve a "Selecciona..."
+                       selectProgreso.value = "";
+                       cargarGraficoProgresoTiempo(""); // Limpia el gráfico
+                    } else {
+                       // Si la búsqueda no da resultados
+                       selectProgreso.value = "";
+                       cargarGraficoProgresoTiempo(""); // Limpia el gráfico
+                    }
+                });
+                // >> FIN DEL BLOQUE AÑADIDO <<
+
+
                 // Opcional: Carga inicial del gráfico (puedes dejarlo vacío o cargar el primero)
                  cargarGraficoProgresoTiempo(null); // Inicia sin ejercicio seleccionado
-                // O si quieres cargar el primero por defecto (si hay ejercicios):
-                // if (__CATALOGO_EJERCICIOS__ && __CATALOGO_EJERCICIOS__.length > 0) {
-                //    selectProgreso.value = __CATALOGO_EJERCICIOS__[0].id; // Selecciona el primero en el dropdown
-                //    cargarGraficoProgresoTiempo(__CATALOGO_EJERCICIOS__[0].id); // Carga el gráfico para el primero
-                // } else {
-                //    cargarGraficoProgresoTiempo(null); // No hay ejercicios, inicia vacío
-                // }
 
             } else {
-                console.warn("Elemento select 'selectProgresoEjercicio' no encontrado.");
+                // Modifica la advertencia si falta alguno de los elementos
+                console.warn("Elemento select 'selectProgresoEjercicio' o input 'buscarProgresoEjercicio' no encontrado.");
             }
             if (!currentUserId) { throw new Error("Fallo al obtener ID de usuario."); } 
 
