@@ -128,28 +128,3 @@ func (h *ExerciseHandler) DeleteExercise(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Ejercicio eliminado correctamente"})
 }
-
-// GET /api/exercises/search → Buscar ejercicios (admin y user)
-func (h *ExerciseHandler) SearchExercises(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	var search dto.ExerciseSearchRequest
-	if err := c.ShouldBindQuery(&search); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Parámetros de búsqueda inválidos"})
-		return
-	}
-
-	exercises, err := h.exerciseService.SearchExercises(actor, search)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, exercises)
-}

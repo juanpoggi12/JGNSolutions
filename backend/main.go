@@ -168,14 +168,11 @@ func main() {
 
 	api := r.Group("/api")
 	{
-		api.GET("/ping", func(c *gin.Context) {
-			c.JSON(http.StatusOK, gin.H{"message": "pong"})
-		})
+
 		apiAuth := api.Group("/auth")
 		{
 			apiAuth.POST("/register", authHandler.Register)
 			apiAuth.POST("/login", authHandler.Login)
-			apiAuth.POST("/refresh", authHandler.Refresh)
 			apiAuth.POST("/logout", authHandler.Logout)
 			apiAuth.POST("/reset-password", authHandler.ResetPassword)
 		}
@@ -191,11 +188,8 @@ func main() {
 		apiUser := api.Group("/users")
 		apiUser.Use(middleware.AuthMiddleware(jwtCfg)) // 🔒 Todas requieren token
 		{
-			apiUser.POST("/", userHandler.CreateUser)      // solo admin (ya lo valida el service internamente)
-			apiUser.GET("/:id", userHandler.GetUserByID)   // admin o el mismo user
-			apiUser.PUT("/:id", userHandler.UpdateUser)    // admin o el mismo user
+			apiUser.GET("/:id", userHandler.GetUserByID)   // admin o el mismo user   // admin o el mismo user
 			apiUser.DELETE("/:id", userHandler.DeleteUser) // solo admin
-			apiUser.PUT("/change-password", userHandler.ChangePassword)
 		}
 
 		// Rutas Admin (solo para usuarios con rol admin)
@@ -203,18 +197,11 @@ func main() {
 		apiAdmin.Use(middleware.AuthMiddleware(jwtCfg), middleware.CheckAdmin()) // 🔒 Token + Rol admin
 		{
 			apiAdmin.GET("/metrics/summary", adminHandler.MetricsSummary)
-			apiAdmin.GET("/users/count", adminHandler.CountUsers)
-			apiAdmin.GET("/exercises/count", adminHandler.CountExercises)
-			apiAdmin.GET("/routines/count", adminHandler.CountRoutines)
-			apiAdmin.GET("/workouts/count", adminHandler.CountWorkoutSessions)
 			apiAdmin.GET("/users", adminHandler.ListUsers)
 			apiAdmin.GET("/exercises/top", adminHandler.TopExercises)
 			apiAdmin.GET("/routines/top", adminHandler.TopRoutines)
 			apiAdmin.PUT("/users/:id/role", adminHandler.UpdateUserRole)
 			apiAdmin.GET("/logs", adminHandler.ListLogs)
-			apiAdmin.GET("/user-profiles", adminHandler.ListProfiles)
-			apiAdmin.GET("/user-profiles/stats/levels", adminHandler.CountProfilesByLevel)
-			apiAdmin.GET("/user-profiles/stats/goals", adminHandler.CountProfilesByGoal)
 		}
 
 		// --- Rutas de ejercicios ---
@@ -226,7 +213,6 @@ func main() {
 			apiExercises.DELETE("/:id", middleware.CheckAdmin(), exerciseHandler.DeleteExercise) // solo admin
 
 			apiExercises.GET("/:id", exerciseHandler.GetExerciseByID) // visible para todos los logueados
-			apiExercises.GET("/search", exerciseHandler.SearchExercises)
 			apiExercises.GET("", exerciseHandler.ListExercises)
 		}
 
@@ -235,9 +221,6 @@ func main() {
 		apiWorkoutEntries.Use(middleware.AuthMiddleware(jwtCfg)) // todas requieren token
 		{
 			apiWorkoutEntries.POST("/", workoutEntryHandler.CreateEntry)        // user o admin (valida el service)
-			apiWorkoutEntries.GET("/:id", workoutEntryHandler.GetEntryByID)     // user o admin
-			apiWorkoutEntries.PUT("/:id", workoutEntryHandler.UpdateEntry)      // user o admin
-			apiWorkoutEntries.DELETE("/:id", workoutEntryHandler.DeleteEntry)   // user o admin
 			apiWorkoutEntries.GET("/search", workoutEntryHandler.SearchEntries) // búsqueda
 		}
 
@@ -264,8 +247,6 @@ func main() {
 		apiRoutines.Use(middleware.AuthMiddleware(jwtCfg)) // todas requieren JWT válido
 		{
 			apiRoutines.POST("/", routineHandler.CreateRoutine)       // user o admin
-			apiRoutines.GET("/:id", routineHandler.GetRoutineByID)    // user o admin
-			apiRoutines.PUT("/:id", routineHandler.UpdateRoutine)     // user o admin
 			apiRoutines.DELETE("/:id", routineHandler.DeleteRoutine)  // user o admin
 			apiRoutines.GET("/search", routineHandler.SearchRoutines) // user o admin
 
@@ -288,11 +269,7 @@ func main() {
 			// === INICIO CAMBIO === (Añadir esta línea ~277)
 			apiProfile.PUT("", userProfileHandler.UpdateProfile) // <<-- AÑADIR ESTA RUTA para actualizar perfil PROPIO
 			// === FIN CAMBIO ===
-			apiProfile.POST("/change-password", userProfileHandler.ChangePassword) // Cambia contraseña propia
 			// apiProfile.GET("/search", userProfileHandler.GetProfile) // Probablemente redundante
-			apiProfile.PUT("/:id", userProfileHandler.UpdateProfile)    // Admin actualiza OTRO perfil
-			apiProfile.DELETE("/:id", userProfileHandler.DeleteProfile) // Admin/usuario borra perfil
-			apiProfile.POST("/", userProfileHandler.CreateProfile)      // Usuario crea su perfil si no existe
 		}
 		// ... resto ...
 		apiWorkouts := api.Group("/workouts")

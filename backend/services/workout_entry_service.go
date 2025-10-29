@@ -17,9 +17,6 @@ import (
 // 🧩 Interfaz del servicio
 type WorkoutEntryServiceInterface interface {
 	Create(actor Actor, req dto.WorkoutEntryCreateRequest) (models.WorkoutEntry, error)
-	GetByID(actor Actor, id primitive.ObjectID) (*models.WorkoutEntry, error)
-	Update(actor Actor, id primitive.ObjectID, req dto.WorkoutEntryUpdateRequest) (models.WorkoutEntry, error)
-	Delete(actor Actor, id primitive.ObjectID) error
 	Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error)
 }
 
@@ -65,98 +62,6 @@ func (s *WorkoutEntryService) Create(actor Actor, req dto.WorkoutEntryCreateRequ
 
 	return entry, nil
 }
-
-// Obtener una entrada por ID
-func (s *WorkoutEntryService) GetByID(actor Actor, id primitive.ObjectID) (*models.WorkoutEntry, error) {
-	entry, err := s.repo.FindByID(id)
-	if err != nil {
-		return nil, errors.New("entrada no encontrada")
-	}
-
-	session, err := s.sessionRepo.FindByID(entry.WorkoutSessionID)
-	if err != nil {
-		return nil, errors.New("no se pudo validar la sesión asociada")
-	}
-
-	if actor.Role != "admin" && session.UserID != actor.UserID {
-		return nil, errors.New("no tienes permiso para acceder a esta entrada")
-	}
-
-	return entry, nil
-}
-
-// Actualizar una entrada
-func (s *WorkoutEntryService) Update(actor Actor, id primitive.ObjectID, req dto.WorkoutEntryUpdateRequest) (models.WorkoutEntry, error) {
-	existing, err := s.repo.FindByID(id)
-	if err != nil {
-		return models.WorkoutEntry{}, errors.New("entrada no encontrada")
-	}
-
-	session, err := s.sessionRepo.FindByID(existing.WorkoutSessionID)
-	if err != nil {
-		return models.WorkoutEntry{}, errors.New("no se pudo validar la sesión asociada")
-	}
-
-	if actor.Role != "admin" && session.UserID != actor.UserID {
-		return models.WorkoutEntry{}, errors.New("no tienes permiso para modificar esta entrada")
-	}
-
-	// Aplicar campos enviados
-	if req.SetNumber != nil {
-		existing.SetNumber = *req.SetNumber
-	}
-	if req.RepsDone != nil {
-		existing.RepsDone = req.RepsDone
-	}
-	if req.WeightUsed != nil {
-		existing.WeightUsed = req.WeightUsed
-	}
-	if req.TimeSec != nil {
-		existing.TimeSec = req.TimeSec
-	}
-	if req.PerceivedEffort != nil {
-		existing.PerceivedEffort = req.PerceivedEffort
-	}
-
-	if err := s.repo.Update(existing); err != nil {
-		return models.WorkoutEntry{}, err
-	}
-
-	if s.logService != nil {
-		s.logService.RecordAction(actor.UserID, "entrada_entrenamiento:modificada "+existing.ID.Hex())
-	}
-
-	return *existing, nil
-}
-
-// Eliminar una entrada
-func (s *WorkoutEntryService) Delete(actor Actor, id primitive.ObjectID) error {
-	entry, err := s.repo.FindByID(id)
-	if err != nil {
-		return errors.New("entrada no encontrada")
-	}
-
-	session, err := s.sessionRepo.FindByID(entry.WorkoutSessionID)
-	if err != nil {
-		return errors.New("no se pudo validar la sesión asociada")
-	}
-
-	if actor.Role != "admin" && session.UserID != actor.UserID {
-		return errors.New("no tienes permiso para eliminar esta entrada")
-	}
-
-	if err := s.repo.Delete(id); err != nil {
-		return err
-	}
-
-	if s.logService != nil {
-		s.logService.RecordAction(actor.UserID, "entrada_entrenamiento:eliminada "+id.Hex())
-	}
-
-	return nil
-}
-
-// juanpoggi12/jgnsolutions/JGNSolutions-7c48b53190321ccfabc6877d44ae535f756457c5/backend/services/workout_entry_service.go
 
 // Buscar entradas (no se registran logs)
 func (s *WorkoutEntryService) Search(actor Actor, filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error) {

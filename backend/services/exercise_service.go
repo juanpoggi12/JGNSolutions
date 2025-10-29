@@ -19,7 +19,6 @@ type ExerciseServiceInterface interface {
 	GetExerciseByID(actor Actor, id string) (dto.ExerciseResponse, error)
 	UpdateExercise(actor Actor, id string, req dto.ExerciseUpdateRequest) (dto.ExerciseResponse, error)
 	DeleteExercise(actor Actor, id string) error
-	SearchExercises(actor Actor, search dto.ExerciseSearchRequest) ([]dto.ExerciseResponse, error)
 	ListExercises(actor Actor, query dto.ExerciseCatalogQuery) (dto.ExerciseCatalogResponse, error)
 }
 
@@ -136,38 +135,6 @@ func (service *ExerciseService) DeleteExercise(actor Actor, id string) error {
 	return nil
 }
 
-func (service *ExerciseService) SearchExercises(actor Actor, search dto.ExerciseSearchRequest) ([]dto.ExerciseResponse, error) {
-	// Los usuarios normales solo ven ejercicios no eliminados
-	includeDeleted := false
-	if actor.Role == "admin" {
-		includeDeleted = search.IncludeDel
-	}
-
-	// Si es user, ignoramos CreatedBy del search (no debería poder filtrar por creador)
-	createdBy := ""
-	if actor.Role == "admin" && search.CreatedBy != "" {
-		createdBy = search.CreatedBy
-	}
-
-	ejercicios, err := service.repository.SearchExercises(
-		search.Name,
-		search.Category,
-		search.MuscleGroup,
-		search.Difficulty,
-		createdBy,
-		includeDeleted,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	respuestas := make([]dto.ExerciseResponse, 0, len(ejercicios))
-	for _, ejercicio := range ejercicios {
-		respuestas = append(respuestas, utils.ConvertExerciseModelToResponse(ejercicio))
-	}
-
-	return respuestas, nil
-}
 func (service *ExerciseService) ListExercises(actor Actor, query dto.ExerciseCatalogQuery) (dto.ExerciseCatalogResponse, error) {
 	page := query.Page
 	if page <= 0 {

@@ -15,7 +15,6 @@ type RoutineRepositoryInterface interface {
 	SearchRoutines(name string, userID string, isTemplate *bool, includeDeleted bool) ([]models.Routine, error)
 	GetRoutineByID(id string) (models.Routine, error)
 	InsertRoutine(routine models.Routine) (*mongo.InsertOneResult, error)
-	UpdateRoutine(routine models.Routine) (*mongo.UpdateResult, error)
 	DeleteRoutine(id primitive.ObjectID) (*mongo.UpdateResult, error)
 }
 
@@ -87,22 +86,6 @@ func (repository RoutineRepository) GetRoutineByID(id string) (models.Routine, e
 func (repository RoutineRepository) InsertRoutine(routine models.Routine) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
 	resultado, err := collection.InsertOne(context.TODO(), routine)
-	return resultado, err
-}
-
-func (repository RoutineRepository) UpdateRoutine(rutina models.Routine) (*mongo.UpdateResult, error) {
-	collection := repository.collection()
-
-	filtro := bson.M{"_id": rutina.ID}
-	actualizacion := bson.M{"$set": bson.M{
-		"userId":      rutina.UserID,
-		"name":        rutina.Name,
-		"description": rutina.Description,
-		"isTemplate":  rutina.IsTemplate,
-		"updatedAt":   rutina.UpdatedAt,
-	}}
-
-	resultado, err := collection.UpdateOne(context.TODO(), filtro, actualizacion)
 	return resultado, err
 }
 

@@ -1,14 +1,5 @@
 package dto
 
-type UserProfileCreateRequest struct {
-	FullName  string  `json:"full_name" binding:"required,min=2,max=80"`
-	BirthDate string  `json:"birth_date" binding:"required,datetime=2006-01-02"` // yyyy-mm-dd
-	WeightKg  float64 `json:"weight_kg" binding:"required,gt=0,lte=500"`
-	HeightCm  int     `json:"height_cm" binding:"required,gt=0,lte=300"`
-	Level     string  `json:"level" binding:"required,oneof=beginner intermediate advanced principiante intermedio avanzado PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Goal      string  `json:"goal" binding:"required,oneof=lose_weight gain_muscle maintain PERDER_PESO GANAR_MUSCULO MANTENERSE perder_peso ganar_musculo mantenerse"`
-}
-
 type UserProfileUpdateRequest struct {
 	FullName  *string  `json:"full_name" binding:"omitempty,min=2,max=80"`
 	BirthDate *string  `json:"birth_date" binding:"omitempty,datetime=2006-01-02"`
@@ -16,12 +7,6 @@ type UserProfileUpdateRequest struct {
 	HeightCm  *int     `json:"height_cm" binding:"omitempty,gt=0,lte=300"`
 	Level     *string  `json:"level" binding:"omitempty,oneof=beginner intermediate advanced principiante intermedio avanzado PRINCIPIANTE INTERMEDIO AVANZADO"`
 	Goal      *string  `json:"goal" binding:"omitempty,oneof=lose_weight gain_muscle maintain PERDER_PESO GANAR_MUSCULO MANTENERSE perder_peso ganar_musculo mantenerse"`
-}
-
-type UserProfileSearchRequest struct {
-	Name  string `form:"name"`
-	Level string `form:"level" binding:"omitempty,oneof=PRINCIPIANTE INTERMEDIO AVANZADO"`
-	Goal  string `form:"goal" binding:"omitempty,oneof=PERDER_PESO GANAR_MUSCULO MANTENERSE"`
 }
 
 type UserProfileResponse struct {
@@ -65,9 +50,4 @@ type ProfileUpdateRequest struct {
 	Height    *float64 `json:"height" binding:"omitempty,gte=0,lte=300"`
 	Level     *string  `json:"level" binding:"omitempty,oneof=beginner intermediate advanced principiante intermedio avanzado PRINCIPIANTE INTERMEDIO AVANZADO"`
 	Goal      *string  `json:"goal" binding:"omitempty"`
-}
-
-type ProfileChangePasswordRequest struct {
-	CurrentPassword string `json:"currentPassword" binding:"required"`
-	NewPassword     string `json:"newPassword" binding:"required,min=8"`
 }

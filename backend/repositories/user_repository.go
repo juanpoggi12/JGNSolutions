@@ -19,7 +19,6 @@ type UserRepositoryInterface interface {
 	DeleteUser(id primitive.ObjectID) (*mongo.DeleteResult, error)
 	CountUsers() (int64, error)
 	ListUsersBasic() ([]models.User, error)
-	FindByEmailOrUsername(identifier string) (*models.User, error)
 	UpdatePassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error)
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 	Create(ctx context.Context, user *models.User) error
@@ -111,22 +110,6 @@ func (r UserRepository) ListUsersBasic() ([]models.User, error) {
 		}
 	}
 	return res, nil
-}
-
-// Buscar por email o username (para login)
-func (r *UserRepository) FindByEmailOrUsername(identifier string) (*models.User, error) {
-	var user models.User
-	filter := bson.M{
-		"$or": []bson.M{
-			{"email": identifier},
-			{"username": identifier},
-		},
-	}
-	err := r.db.Collection("users").FindOne(context.TODO(), filter).Decode(&user)
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
 }
 
 func (repository UserRepository) UpdatePassword(id primitive.ObjectID, hashed string) (*mongo.UpdateResult, error) {

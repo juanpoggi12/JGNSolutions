@@ -10,7 +10,6 @@ import (
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // UserProfileHandler maneja las peticiones HTTP relacionadas con los perfiles de usuario
@@ -111,98 +110,6 @@ func (h *UserProfileHandler) UpdateProfile(c *gin.Context) {
 		Goal:      string(updated.Goal),
 		UpdatedAt: updated.UpdatedAt.Format(time.RFC3339),
 	})
-}
-
-// POST /api/profile → Crear perfil (si aún no existe)
-func (h *UserProfileHandler) CreateProfile(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	// ✅ Bind al DTO
-	var req dto.UserProfileCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	created, err := h.userProfileService.CreateProfile(actor, req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, created)
-}
-
-// DELETE /api/profile/:id → Eliminar perfil (solo admin)
-func (h *UserProfileHandler) DeleteProfile(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-	id := c.Param("id")
-
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	// Solo los administradores pueden eliminar perfiles
-	if actor.Role != "admin" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "solo los administradores pueden eliminar perfiles"})
-		return
-	}
-
-	// Validar formato del ID
-	if _, err := primitive.ObjectIDFromHex(id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID inválido"})
-		return
-	}
-
-	// Llamar al servicio
-	if err := h.userProfileService.DeleteProfile(actor, id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Perfil eliminado correctamente"})
-}
-
-// POST /api/profile/change-password → cambiar contraseña del usuario autenticado
-func (h *UserProfileHandler) ChangePassword(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	if actor.UserID.IsZero() {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "usuario no autenticado"})
-		return
-	}
-
-	var req dto.ProfileChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	changeReq := dto.ChangePasswordRequest{
-		OldPassword: req.CurrentPassword,
-		NewPassword: req.NewPassword,
-	}
-
-	if err := h.userService.ChangePassword(actor, changeReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.Status(http.StatusNoContent)
 }
 
 func mapProfileUpdateRequest(req dto.ProfileUpdateRequest) dto.UserProfileUpdateRequest {

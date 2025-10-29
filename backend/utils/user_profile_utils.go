@@ -5,31 +5,7 @@ import (
 
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"go.mongodb.org/mongo-driver/bson"
 )
-
-// CreateRequest → Model
-// Ya no toma el UserID del DTO, se asigna externamente en el service usando actor.UserID
-func ConvertUserProfileCreateRequestToModel(req dto.UserProfileCreateRequest, userID primitive.ObjectID) (models.UserProfile, error) {
-	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
-	if err != nil {
-		return models.UserProfile{}, err
-	}
-
-	return models.UserProfile{
-		UserID:    userID,
-		FullName:  req.FullName,
-		BirthDate: birthDate,
-		WeightKg:  req.WeightKg,
-		HeightCm:  req.HeightCm,
-		Level:     models.Nivel(req.Level),
-		Goal:      models.Objetivo(req.Goal),
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}, nil
-}
 
 // UpdateRequest → aplica cambios sobre el modelo
 func ApplyUserProfileUpdateToModel(up *models.UserProfile, req dto.UserProfileUpdateRequest) error {
@@ -73,24 +49,4 @@ func ConvertUserProfileModelToResponse(up models.UserProfile) dto.UserProfileRes
 		CreatedAt: up.CreatedAt.Format(time.RFC3339),
 		UpdatedAt: up.UpdatedAt.Format(time.RFC3339),
 	}
-}
-
-// SearchRequest → filtro Mongo
-// Ya no usa UserID del body; el filtro por usuario lo manejará el service usando actor.UserID
-func BuildUserProfileSearchFilter(search dto.UserProfileSearchRequest, userID string) bson.M {
-	filter := bson.M{}
-
-	if userID != "" {
-		filter["userId"] = ToObjectID(userID)
-	}
-	if search.Name != "" {
-		filter["fullName"] = bson.M{"$regex": search.Name, "$options": "i"}
-	}
-	if search.Level != "" {
-		filter["level"] = search.Level
-	}
-	if search.Goal != "" {
-		filter["goal"] = search.Goal
-	}
-	return filter
 }

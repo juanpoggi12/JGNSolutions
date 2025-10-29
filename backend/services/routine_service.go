@@ -16,8 +16,6 @@ import (
 
 type RoutineServiceInterface interface {
 	CreateRoutine(actor Actor, req dto.RoutineCreateRequest) (dto.RoutineResponse, error)
-	GetRoutineByID(actor Actor, id string) (dto.RoutineResponse, error)
-	UpdateRoutine(actor Actor, id string, req dto.RoutineUpdateRequest) (dto.RoutineResponse, error)
 	DeleteRoutine(actor Actor, id string) error
 	SearchRoutines(actor Actor, search dto.RoutineSearchRequest) ([]dto.RoutineResponse, error)
 	AddExerciseToRoutine(actor Actor, req dto.RoutineExerciseCreateRequest) (dto.RoutineExerciseResponse, error)
@@ -72,52 +70,6 @@ func (service *RoutineService) CreateRoutine(actor Actor, req dto.RoutineCreateR
 	}
 
 	return dto.RoutineResponse{}, errors.New("error al obtener ID de la rutina creada")
-}
-
-func (service *RoutineService) GetRoutineByID(actor Actor, id string) (dto.RoutineResponse, error) {
-	rutina, err := service.routineRepository.GetRoutineByID(id)
-	if err != nil {
-		return dto.RoutineResponse{}, errors.New("rutina no encontrada")
-	}
-	if rutina.IsDeleted {
-		return dto.RoutineResponse{}, errors.New("la rutina fue eliminada")
-	}
-
-	// Solo el dueño o un admin puede acceder
-	if actor.Role != "admin" && rutina.UserID != actor.UserID {
-		return dto.RoutineResponse{}, errors.New("no tienes permiso para acceder a esta rutina")
-	}
-
-	return utils.ConvertRoutineModelToResponse(rutina), nil
-}
-
-func (service *RoutineService) UpdateRoutine(actor Actor, id string, req dto.RoutineUpdateRequest) (dto.RoutineResponse, error) {
-	rutina, err := service.routineRepository.GetRoutineByID(id)
-	if err != nil {
-		return dto.RoutineResponse{}, errors.New("rutina no encontrada")
-	}
-	if rutina.IsDeleted {
-		return dto.RoutineResponse{}, errors.New("la rutina fue eliminada")
-	}
-
-	if actor.Role != "admin" && rutina.UserID != actor.UserID {
-		return dto.RoutineResponse{}, errors.New("no tienes permiso para modificar esta rutina")
-	}
-
-	utils.ApplyRoutineUpdateToModel(&rutina, req)
-	rutina.UpdatedAt = time.Now()
-
-	_, err = service.routineRepository.UpdateRoutine(rutina)
-	if err != nil {
-		return dto.RoutineResponse{}, err
-	}
-
-	// Log de modificación exitosa
-	if service.logService != nil {
-		service.logService.RecordAction(actor.UserID, "rutina:modificada "+rutina.Name)
-	}
-
-	return utils.ConvertRoutineModelToResponse(rutina), nil
 }
 
 func (service *RoutineService) DeleteRoutine(actor Actor, id string) error {

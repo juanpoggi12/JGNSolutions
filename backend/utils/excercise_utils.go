@@ -6,7 +6,6 @@ import (
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -74,29 +73,4 @@ func ApplyExerciseUpdateToModel(e *models.Exercise, req dto.ExerciseUpdateReques
 		e.Instructions = *req.Instructions
 	}
 	e.UpdatedAt = time.Now()
-}
-
-// ----------------- SearchRequest → Filtro Mongo -----------------
-
-func BuildExerciseSearchFilter(search dto.ExerciseSearchRequest) bson.M {
-	filter := bson.M{}
-	if search.Name != "" {
-		filter["name"] = bson.M{"$regex": search.Name, "$options": "i"}
-	}
-	if search.Category != "" {
-		filter["category"] = search.Category
-	}
-	if search.MuscleGroup != "" {
-		filter["muscleGroup"] = search.MuscleGroup
-	}
-	if search.Difficulty != "" {
-		filter["difficulty"] = search.Difficulty
-	}
-	if search.CreatedBy != "" {
-		filter["createdByUserId"] = ToObjectID(search.CreatedBy)
-	}
-	if !search.IncludeDel {
-		filter["isDeleted"] = false
-	}
-	return filter
 }

@@ -2,10 +2,8 @@ package handlers
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -21,31 +19,6 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 }
 
 // POST /api/users → Crear usuario (solo admin)
-func (h *UserHandler) CreateUser(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	// 1️⃣ Bindeamos al DTO, no al modelo
-	var req dto.UserCreateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	// 2️⃣ Llamar al servicio (él se encarga del resto)
-	created, err := h.userService.CreateUser(actor, req)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, created)
-}
 
 // GET /api/users/:id → Obtener usuario (admin o el mismo usuario)
 func (h *UserHandler) GetUserByID(c *gin.Context) {
@@ -67,30 +40,6 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 }
 
 // PUT /api/users/:id → Actualizar usuario (admin o el mismo usuario)
-func (h *UserHandler) UpdateUser(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	id := c.Param("id")
-	var req dto.UserUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	updated, err := h.userService.UpdateUser(actor, id, req)
-
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, updated)
-}
 
 // DELETE /api/users/:id → Eliminar usuario (solo admin)
 func (h *UserHandler) DeleteUser(c *gin.Context) {
@@ -114,47 +63,4 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 func parseObjectID(id string) primitive.ObjectID {
 	oid, _ := primitive.ObjectIDFromHex(id)
 	return oid
-}
-
-// Cambiar contraseña del usuario autenticado
-func (h *UserHandler) ChangePassword(c *gin.Context) {
-	// 1️⃣ Validar el JSON recibido
-	var req dto.ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	// 2️⃣ Obtener los datos del usuario autenticado (set por middleware JWT)
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-
-	// 3️⃣ Crear el actor
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	// 4️⃣ Llamar al servicio para cambiar la contraseña
-	err := h.userService.ChangePassword(actor, req)
-	if err != nil {
-		switch {
-		case err.Error() == "contraseña actual incorrecta":
-			// ❌ Error del usuario → 400
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		case strings.Contains(err.Error(), "no encontrado") ||
-			strings.Contains(err.Error(), "inexistente"):
-			// ❌ Usuario no existe → 404
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
-		default:
-			// ⚠️ Error inesperado → 500
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno del servidor"})
-		}
-		return
-	}
-
-	// 5️⃣ Responder al cliente si todo salió bien
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Contraseña actualizada correctamente",
-	})
 }

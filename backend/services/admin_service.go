@@ -11,19 +11,13 @@ import (
 )
 
 type AdminServiceInterface interface {
-	CountUsers(actor Actor) (int64, error)
-	CountExercises(actor Actor) (int64, error)
-	CountRoutines(actor Actor) (int64, error)
-	CountWorkoutSessions(actor Actor) (int64, error)
-	ListUsers(actor Actor) ([]dto.UserListResponse, error)
 	TopExercises(actor Actor, limit int) ([]dto.ExerciseStatResponse, error)
 	TopRoutines(actor Actor, limit int) ([]dto.RoutineStatResponse, error)
 	ListProfiles(actor Actor) ([]dto.UserProfileListResponse, error)
-	CountProfilesByLevel(actor Actor) ([]dto.ProfileLevelStat, error)
-	CountProfilesByGoal(actor Actor) ([]dto.ProfileGoalStat, error)
 	ListLogs(actor Actor) ([]models.Log, error) // 👈 nuevo método
 	UpdateUserRole(actor Actor, id string, role string) (dto.AdminUserResponse, error)
 	GetMetricsSummary(actor Actor) (dto.AdminMetricsSummaryResponse, error)
+	ListUsers(actor Actor) ([]dto.UserListResponse, error)
 }
 
 type AdminService struct {
@@ -46,35 +40,6 @@ func NewAdminService(
 		logRepository:         logRepo,
 	}
 }
-
-func (service *AdminService) CountUsers(actor Actor) (int64, error) {
-	if actor.Role != "admin" {
-		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
-	}
-	return service.adminRepository.CountDocuments("users")
-}
-
-func (service *AdminService) CountExercises(actor Actor) (int64, error) {
-	if actor.Role != "admin" {
-		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
-	}
-	return service.adminRepository.CountDocuments("exercises")
-}
-
-func (service *AdminService) CountRoutines(actor Actor) (int64, error) {
-	if actor.Role != "admin" {
-		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
-	}
-	return service.adminRepository.CountDocuments("routines")
-}
-
-func (service *AdminService) CountWorkoutSessions(actor Actor) (int64, error) {
-	if actor.Role != "admin" {
-		return 0, errors.New("no tienes permiso para acceder a estas estadísticas")
-	}
-	return service.adminRepository.CountDocuments("workoutSessions")
-}
-
 func (s *AdminService) ListUsers(actor Actor) ([]dto.UserListResponse, error) {
 	if actor.Role != "admin" {
 		return nil, errors.New("no tienes permiso para ver usuarios")
@@ -162,59 +127,6 @@ func (s *AdminService) ListProfiles(actor Actor) ([]dto.UserProfileListResponse,
 }
 
 // --- 📊 ESTADÍSTICAS DE PERFILES (solo admin) ---
-
-func (s *AdminService) CountProfilesByLevel(actor Actor) ([]dto.ProfileLevelStat, error) {
-	if actor.Role != "admin" {
-		return nil, errors.New("no tienes permiso para ver estadísticas de perfiles")
-	}
-
-	perfiles, err := s.userProfileRepository.ListProfiles()
-	if err != nil {
-		return nil, err
-	}
-
-	stats := map[string]int{}
-	for _, p := range perfiles {
-		stats[string(p.Level)]++
-	}
-
-	out := []dto.ProfileLevelStat{}
-	for level, count := range stats {
-		out = append(out, dto.ProfileLevelStat{
-			Level: level,
-			Count: count,
-		})
-	}
-
-	return out, nil
-}
-
-func (s *AdminService) CountProfilesByGoal(actor Actor) ([]dto.ProfileGoalStat, error) {
-	if actor.Role != "admin" {
-		return nil, errors.New("no tienes permiso para ver estadísticas de perfiles")
-	}
-
-	perfiles, err := s.userProfileRepository.ListProfiles()
-	if err != nil {
-		return nil, err
-	}
-
-	stats := map[string]int{}
-	for _, p := range perfiles {
-		stats[string(p.Goal)]++
-	}
-
-	out := []dto.ProfileGoalStat{}
-	for goal, count := range stats {
-		out = append(out, dto.ProfileGoalStat{
-			Goal:  goal,
-			Count: count,
-		})
-	}
-
-	return out, nil
-}
-
 // --- 📜 LISTADO DE LOGS (solo admin) ---
 func (s *AdminService) ListLogs(actor Actor) ([]models.Log, error) {
 	if actor.Role != "admin" {

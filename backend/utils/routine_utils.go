@@ -22,20 +22,6 @@ func ConvertRoutineCreateRequestToModel(req dto.RoutineCreateRequest) (models.Ro
 	}, nil
 }
 
-// Aplica cambios de un UpdateRequest sobre un modelo existente (PATCH)
-func ApplyRoutineUpdateToModel(r *models.Routine, req dto.RoutineUpdateRequest) {
-	if req.Name != nil {
-		r.Name = *req.Name
-	}
-	if req.Description != nil {
-		r.Description = *req.Description
-	}
-	if req.IsTemplate != nil {
-		r.IsTemplate = *req.IsTemplate
-	}
-	r.UpdatedAt = time.Now()
-}
-
 // Convierte modelo a DTO de respuesta (Model -> Response)
 func ConvertRoutineModelToResponse(r models.Routine) dto.RoutineResponse {
 	return dto.RoutineResponse{

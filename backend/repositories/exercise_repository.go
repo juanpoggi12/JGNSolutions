@@ -14,7 +14,6 @@ import (
 )
 
 type ExerciseRepositoryInterface interface {
-	SearchExercises(name, category, muscleGroup, difficulty, createdBy string, includeDeleted bool) ([]models.Exercise, error)
 	GetExerciseByID(id string) (models.Exercise, error)
 	InsertExercise(exercise models.Exercise) (*mongo.InsertOneResult, error)
 	UpdateExercise(exercise models.Exercise) (*mongo.UpdateResult, error)
@@ -42,51 +41,6 @@ func NewExerciseRepository(db *mongo.Database) *ExerciseRepository {
 
 func (repository ExerciseRepository) collection() *mongo.Collection {
 	return repository.db.Collection("exercises")
-}
-
-func (repository ExerciseRepository) SearchExercises(name, category, muscleGroup, difficulty, createdBy string, includeDeleted bool) ([]models.Exercise, error) {
-	collection := repository.collection()
-
-	filtro := bson.M{}
-	if name != "" {
-		filtro["name"] = bson.M{"$regex": name, "$options": "i"}
-	}
-	if category != "" {
-		filtro["category"] = category
-	}
-	if muscleGroup != "" {
-		filtro["muscleGroup"] = muscleGroup
-	}
-	if difficulty != "" {
-		filtro["difficulty"] = difficulty
-	}
-	if createdBy != "" {
-		objectID, err := primitive.ObjectIDFromHex(createdBy)
-		if err != nil {
-			return nil, err
-		}
-		filtro["createdBy"] = objectID
-	}
-	if !includeDeleted {
-		filtro["isDeleted"] = false
-	}
-
-	cursor, err := collection.Find(context.TODO(), filtro)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(context.Background())
-
-	var exercises []models.Exercise
-	for cursor.Next(context.Background()) {
-		var exercise models.Exercise
-		if err := cursor.Decode(&exercise); err != nil {
-			continue
-		}
-		exercises = append(exercises, exercise)
-	}
-
-	return exercises, nil
 }
 
 func (repository ExerciseRepository) GetExerciseByID(id string) (models.Exercise, error) {

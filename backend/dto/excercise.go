@@ -21,15 +21,6 @@ type ExerciseUpdateRequest struct {
 	Instructions *[]string `json:"instructions" binding:"omitempty,max=100"`
 }
 
-type ExerciseSearchRequest struct {
-	Name        string `form:"name"`
-	Category    string `form:"category" binding:"omitempty,oneof=FUERZA CARDIO FLEXIBILIDAD OTRA"`
-	MuscleGroup string `form:"muscle_group" binding:"omitempty,oneof=PECHO ESPALDA PIERNA HOMBRO BRAZO CORE"`
-	Difficulty  string `form:"difficulty" binding:"omitempty,oneof=BAJA MEDIA ALTA"`
-	CreatedBy   string `form:"created_by_user_id" binding:"omitempty,hexadecimal,len=24"`
-	IncludeDel  bool   `form:"include_deleted"`
-}
-
 type ExerciseResponse struct {
 	ID           string   `json:"id"`
 	Name         string   `json:"name"`

@@ -39,6 +39,12 @@ func createIndexes(coll *mongo.Collection) {
 		},
 	})
 }
+func (r *SessionRepository) FindActiveByUser(ctx context.Context, userID primitive.ObjectID) ([]models.Session, error) {
+	return r.find(ctx, bson.M{
+		"userId":    userID,
+		"revokedAt": bson.M{"$exists": false},
+	})
+}
 
 func (r *SessionRepository) Create(ctx context.Context, session *models.Session) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -56,13 +62,6 @@ func (r *SessionRepository) Create(ctx context.Context, session *models.Session)
 
 func (r *SessionRepository) FindActive(ctx context.Context) ([]models.Session, error) {
 	return r.find(ctx, bson.M{
-		"revokedAt": bson.M{"$exists": false},
-	})
-}
-
-func (r *SessionRepository) FindActiveByUser(ctx context.Context, userID primitive.ObjectID) ([]models.Session, error) {
-	return r.find(ctx, bson.M{
-		"userId":    userID,
 		"revokedAt": bson.M{"$exists": false},
 	})
 }

@@ -8,16 +8,12 @@ import (
 	"github.com/juanpoggi12/JGNSolutions/backend/models"
 	"github.com/juanpoggi12/JGNSolutions/backend/repositories"
 	"github.com/juanpoggi12/JGNSolutions/backend/utils"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // 🧩 Interface del servicio
 type UserProfileServiceInterface interface {
-	CreateProfile(actor Actor, req dto.UserProfileCreateRequest) (models.UserProfile, error)
 	GetProfile(actor Actor) (models.UserProfile, error)
 	UpdateProfile(actor Actor, req dto.UserProfileUpdateRequest) (models.UserProfile, error)
-	DeleteProfile(actor Actor, id string) error
 }
 
 // 🧩 Implementación del servicio
@@ -31,40 +27,6 @@ func NewUserProfileService(repo repositories.UserProfileRepositoryInterface, log
 }
 
 // Crear perfil nuevo (solo si el usuario no lo tiene aún)
-func (service *UserProfileService) CreateProfile(actor Actor, req dto.UserProfileCreateRequest) (models.UserProfile, error) {
-	if actor.UserID.IsZero() {
-		return models.UserProfile{}, errors.New("ID de usuario inválido")
-	}
-
-	// Evitar duplicados
-	existing, _ := service.repository.GetProfileByUserID(actor.UserID)
-	if existing.UserID == actor.UserID {
-		return models.UserProfile{}, errors.New("el perfil ya existe")
-	}
-
-	// Convertir DTO → modelo (con el userID del actor)
-	perfil, err := utils.ConvertUserProfileCreateRequestToModel(req, actor.UserID)
-	if err != nil {
-		return models.UserProfile{}, err
-	}
-
-	// ✅ Guardar en base y capturar el InsertedID
-	result, err := service.repository.InsertProfile(perfil)
-	if err != nil {
-		return models.UserProfile{}, err
-	}
-
-	if oid, ok := result.InsertedID.(primitive.ObjectID); ok {
-		perfil.ID = oid
-	}
-
-	// Log opcional
-	if service.logService != nil {
-		service.logService.RecordAction(actor.UserID, "perfil:creado "+actor.UserID.Hex())
-	}
-
-	return perfil, nil
-}
 
 // Obtener el perfil del usuario autenticado
 func (service *UserProfileService) GetProfile(actor Actor) (models.UserProfile, error) {
@@ -116,22 +78,3 @@ func (service *UserProfileService) UpdateProfile(actor Actor, id string, req dto
 }
 
 // Eliminar un perfil (solo admin)
-func (service *UserProfileService) DeleteProfile(actor Actor, id string) error {
-	if strings.ToLower(actor.Role) != "admin" {
-		return errors.New("solo los administradores pueden eliminar perfiles")
-	}
-	objectID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return errors.New("ID inválido")
-	}
-	_, err = service.repository.DeleteProfile(objectID)
-	if err != nil {
-		return err
-	}
-
-	if service.logService != nil {
-		service.logService.RecordAction(actor.UserID, "perfil:eliminado "+id)
-	}
-
-	return nil
-}

@@ -42,50 +42,6 @@ func (h *RoutineHandler) CreateRoutine(c *gin.Context) {
 	c.JSON(http.StatusCreated, routine)
 }
 
-// GET /api/routines/:id → obtener rutina
-func (h *RoutineHandler) GetRoutineByID(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	id := c.Param("id")
-	routine, err := h.routineService.GetRoutineByID(actor, id)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, routine)
-}
-
-// PUT /api/routines/:id → actualizar rutina
-func (h *RoutineHandler) UpdateRoutine(c *gin.Context) {
-	role := c.GetString("role")
-	userID := c.GetString("userId")
-	actor := services.Actor{
-		UserID: parseObjectID(userID),
-		Role:   role,
-	}
-
-	id := c.Param("id")
-	var req dto.RoutineUpdateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Datos inválidos"})
-		return
-	}
-
-	updated, err := h.routineService.UpdateRoutine(actor, id, req)
-	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, updated)
-}
-
 // DELETE /api/routines/:id → eliminar rutina
 func (h *RoutineHandler) DeleteRoutine(c *gin.Context) {
 	role := c.GetString("role")

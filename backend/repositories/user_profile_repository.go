@@ -12,11 +12,9 @@ import (
 
 type UserProfileRepositoryInterface interface {
 	GetProfileByUserID(userID primitive.ObjectID) (models.UserProfile, error)
-	InsertProfile(profile models.UserProfile) (*mongo.InsertOneResult, error)
 	UpdateProfile(profile models.UserProfile) (*mongo.UpdateResult, error)
 	ListProfiles() ([]models.UserProfile, error)
 	GetProfileByID(id string) (models.UserProfile, error)
-	DeleteProfile(id primitive.ObjectID) (*mongo.DeleteResult, error)
 }
 
 type UserProfileRepository struct {
@@ -59,15 +57,6 @@ func (repository UserProfileRepository) GetProfileByUserID(userID primitive.Obje
 	var profile models.UserProfile
 	err := collection.FindOne(context.TODO(), filtro).Decode(&profile)
 	return profile, err
-}
-
-func (repository UserProfileRepository) InsertProfile(profile models.UserProfile) (*mongo.InsertOneResult, error) {
-	collection := repository.collection()
-	if profile.UpdatedAt.IsZero() {
-		profile.UpdatedAt = time.Now()
-	}
-	resultado, err := collection.InsertOne(context.TODO(), profile)
-	return resultado, err
 }
 
 func (repository UserProfileRepository) UpdateProfile(profile models.UserProfile) (*mongo.UpdateResult, error) {
@@ -118,10 +107,4 @@ func (repository UserProfileRepository) GetProfileByID(id string) (models.UserPr
 
 	err = collection.FindOne(context.TODO(), filtro).Decode(&profile)
 	return profile, err
-}
-
-func (repository UserProfileRepository) DeleteProfile(id primitive.ObjectID) (*mongo.DeleteResult, error) {
-	collection := repository.collection()
-	resultado, err := collection.DeleteOne(context.TODO(), bson.M{"_id": id})
-	return resultado, err
 }
