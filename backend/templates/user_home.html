@@ -477,61 +477,168 @@ document.addEventListener('DOMContentLoaded', () => {
     let chartProgreso = null;
     let currentUserId = null; 
 
+    // ===>>> HELPER FUNCTIONS (getToken y api - ¡ESENCIALES!) <<<===
     function getToken(){
-      let token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-      let exp = localStorage.getItem('accessTokenExp') || sessionStorage.getItem('accessTokenExp');
-      if (token && exp && Date.now() > parseInt(exp)) {
-          console.warn("Token expirado.");
-          localStorage.removeItem('accessToken'); localStorage.removeItem('accessTokenExp');
-          sessionStorage.removeItem('accessToken'); sessionStorage.removeItem('accessTokenExp');
-          window.location.href = '/login';
-          return null;
-      }
-      return token;
+        let token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        let exp = localStorage.getItem('accessTokenExp') || sessionStorage.getItem('accessTokenExp');
+        // Verifica si el token existe y no ha expirado
+        if (token && exp && Date.now() > parseInt(exp)) {
+            console.warn("Access Token expirado.");
+            // NO redirige aquí, solo devuelve null. La función api decidirá qué hacer.
+            return null;
+        }
+        // Devuelve el token si es válido o si no hay datos de expiración (menos seguro)
+        return token;
     }
 
+    // Variable para evitar bucles infinitos de refresh
+    let isRefreshing = false;
+    // Cola para peticiones que fallaron mientras se refrescaba
+    let failedQueue = [];
+
+    const processFailedQueue = (error, token = null) => {
+        failedQueue.forEach(prom => {
+            if (error) {
+                prom.reject(error);
+            } else {
+                prom.resolve(token);
+            }
+        });
+        failedQueue = [];
+    };
+
     async function api(path, opts={}){
-      const token = getToken();
-      if (!token && !path.startsWith('/auth/')) {
-          console.warn("No token found, redirecting to login.");
-          window.location.href = '/login';
-          return Promise.reject(new Error('No autorizado'));
-      }
-      try {
-          const res = await fetch(API_BASE + path, {
-            ...opts,
-            headers: {
-              'Content-Type':'application/json',
-              ...(token ? { Authorization: 'Bearer ' + token } : {}),
-              ...(opts.headers||{})
-            },
-            credentials: 'same-origin'
-          });
-          if(res.status === 401 || res.status === 403){
-              console.warn(`Auth error (${res.status}), redirecting to login.`);
-              localStorage.removeItem('accessToken'); localStorage.removeItem('accessTokenExp');
-              sessionStorage.removeItem('accessToken'); sessionStorage.removeItem('accessTokenExp');
-              window.location.href = '/login';
-              throw new Error('No autorizado o prohibido');
-          }
-          if(!res.ok){
-            let msg = `Error ${res.status}`;
-            try{ const data = await res.json(); msg = data?.error || data?.message || `Error ${res.status}`; }
-            catch(_){ msg = `Error ${res.status} - ${res.statusText}`; }
-            throw new Error(msg);
-          }
-          const ct = res.headers.get('content-type') || '';
-          if (res.status === 204 || ct === '') { return null; }
-          if (ct.includes('application/json')) { return res.json(); }
-          return res.text();
-      } catch (error) {
-           console.error(`API call failed for ${path}:`, error.message);
-           if (error.message.includes('No autorizado') || error.message.includes('prohibido')) {
-               return Promise.reject(error);
-           }
-           throw error;
-      }
+        let token = getToken();
+
+        // Si NO hay token Y NO estamos ya intentando refrescar Y NO es una ruta pública -> Redirigir
+        if (!token && !isRefreshing && !path.startsWith('/auth/')) {
+            console.warn("No token found, redirecting to login.");
+            window.location.href = '/login';
+            return Promise.reject(new Error('No autorizado'));
+        }
+
+        try {
+            // Realiza la llamada fetch original
+            const res = await fetch(API_BASE + path, {
+                ...opts,
+                headers: {
+                  'Content-Type':'application/json',
+                  ...(token ? { Authorization: 'Bearer ' + token } : {}),
+                  ...(opts.headers||{})
+                },
+                // IMPORTANTE: Asegúrate que 'credentials' esté configurado correctamente
+                // para enviar cookies (necesario para el refresh token HttpOnly)
+                credentials: 'same-origin' // 'include' si backend está en otro dominio/subdominio
+             });
+
+            // --- Manejo específico de error 401 (Token Expirado) ---
+            if (res.status === 401) {
+                console.warn(`API call to ${path} returned 401.`);
+
+                // Si ya estamos refrescando, pone la petición en cola
+                if (isRefreshing) {
+                    console.log("Refresh already in progress, queuing request:", path);
+                    return new Promise((resolve, reject) => {
+                        failedQueue.push({ resolve, reject });
+                    }).then(newToken => {
+                        // Reintenta la llamada original con el nuevo token obtenido por el refresh en curso
+                        opts.headers = { ...opts.headers, Authorization: `Bearer ${newToken}` };
+                        return api(path, opts); // Llama a la función api de nuevo, recursivamente
+                    });
+                }
+
+                // Marca que estamos refrescando
+                isRefreshing = true;
+                console.log("Attempting token refresh...");
+
+                try {
+                    // Llama al endpoint de refresh (POST /api/auth/refresh)
+                    // No necesita body ni Auth header, usa la cookie HttpOnly
+                    const refreshRes = await fetch(API_BASE + '/auth/refresh', {
+                        method: 'POST',
+                        credentials: 'same-origin' // Asegúrate que envía cookies
+                    });
+
+                    if (!refreshRes.ok) {
+                        // Si el refresh falla (ej: refresh token inválido o expirado)
+                        console.error("Token refresh failed:", refreshRes.status);
+                        throw new Error('Refresh failed'); // Lanza error para ir al catch general
+                    }
+
+                    // Refresh exitoso: Obtiene nuevo accessToken
+                    const { accessToken, expiresIn } = await refreshRes.json();
+                    console.log("Token refreshed successfully.");
+
+                    // Guarda el nuevo token (detecta si usaba local o session storage)
+                    const storage = localStorage.getItem('accessToken') ? localStorage : sessionStorage;
+                    storage.setItem("accessToken", accessToken);
+                    storage.setItem("accessTokenExp", (Date.now() + (expiresIn||3600)*1000).toString());
+
+                    // Procesa la cola de peticiones fallidas con el nuevo token
+                    processFailedQueue(null, accessToken);
+
+                    // Reintenta la llamada ORIGINAL que falló con el NUEVO token
+                    console.log("Retrying original request with new token:", path);
+                    opts.headers = { ...opts.headers, Authorization: `Bearer ${accessToken}` };
+                    isRefreshing = false; // Desmarca el estado de refresh
+                    return api(path, opts); // Llama a la función api de nuevo, recursivamente
+
+                } catch (refreshError) {
+                    console.error("Refresh attempt failed:", refreshError.message);
+                    // Procesa la cola de peticiones fallidas con error
+                    processFailedQueue(refreshError, null);
+                    isRefreshing = false; // Desmarca el estado de refresh
+                    // Limpia tokens y redirige a login
+                    localStorage.removeItem('accessToken'); localStorage.removeItem('accessTokenExp');
+                    sessionStorage.removeItem('accessToken'); sessionStorage.removeItem('accessTokenExp');
+                    window.location.href = '/login';
+                    return Promise.reject(new Error('Sesión expirada')); // Rechaza la promesa original
+                }
+            } // Fin del manejo de 401
+
+            // --- Manejo de otros errores HTTP (403 Prohibido, etc.) ---
+             else if(res.status === 403){
+                 console.warn(`Permission error (403) on ${path}, redirecting.`);
+                 // Redirige a home si el error es de permisos (rol incorrecto)
+                 window.location.href = '/home';
+                 throw new Error('Prohibido');
+             } else if (!res.ok) { // Otros errores (400, 404, 500...)
+                let errorMsg = `Error ${res.status}`;
+                try{
+                    const errorData = await res.json();
+                    errorMsg = errorData?.error || errorData?.message || `Error ${res.status}`;
+                } catch(_){
+                    errorMsg = `Error ${res.status} - ${res.statusText}`;
+                }
+                throw new Error(errorMsg); // Lanza error para el catch general
+            }
+
+            // --- Manejo de respuestas exitosas (sin cambios) ---
+            const contentType = res.headers.get('content-type') || '';
+            if (res.status === 204 || contentType === '') {
+                return null;
+            }
+            if (contentType.includes('application/json')) {
+                return res.json();
+            }
+            return res.text();
+
+        } catch (error) {
+             // Catch general para errores de red o los lanzados arriba (excepto los de refresh/401 que ya redirigen)
+             console.error(`API call final failure for ${path}:`, error.message);
+             // Solo relanza el error si NO fue un error que ya causó redirección
+             if (error.message !== 'No autorizado' && error.message !== 'Prohibido' && error.message !== 'Sesión expirada') {
+                  throw error;
+             }
+             // Si ya se manejó la redirección, simplemente detenemos la cadena de promesas.
+             return Promise.reject(error);
+        } finally {
+           // Asegura que isRefreshing se resetee si algo muy raro pasa,
+           // aunque la lógica principal debería manejarlo en try/catch del refresh.
+           // isRefreshing = false; // Podría causar problemas si hay llamadas concurrentes, mejor manejarlo dentro del try/catch del refresh.
+        }
     }
+    // ===>>> FIN HELPER FUNCTIONS <<<===
 
     // ======= Tabs =======
     const panes = {
