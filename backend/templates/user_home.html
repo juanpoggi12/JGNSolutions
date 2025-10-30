@@ -2598,13 +2598,21 @@ async function cargarGraficoFrecuencia() {
             }
             if (!currentUserId) { throw new Error("Fallo al obtener ID de usuario."); } 
 
-            // Carga el resto en paralelo
+          
+            // 1. Cargar las rutinas PRIMERO, porque el historial DEPENDE de ellas.
+            console.log("Cargando rutinas (dependencia del historial)...");
+            await cargarRutinas(); // Llena __USER_ROUTINES__
+            console.log("Dependencia de rutinas cargada.");
+
+            // 2. Ahora, cargar el resto en paralelo.
+            //    El historial ya puede usar el caché __USER_ROUTINES__ de forma segura.
             await Promise.all([
                 cargarStats(), // 🚀 Carga KPIs y Gráficos
                 cargarHistorial(), // 🚀 Carga la tabla de sesiones
-                cargarCatalogoEjercicios(), // Carga el catálogo para los modales
-                cargarRutinas() // Carga las rutinas para la Pestaña Rutinas (y llena el cache)
+                // cargarCatalogoEjercicios() ya se llamó antes para el dropdown de progreso
             ]);
+          
+
             console.log("Carga inicial completa.");
             
             const inicioPane = document.getElementById('tab-inicio'); if (inicioPane) inicioPane.style.display = 'block';
