@@ -128,6 +128,9 @@
       </nav>
       <div class="mt-auto p-3 small text-muted">
         <div id="sidebarUserEmail">—</div>
+        <a href="/admin" class="btn btn-sm btn-outline-danger mt-2 w-100 d-none" id="btnAdminPanel">
+          <i class="bi bi-shield-lock me-1"></i> Panel Admin
+        </a>
       </div>
     </aside>
 
@@ -743,6 +746,10 @@ const btnLogout = document.getElementById('btnLogout');
       try{
         // Esta API es ficticia en tu backend, usamos /api/me
         const me = await api('/me'); 
+        const btnAdmin = document.getElementById('btnAdminPanel');
+        if (btnAdmin && me && me.role === 'admin') {
+            btnAdmin.classList.remove('d-none'); // ¡Muestra el botón!
+        }
         currentUserId = me?.userId;
         if(!currentUserId) throw new Error('Cannot identify user: No userId from /me');
         
