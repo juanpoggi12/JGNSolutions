@@ -376,6 +376,40 @@
   </div>
 </div>
 
+
+<div class="modal fade" id="modalCambiarPassword" tabindex="-1" aria-labelledby="modalCambiarPasswordLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCambiarPasswordLabel">Cambiar Contraseña</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="formChangePassword" novalidate>
+        <div class="modal-body">
+          <p class="text-muted small">Vas a cambiar la contraseña para el email: <br /><strong id="passModalEmail" class="fs-6">...</strong></p>
+          
+          <div class="mb-3">
+            <label for="passNew" class="form-label">Nueva Contraseña (mínimo 8 caracteres)</label>
+            <input type="password" class="form-control" id="passNew" required minlength="8" />
+          </div>
+          <div class="mb-3">
+            <label for="passConfirm" class="form-label">Confirmar Nueva Contraseña</label>
+            <input type="password" class="form-control" id="passConfirm" required minlength="8" />
+          </div>
+
+          <div id="passwordError" class="alert alert-danger d-none mt-3" role="alert"></div>
+          <div id="passwordSuccess" class="alert alert-success d-none mt-3" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-dark">Confirmar Cambio</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
 <div class="modal fade" id="modalEntrenamientoActivo" tabindex="-1" aria-labelledby="modalEntrenamientoActivoLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-fullscreen-md-down"> <div class="modal-content">
       <div class="modal-header">
@@ -452,6 +486,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalEntrenamientoActivoEl = document.getElementById('modalEntrenamientoActivo');
     let modalIniciarEntrenamiento = modalIniciarEntrenamientoEl ? new bootstrap.Modal(modalIniciarEntrenamientoEl) : null;
     let modalEntrenamientoActivo = modalEntrenamientoActivoEl ? new bootstrap.Modal(modalEntrenamientoActivoEl) : null;
+    const modalCambiarPasswordEl = document.getElementById('modalCambiarPassword');
+    let modalCambiarPassword = modalCambiarPasswordEl ? new bootstrap.Modal(modalCambiarPasswordEl) : null;
     const routineSelectList = document.getElementById('routineSelectList');
     const workoutTimeline = document.getElementById('workoutTimeline');
     const workoutExerciseList = document.getElementById('workoutExerciseList');
@@ -813,8 +849,104 @@ const btnLogout = document.getElementById('btnLogout');
       } catch(e) { alert('Error al guardar perfil: '+ e.message); }
     });
 
-    btnCambiarPass?.addEventListener('click', async()=>{ /* (sin cambios) */ });
+btnCambiarPass?.addEventListener('click', async () => {
+        if (modalCambiarPassword) {
+            // 1. Obtener el email del campo de perfil (que está deshabilitado)
+            const emailEl = document.getElementById('pfEmail');
+            const modalEmailEl = document.getElementById('passModalEmail');
+            if (emailEl && modalEmailEl) {
+                // 2. Mostrar el email en el modal
+                modalEmailEl.textContent = emailEl.value;
+            }
 
+            // 3. Limpiar campos y errores de intentos anteriores
+            document.getElementById('passNew').value = '';
+            document.getElementById('passConfirm').value = '';
+            document.getElementById('passwordError').classList.add('d-none');
+            document.getElementById('passwordSuccess').classList.add('d-none');
+            
+            // 4. Mostrar el modal
+            modalCambiarPassword.show();
+        } else {
+            console.error("El modal de cambiar contraseña no está inicializado.");
+        }
+    });
+
+    // Listener para el formulario del modal de cambiar contraseña
+    document.getElementById('formChangePassword')?.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Evita que la página se recargue
+
+        // Referencias a elementos
+        const errDiv = document.getElementById('passwordError');
+        const okDiv = document.getElementById('passwordSuccess');
+        const emailEl = document.getElementById('pfEmail'); // Email del perfil
+        const passNewEl = document.getElementById('passNew');
+        const passConfirmEl = document.getElementById('passConfirm');
+
+        // Ocultar alertas previas
+        errDiv.classList.add('d-none');
+        okDiv.classList.add('d-none');
+
+        // Obtener valores
+        const userEmail = emailEl.value;
+        const newPass = passNewEl.value;
+        const confirmPass = passConfirmEl.value;
+
+        // --- Validaciones del Frontend ---
+        if (!newPass || !confirmPass) {
+            errDiv.textContent = 'Ambos campos son obligatorios.';
+            errDiv.classList.remove('d-none');
+            return;
+        }
+        if (newPass !== confirmPass) {
+            errDiv.textContent = 'Las contraseñas no coinciden.';
+            errDiv.classList.remove('d-none');
+            return;
+        }
+        if (newPass.length < 8) {
+            errDiv.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+            errDiv.classList.remove('d-none');
+            return;
+        }
+        // Verifica que tengamos el email
+        if (!userEmail) {
+            errDiv.textContent = 'No se pudo identificar tu email. Refresca la página.';
+            errDiv.classList.remove('d-none');
+            return;
+        }
+
+        try {
+            // --- Llamada a la API ---
+            // Reutilizamos el endpoint de "reset-password"
+            await api('/auth/reset-password', {
+                method: 'POST',
+                body: JSON.stringify({
+                    email: userEmail,
+                    newPassword: newPass
+                })
+            });
+
+            // --- Éxito ---
+            okDiv.textContent = 'Contraseña actualizada con éxito.';
+            okDiv.classList.remove('d-none');
+            
+            // Limpiar formulario
+            passNewEl.value = '';
+            passConfirmEl.value = '';
+
+            // Ocultar el modal después de 2 segundos
+            setTimeout(() => {
+                if (modalCambiarPassword) {
+                    modalCambiarPassword.hide();
+                }
+            }, 2000);
+
+        } catch (err) {
+            // --- Error ---
+            errDiv.textContent = 'Error: ' + (err.message || 'No se pudo cambiar la contraseña.');
+            errDiv.classList.remove('d-none');
+        }
+    });
 
     // ======= 📊📈 IMPLEMENTACIÓN DASHBOARD (STATS & HISTORIAL)  =======
     async function cargarGraficoProgresoTiempo(exerciseId) {
@@ -2508,5 +2640,6 @@ if (historyFilterContainer) {
     initializeApp(); // Iniciar la aplicación
 
 });
+
 </script>
 {{end}}
