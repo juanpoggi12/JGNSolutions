@@ -54,7 +54,7 @@ func (s *AdminService) ListUsers(actor Actor) ([]dto.UserListResponse, error) {
 		out = append(out, dto.UserListResponse{
 			ID:    u.ID.Hex(),
 			Email: u.Email,
-			Role:  string(u.Role), // 👈 conversión explícita
+			Role:  string(u.Role),
 		})
 	}
 	return out, nil
@@ -100,7 +100,7 @@ func (s *AdminService) TopRoutines(actor Actor, limit int) ([]dto.RoutineStatRes
 	return out, nil
 }
 
-// --- 👤 LISTADO DE PERFILES DE USUARIO (solo admin) ---
+// ---  LISTADO DE PERFILES DE USUARIO (solo admin) ---
 func (s *AdminService) ListProfiles(actor Actor) ([]dto.UserProfileListResponse, error) {
 	if actor.Role != "admin" {
 		return nil, errors.New("no tienes permiso para ver perfiles de usuario")
@@ -126,8 +126,8 @@ func (s *AdminService) ListProfiles(actor Actor) ([]dto.UserProfileListResponse,
 	return out, nil
 }
 
-// --- 📊 ESTADÍSTICAS DE PERFILES (solo admin) ---
-// --- 📜 LISTADO DE LOGS (solo admin) ---
+// ---  ESTADÍSTICAS DE PERFILES (solo admin) ---
+// ---  LISTADO DE LOGS (solo admin) ---
 func (s *AdminService) ListLogs(actor Actor) ([]models.Log, error) {
 	if actor.Role != "admin" {
 		return nil, errors.New("no tienes permiso para ver los logs del sistema")

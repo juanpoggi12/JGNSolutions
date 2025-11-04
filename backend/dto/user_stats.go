@@ -4,7 +4,7 @@ type WorkoutSummaryResponse struct {
 	ByExercise         []WorkoutSummaryExercise `json:"byExercise"`
 	ByPeriod           []WorkoutSummaryPeriod   `json:"byPeriod"`
 	PRs                []WorkoutPersonalRecord  `json:"prs"`
-	ImprovementPercent *float64                 `json:"improvementPercent,omitempty"` // <-- AÑADIR ESTA LÍNEA
+	ImprovementPercent *float64                 `json:"improvementPercent,omitempty"`
 }
 
 type WorkoutSummaryExercise struct {

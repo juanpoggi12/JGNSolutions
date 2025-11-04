@@ -2,10 +2,8 @@
 {{define "content_admin_dashboard"}}
 
 <style>
-  /* ... (Estilos existentes: .kpi-admin, .card-lite, .table-sm) ... */
-  
-  /* Estilos adicionales */
-  .modal-lg { max-width: 800px; } /* Modal más ancho para ejercicios */
+ 
+  .modal-lg { max-width: 800px; } 
   .exercise-details p { margin-bottom: 0.5rem; }
   .exercise-details strong { display: inline-block; min-width: 100px; }
   .log-entry { font-family: monospace; font-size: 0.85rem; border-bottom: 1px dashed #eee; padding-bottom: 5px; margin-bottom: 5px; }
@@ -413,8 +411,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Async para await 
             }
 
             tbody.innerHTML = ''; // Limpia tabla
-            users.forEach(user => {
-                // ... (código para crear la fila <tr> sin cambios) ...
+            users.forEach(user => {       
                  const tr = document.createElement('tr');
                  tr.innerHTML = `
                      <td><small>${user.id}</small></td>
@@ -450,11 +447,9 @@ const userSearchInput = document.getElementById('userSearchEmail');
         tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando ejercicios...</td></tr>';
 
         try {
-            // Construye la URL de la API con el filtro si existe
-            // Usamos el parámetro 'q' que espera la API GET /exercises
-            let apiUrl = '/exercises?limit=100'; // Puedes ajustar el límite si quieres paginación
+            // Construye la URL de la API con el filtro si existe         
+            let apiUrl = '/exercises?limit=100'; 
 
-    // Añade filtros si tienen valor
     if (nameFilter) {
         apiUrl += `&q=${encodeURIComponent(nameFilter)}`; // Filtro por nombre
     }
@@ -485,7 +480,7 @@ tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${message}
             exercises.forEach(ex => {
                  if (ex.is_deleted) return; 
 
-                 // ... (código para crear la fila <tr> sin cambios) ...
+                
                  const tr = document.createElement('tr');
                  tr.innerHTML = `
                      <td>${ex.name}</td>
@@ -516,7 +511,7 @@ tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">${message}
             tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error al cargar ejercicios: ${error.message}</td></tr>`;
         }
     }
-// === NUEVO: Listener para el Input de Búsqueda de Ejercicios ===
+// ===  Listener para el Input de Búsqueda de Ejercicios ===
     const exerciseSearchInput = document.getElementById('exerciseSearchName');
     const exerciseFilterCategory = document.getElementById('exerciseFilterCategory');
 const exerciseFilterMuscleGroup = document.getElementById('exerciseFilterMuscleGroup');
@@ -557,12 +552,10 @@ const exerciseFilterDifficulty = document.getElementById('exerciseFilterDifficul
             container.innerHTML = '';
             logs.forEach(log => {
                 const entry = document.createElement('div');
-                entry.className = 'log-entry';
-                 // --- CORRECCIÓN: Usar PascalCase ---
+                entry.className = 'log-entry';        
              const timestamp = log.Timestamp ? new Date(log.Timestamp).toLocaleString() : 'Fecha inválida'; // Usar log.Timestamp
              const userIdShort = log.UserID ? log.UserID.substring(0, 8) + '...' : 'Sistema'; // Usar log.UserID
             entry.innerHTML = `[${timestamp}] User: ${userIdShort} -> ${log.Action || 'Acción desconocida'}`; // Usar log.Action
-             // --- FIN CORRECCIÓN ---
                 container.appendChild(entry);
             });
             console.log(`${logs.length} logs cargados.`);
@@ -572,7 +565,7 @@ const exerciseFilterDifficulty = document.getElementById('exerciseFilterDifficul
         }
     }
    
-    async function loadTopExercises(limit = 5) { // Carga top 5 por defecto
+    async function loadTopExercises(limit = 5) { // Carga top 5 
         const list = document.getElementById('topExercisesList');
         if (!list) return;
         list.innerHTML = '<li class="list-group-item text-muted">Cargando ejercicios populares...</li>';
@@ -748,16 +741,16 @@ const exerciseFilterDifficulty = document.getElementById('exerciseFilterDifficul
         if (!name || !category || !muscleGroup || !difficulty) {
             alert("Por favor, completa los campos obligatorios (*)."); return;
         }
-        // Payload (¡OJO! Los nombres deben coincidir con los DTOs de Go)
+      
         let payload = {
             name: name,
             category: category,
-            muscle_group: muscleGroup, // DTO usa snake_case
+            muscle_group: muscleGroup, 
             difficulty: difficulty,
             description: description || undefined,
-            media_url: mediaUrl || undefined, // DTO usa snake_case
+            media_url: mediaUrl || undefined, 
             instructions: instructions.length > 0 ? instructions : undefined,
-             // Solo en CREAR (POST) se necesita created_by_user_id
+             
              created_by_user_id: !isEditing ? currentUserId : undefined
         };
         Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]); // Limpia undefined
@@ -786,20 +779,20 @@ const exerciseFilterDifficulty = document.getElementById('exerciseFilterDifficul
             loadUserList(),
             loadExerciseList(),
             loadSystemLogs(),
-            loadTopExercises(), // <-- AÑADIR LLAMADA
+            loadTopExercises(), 
             loadTopRoutines()
         ]).catch(err => {
              // Si alguna llamada falla por 401/403, la redirección ya ocurrió.
              // Si es otro error, lo mostramos.
              if (err.message !== 'No autorizado' && err.message !== 'Prohibido'){
                  console.error("Fallo en la carga inicial de datos del admin:", err);
-                 // Podrías mostrar un error general en la página
+                
              }
         });
         console.log("Panel de Admin: Carga inicial de datos intentada.");
     }
-    // (La llamada a initializeAdminPanel está dentro del try/catch de verificación de rol)
+   
 
-}); // Fin DOMContentLoaded
+}); 
 </script>
 {{end}}

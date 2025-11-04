@@ -18,7 +18,6 @@ type RoutineExerciseUpdateRequest struct {
 	TargetWeight  *float64 `json:"target_weight,omitempty" binding:"omitempty,gte=0"`
 	TargetTimeSec *int     `json:"target_time_sec,omitempty" binding:"omitempty,gte=0"`
 	Notes         *string  `json:"notes,omitempty" binding:"omitempty,max=1000"`
-	// routine_id and exercise_id are not changed in update
 }
 
 type RoutineExerciseSearchRequest struct {

@@ -1,4 +1,3 @@
-// juanpoggi12/jgnsolutions/JGNSolutions-7c48b53190321ccfabc6877d44ae535f756457c5/backend/handlers/workout_session_handler.go
 package handlers
 
 import (
@@ -8,13 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/juanpoggi12/JGNSolutions/backend/dto"
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
-	"github.com/juanpoggi12/JGNSolutions/backend/utils" // Import utils package
+	"github.com/juanpoggi12/JGNSolutions/backend/utils"
 
-	"errors" // Import errors package
+	"errors"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo" // Import mongo package for ErrNoDocuments
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -34,7 +33,7 @@ func (h *WorkoutSessionHandler) CreateSession(c *gin.Context) {
 	userID := c.GetString("userId")
 
 	actor := services.Actor{
-		UserID: parseObjectID(userID), // Assumes parseObjectID handles errors appropriately
+		UserID: parseObjectID(userID),
 		Role:   role,
 	}
 	log.Printf("[Handler.CreateSession] Received request from actor %s (role %s)", actor.UserID.Hex(), actor.Role)
@@ -47,33 +46,24 @@ func (h *WorkoutSessionHandler) CreateSession(c *gin.Context) {
 	}
 	log.Printf("[Handler.CreateSession] Request data bound successfully.")
 
-	// Call the service create function
 	createdModel, err := h.sessionService.Create(actor, req)
 	if err != nil {
-		// Log the error from the service on the server side
 		log.Printf("[Handler.CreateSession] Error received from sessionService.Create: %v", err)
-		// Return a generic 500 error to the client to avoid leaking details
-		// Consider specific status codes for certain errors if needed (e.g., 400 for validation)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No se pudo crear la sesión de entrenamiento"})
 		return
 	}
 
-	// --- Log ID Verification ---
-	// Verify the ID in the model returned by the service *before* converting to DTO
 	if createdModel.ID.IsZero() {
-		// This should theoretically not happen if the service/repo verification works, but check again
+
 		log.Printf("[Handler.CreateSession] CRITICAL ERROR: Service returned success, but WorkoutSession model ID is Zero!")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno al generar ID de sesión"})
 		return
 	}
 	log.Printf("[Handler.CreateSession] Service call successful. Model ID received: %s", createdModel.ID.Hex())
-	// --- End Log ID Verification ---
 
-	// Convert the returned model (which includes the new ID) to the response DTO
 	responseDTO := utils.ConvertWorkoutSessionModelToResponse(createdModel)
 	log.Printf("[Handler.CreateSession] Converted model to response DTO. DTO ID: %s", responseDTO.ID)
 
-	// Send the DTO back to the client
 	log.Printf("[Handler.CreateSession] Sending StatusCreated with DTO.")
 	c.JSON(http.StatusCreated, responseDTO)
 }
@@ -211,34 +201,17 @@ func (h *WorkoutSessionHandler) SearchSessions(c *gin.Context) {
 	}
 	log.Printf("[Handler.SearchSessions] Request from actor %s (role %s)", actor.UserID.Hex(), actor.Role)
 
-	// Build filter based on query params - Example (adapt as needed)
 	filter := bson.M{}
 	if routineIDStr := c.Query("routine_id"); routineIDStr != "" {
 		if oid, err := primitive.ObjectIDFromHex(routineIDStr); err == nil {
 			filter["routineId"] = oid
 		} else {
 			log.Printf("[Handler.SearchSessions] Invalid routine_id query param: %s", routineIDStr)
-			// Optionally return bad request or ignore invalid filter
+
 		}
 	}
-	// Add other filters like date ranges, etc.
-	// Example: date filter using utils.BuildWorkoutSessionSearchFilter
-	/*
-	   searchDTO := dto.WorkoutSessionSearchRequest{
-	       RoutineID:    c.Query("routine_id"),
-	       StartedAfter: c.Query("started_after"), // Expects RFC3339
-	       StartedBefore: c.Query("started_before"),// Expects RFC3339
-	   }
-	   filter, err := utils.BuildWorkoutSessionSearchFilter(searchDTO, "") // Pass actor ID if needed by util
-	   if err != nil {
-	       c.JSON(http.StatusBadRequest, gin.H{"error": "Parámetros de fecha inválidos"})
-	       return
-	   }
-	*/
 
-	// Add pagination options if needed
 	opts := options.Find()
-	// Example: opts.SetLimit(20).SetSkip(page * 20)
 
 	log.Printf("[Handler.SearchSessions] Calling service Search with filter: %v", filter)
 	resultsModels, err := h.sessionService.Search(actor, filter, opts)
@@ -248,7 +221,6 @@ func (h *WorkoutSessionHandler) SearchSessions(c *gin.Context) {
 		return
 	}
 
-	// Convert results from model slice to DTO slice
 	resultsDTOs := make([]dto.WorkoutSessionResponse, 0, len(resultsModels))
 	for _, model := range resultsModels {
 		resultsDTOs = append(resultsDTOs, utils.ConvertWorkoutSessionModelToResponse(model))

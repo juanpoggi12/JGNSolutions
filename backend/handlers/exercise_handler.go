@@ -8,7 +8,7 @@ import (
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
 )
 
-// ExerciseHandler maneja las peticiones HTTP relacionadas con los ejercicios
+// maneja las peticiones HTTP relacionadas con los ejercicios
 type ExerciseHandler struct {
 	exerciseService *services.ExerciseService
 }

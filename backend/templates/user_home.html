@@ -1,7 +1,6 @@
 {{define "inicio_user"}}{{template "layout" .}}{{end}}
 {{define "content_inicio_user"}}
 <style>
-  /* --- (Estilos existentes sin cambios) --- */
   .pill{display:inline-flex;align-items:center;gap:6px;padding:.25rem .6rem;border-radius:999px;font-size:.75rem;font-weight:600}
   .pill-blue{background:#e6f0ff;color:#1d4ed8}
   .pill-green{background:#e8fff2;color:#047857}
@@ -27,16 +26,16 @@
   .h-28{height:28px}
   .modal-lg { max-width: 800px; }
   .modal-body { max-height: 70vh; overflow-y: auto; }
-  /* Ocultar panes inactivos por defecto */
+  
   .tab-pane:not(.active) { display: none; }
   
-  /* --- (Solución responsive del paso anterior) --- */
+ 
   .sidebar-container { min-height: auto; }
   @media (min-width: 768px) { .sidebar-container { min-height: 100vh; } }
 
-  /* === 🎨 CSS NUEVO PARA EL MODAL DE ENTRENAMIENTO === */
+ 
   #modalEntrenamientoActivo .modal-dialog {
-    max-width: 900px; /* Más ancho */
+    max-width: 900px; 
   }
 
   .workout-layout {
@@ -99,7 +98,7 @@
   .routine-select-list .list-group-item:hover {
     background-color: #f8f9fa;
   }
-  /* === FIN CSS NUEVO === */
+  
 </style>
 
 <div class="container-fluid">
@@ -484,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectCatalogoEjercicios = document.getElementById('selectCatalogoEjercicios');
     const formCrearRutina = document.getElementById('formCrearRutina');
 
-    // --- 🏃‍♂️ NUEVO: Modals de Entrenamiento ---
+    // --- Modals de Entrenamiento ---
     const modalIniciarEntrenamientoEl = document.getElementById('modalIniciarEntrenamiento');
     const modalEntrenamientoActivoEl = document.getElementById('modalEntrenamientoActivo');
     let modalIniciarEntrenamiento = modalIniciarEntrenamientoEl ? new bootstrap.Modal(modalIniciarEntrenamientoEl) : null;
@@ -509,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let __USER_ROUTINES__ = []; // Cache para las rutinas del usuario
     let __CURRENT_WORKOUT_SESSION__ = null; // { sessionId, routineId, exercises: [] }
     let __CURRENT_EXERCISE_INDEX__ = -1;
-    let __ALL_SESSIONS_CACHE__ = []; // Guardará todas las sesiones cargadas
+    let __ALL_SESSIONS_CACHE__ = []; // Guardar todas las sesiones cargadas
     let __CURRENT_HISTORY_FILTER__ = '';
     let chartFrecuencia = null;
     let chartProgresoTiempo = null;
@@ -565,9 +564,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   ...(token ? { Authorization: 'Bearer ' + token } : {}),
                   ...(opts.headers||{})
                 },
-                // IMPORTANTE: Asegúrate que 'credentials' esté configurado correctamente
-                // para enviar cookies (necesario para el refresh token HttpOnly)
-                credentials: 'same-origin' // 'include' si backend está en otro dominio/subdominio
+
+                credentials: 'same-origin' 
              });
 
             // --- Manejo específico de error 401 (Token Expirado) ---
@@ -595,7 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // No necesita body ni Auth header, usa la cookie HttpOnly
                     const refreshRes = await fetch(API_BASE + '/auth/refresh', {
                         method: 'POST',
-                        credentials: 'same-origin' // Asegúrate que envía cookies
+                        credentials: 'same-origin' 
                     });
 
                     if (!refreshRes.ok) {
@@ -652,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorMsg); // Lanza error para el catch general
             }
 
-            // --- Manejo de respuestas exitosas (sin cambios) ---
+            // --- Manejo de respuestas exitosas ---
             const contentType = res.headers.get('content-type') || '';
             if (res.status === 204 || contentType === '') {
                 return null;
@@ -672,9 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
              // Si ya se manejó la redirección, simplemente detenemos la cadena de promesas.
              return Promise.reject(error);
         } finally {
-           // Asegura que isRefreshing se resetee si algo muy raro pasa,
-           // aunque la lógica principal debería manejarlo en try/catch del refresh.
-           // isRefreshing = false; // Podría causar problemas si hay llamadas concurrentes, mejor manejarlo dentro del try/catch del refresh.
+       
         }
     }
     // ===>>> FIN HELPER FUNCTIONS <<<===
@@ -731,7 +727,7 @@ const btnLogout = document.getElementById('btnLogout');
         }
     });
     // ======= PERFIL (carga y guardado) =======
-    // (Esta sección no cambia, es la de la Pestaña Configuración)
+
     const btnGuardarPerfil = document.getElementById('btnGuardarPerfil');
     const profileFields = [
         document.getElementById('pfNombre'),
@@ -744,11 +740,11 @@ const btnLogout = document.getElementById('btnLogout');
     async function cargarPerfil(){
       console.log("Cargando perfil...");
       try{
-        // Esta API es ficticia en tu backend, usamos /api/me
+       
         const me = await api('/me'); 
         const btnAdmin = document.getElementById('btnAdminPanel');
         if (btnAdmin && me && me.role === 'admin') {
-            btnAdmin.classList.remove('d-none'); // ¡Muestra el botón!
+            btnAdmin.classList.remove('d-none');
         }
         currentUserId = me?.userId;
         if(!currentUserId) throw new Error('Cannot identify user: No userId from /me');
@@ -767,7 +763,6 @@ const btnLogout = document.getElementById('btnLogout');
         const goal = p?.goal; 
         const birthDate = p?.birthDate || '';
         const sidebarNameEl = document.getElementById('sidebarUserName'); if(sidebarNameEl) sidebarNameEl.textContent = name || 'Usuario'; // Actualiza el nombre en la sidebar
-    // --- FIN LÍNEA AÑADIDA ---
         const sidebarEmailEl=document.getElementById('sidebarUserEmail'); if(sidebarEmailEl) sidebarEmailEl.textContent=email||'—';
         const configEmailEl=document.getElementById('configUserEmail'); if(configEmailEl) configEmailEl.textContent=email||'—';
         const fNombre=document.getElementById('pfNombre'); if(fNombre) fNombre.value=name;
@@ -955,7 +950,7 @@ btnCambiarPass?.addEventListener('click', async () => {
         }
     });
 
-    // ======= 📊📈 IMPLEMENTACIÓN DASHBOARD (STATS & HISTORIAL)  =======
+    // =======  IMPLEMENTACIÓN DASHBOARD (STATS & HISTORIAL)  =======
     async function cargarGraficoProgresoTiempo(exerciseId) {
         const canvas = document.getElementById('chartProgresoTiempo');
         const mensajeEl = document.getElementById('progresoTiempoMensaje');
@@ -984,7 +979,6 @@ btnCambiarPass?.addEventListener('click', async () => {
 
         try {
             // Llama a la API GET /api/stats/user/progress?exerciseId=...
-            // Podrías añadir fechas &from= &to= si tuvieras inputs para ello
             const progressData = await api(`/stats/user/progress?exerciseId=${exerciseId}`);
 
             if (!progressData || !progressData.labels || progressData.labels.length === 0) {
@@ -997,7 +991,7 @@ btnCambiarPass?.addEventListener('click', async () => {
             mensajeEl.style.display = 'none'; // Oculta mensaje de carga
             canvas.style.display = 'block'; // Muestra canvas
 
-            // Encuentra el nombre del ejercicio (usando el caché)
+            // Encuentra el nombre del ejercicio 
             const ejercicioInfo = __CATALOGO_EJERCICIOS__.find(ex => ex.id === exerciseId);
             const exerciseName = ejercicioInfo ? ejercicioInfo.name : 'Ejercicio';
 
@@ -1010,7 +1004,7 @@ btnCambiarPass?.addEventListener('click', async () => {
                         label: `Peso Máx. (${exerciseName} - kg)`, // Leyenda
                         data: progressData.weight, // Datos de peso (eje Y)
                         borderColor: '#111827', // Color de la línea
-                        backgroundColor: 'rgba(17, 24, 39, 0.1)', // Relleno suave (opcional)
+                        backgroundColor: 'rgba(17, 24, 39, 0.1)', // Relleno suave 
                         tension: 0.1, // Curva suave
                         fill: true, // Rellenar área bajo la línea
                     }]
@@ -1079,7 +1073,7 @@ btnCambiarPass?.addEventListener('click', async () => {
                 const mejora = summaryData?.improvementPercent; // Obtiene el valor del backend
                 const valueSpan = kpiMejoraEl.querySelector('span'); // El span dentro del div
 
-                // *** Verificación añadida: Asegurarse de que el span exista ***
+               
                 if (!valueSpan) {
                     console.error("Error: No se encontró el <span> dentro de #kpiMejora. ¿Se actualizó el HTML?");
                     kpiMejoraEl.textContent = 'Error HTML'; // Mensaje de error visible
@@ -1157,9 +1151,6 @@ await cargarGraficoFrecuencia();
     /**
      * Carga el historial de sesiones de entrenamiento en la tabla
      */
-    /**
-     * Carga el historial de sesiones de entrenamiento en la tabla
-     */
     async function cargarHistorial() {
     const tbody = document.getElementById('tbHistorial');
     if (!tbody) return;
@@ -1183,10 +1174,6 @@ await cargarGraficoFrecuencia();
     }
 }
 
-/**
- * Renderiza la tabla de historial filtrando __ALL_SESSIONS_CACHE__
- * según el valor de __CURRENT_HISTORY_FILTER__.
- */
 function renderFilteredHistorial() {
     const tbody = document.getElementById('tbHistorial');
     if (!tbody) return;
@@ -1262,7 +1249,6 @@ function renderFilteredHistorial() {
     console.log(`Historial renderizado con ${filteredSessions.length} sesiones (Filtro: '${__CURRENT_HISTORY_FILTER__ || 'Todos'}').`);
 }
 
-    // Listener para botones en la tabla de historial (Ojo y Eliminar)
 // Listener para botones en la tabla de historial (Ojo y Eliminar)
     document.getElementById('tbHistorial')?.addEventListener('click', async e => {
         // --- Botón Eliminar ---
@@ -1293,10 +1279,7 @@ function renderFilteredHistorial() {
     });
 
 
-    // ======= 🏋️ IMPLEMENTACIÓN FLUJO DE ENTRENAMIENTO =======
-/**
-     * Carga una sesión existente y abre el modal de entrenamiento activo para continuarla.
-     */
+    // =======  IMPLEMENTACIÓN FLUJO DE ENTRENAMIENTO =======
     /**
  * Carga una sesión existente y abre el modal de entrenamiento activo para continuarla o verla.
  */
@@ -1338,7 +1321,6 @@ async function reanudarEntrenamiento(sessionId) {
     if(logExInput) logExInput.value = '';
     if(logSetNumInput) logSetNumInput.value = '1';
 
-    // /// ---- FIN BLOQUE DE REINICIO MEJORADO ---- ///
 
 
     let isReadOnly = false; // Inicializa como false
@@ -1398,36 +1380,33 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
         // --- FILTRO DE CONTENCIÓN ---
         if (entrySessionId !== __CURRENT_WORKOUT_SESSION__.sessionId) {
             console.warn(`[reanudar populating loop ${idx}] IGNORANDO entrada de sesión incorrecta (${entrySessionId}) - Esperada: (${__CURRENT_WORKOUT_SESSION__.sessionId})`);
-            return; // SALTA esta entrada si no pertenece a la sesión actual
+            return; 
         }
     console.log(`[reanudar populating loop ${idx}] Processing entry:`, JSON.stringify(entry));
-    // Check property names directly from the logged entry object
-    // Estas propiedades VIENEN DEL MODELO Go 'WorkoutEntry'
     const entryExerciseId = entry.exerciseId;
     const entrySetNumber = entry.setNumber;
 
     if (entryExerciseId === undefined || entrySetNumber === undefined || entryExerciseId === null || entrySetNumber === null) {
         console.warn(`[reanudar populating loop ${idx}] Skipping entry due to missing or null exerciseId (${entryExerciseId}) or setNumber (${entrySetNumber}):`, entry);
-        return; // Skip this entry if essential keys are missing/null
+        return; 
     }
     // --- END DEBUG LOGGING ---
 
     // Use the exercise ID string as the key for the logs object
-    const canonicalExerciseId = String(entryExerciseId); // Force to string to ensure consistent key type
+    const canonicalExerciseId = String(entryExerciseId); 
 
     if (!__CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId]) {
         __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId] = {};
         console.log(`[reanudar populating loop ${idx}] Initialized logs structure for exercise ${canonicalExerciseId}`);
     }
 
-    // Guarda los datos usando camelCase consistente internamente, leyendo desde el modelo Go 'WorkoutEntry'
     const logData = {
-        id: entry.id || 'temp-' + Date.now(), // Use ID from entry if available
+        id: entry.id || 'temp-' + Date.now(), 
         setNumber: entrySetNumber,
-        repsDone: entry.repsDone ?? null,       // Lee 'repsDone' (camelCase from Go model)
-        weightUsed: entry.weightUsed ?? null,   // Lee 'weightUsed' (camelCase from Go model)
-        timeSec: entry.timeSec ?? null,         // Lee 'timeSec' (camelCase from Go model)
-        perceivedEffort: entry.perceivedEffort ?? null // Lee 'perceivedEffort' (camelCase from Go model)
+        repsDone: entry.repsDone ?? null,       
+        weightUsed: entry.weightUsed ?? null,   
+        timeSec: entry.timeSec ?? null,         
+        perceivedEffort: entry.perceivedEffort ?? null 
     };
     // Almacena usando el ID canónico y el número de set como claves anidadas
     __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId][entrySetNumber] = logData;
@@ -1452,49 +1431,44 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
         }, {});
 
         // Construye la lista de ejercicios para la sesión, calculando completedSets A PARTIR DE LOS LOGS CARGADOS
-        __CURRENT_WORKOUT_SESSION__.exercises = routineExercises.map((re, index) => { // re es RoutineExerciseResponse DTO
-    // --- START VERIFICATION BLOCK ---
-    // Ensure we use the CORRECT exercise ID format consistently for lookup
-    // The routine exercise DTO uses snake_case: re.exercise_id
-    const canonicalExerciseId = re.exercise_id; // Get the ID from the routine definition
+        __CURRENT_WORKOUT_SESSION__.exercises = routineExercises.map((re, index) => { 
+    const canonicalExerciseId = re.exercise_id; 
 
-    // Perform the lookup using this canonical ID. Check existence robustly.
     const loggedSetsForThisExercise = (__CURRENT_WORKOUT_SESSION__ && __CURRENT_WORKOUT_SESSION__.logs && __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId])
                                         ? __CURRENT_WORKOUT_SESSION__.logs[canonicalExerciseId]
-                                        : {}; // Default to empty object if logs or exercise entry doesn't exist
+                                        : {}; 
 
-    // Calculate count reliably from the keys found in the looked-up object
     const completedSetsCount = Object.keys(loggedSetsForThisExercise).length;
 
-    // Log explicitly what was found for debugging
+    
     console.log(`[reanudar calculation] Exercise ID ${canonicalExerciseId}: Found logs object:`, JSON.parse(JSON.stringify(loggedSetsForThisExercise)), ` Count: ${completedSetsCount}`);
-    // --- END VERIFICATION BLOCK ---
+  
 
-    // --- Other properties ---
+    
     const targetSets = re.sets || '?';
     const targetReps = re.reps || '?';
     const targetWeight = re.target_weight ?? null;
     const exerciseMap = __CATALOGO_EJERCICIOS__.reduce((acc, ex) => {
          acc[ex.id] = ex.name; return acc;
     }, {});
-    // --- End other properties ---
+ 
 
     return {
         routineExerciseId: re.id,
-        exerciseId: canonicalExerciseId, // Store the canonical ID
+        exerciseId: canonicalExerciseId, 
         name: exerciseMap[canonicalExerciseId] || 'Ejercicio Desconocido',
         order: re.order || (index + 1),
         targetSets: targetSets,
         targetReps: targetReps,
         targetWeight: targetWeight,
-        completedSets: completedSetsCount, // <<<--- Usa el conteo calculado aquí
+        completedSets: completedSetsCount, 
         originalIndex: index
      };
 });
-// Esta
+
          console.log("[reanudar] Exercises structure loaded and completedSets calculated:", __CURRENT_WORKOUT_SESSION__.exercises);
 
-        // 5. Renderizar la UI y abrir el modal
+        //. Renderizar la UI y abrir el modal
         renderWorkoutTimeline(); // Renderiza la lista izquierda con el progreso correcto
 
         // Ajusta título y botones según si es solo lectura
@@ -1528,8 +1502,8 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
     } catch (e) {
         alert('Error al cargar detalles/reanudar entrenamiento: ' + e.message);
         console.error("[reanudar] Error detallado:", e);
-        __CURRENT_WORKOUT_SESSION__ = null; // Limpia estado si falla
-        if (modalEntrenamientoActivo) modalEntrenamientoActivo.hide(); // Cierra el modal si falla la carga
+        __CURRENT_WORKOUT_SESSION__ = null; 
+        if (modalEntrenamientoActivo) modalEntrenamientoActivo.hide(); 
     }
 }
     /**
@@ -1543,7 +1517,7 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
 
         if (__USER_ROUTINES__.length === 0) {
             console.log("No hay rutinas en cache, cargando para modal...");
-            await cargarRutinas(); // Asegura que el cache __USER_ROUTINES__ esté lleno
+            await cargarRutinas(); 
         }
 
         if (__USER_ROUTINES__.length > 0) {
@@ -1576,7 +1550,7 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
         const btn = e.target.closest('.list-group-item');
         if (!btn) return;
         
-        const routineId = btn.dataset.routineId; // Será "" para entrenamiento libre
+        const routineId = btn.dataset.routineId; 
         const routineName = btn.dataset.routineName || 'Entrenamiento Libre';
         
         if (modalIniciarEntrenamiento) modalIniciarEntrenamiento.hide();
@@ -1584,16 +1558,10 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
         await iniciarEntrenamiento(routineId, routineName);
     });
 
-    /**
-     * Inicia la sesión de entrenamiento (Crea la WorkoutSession y abre el Modal 2)
-     */
-  /**
-     * Inicia la sesión de entrenamiento (Crea la WorkoutSession y abre el Modal 2)
-     */
    async function iniciarEntrenamiento(routineId, routineName) {
     console.log(`Iniciando rutina: ${routineName} (${routineId || 'Libre'})`); // Ajuste para mostrar 'Libre' si no hay ID
 
-    // /// ---- INICIO BLOQUE DE REINICIO MEJORADO ---- ///
+   
     console.log("Reiniciando estado de sesión actual y limpiando UI...");
     __CURRENT_WORKOUT_SESSION__ = null; // Borra la sesión anterior completa
     __CURRENT_EXERCISE_INDEX__ = -1; // Resetea el índice del ejercicio
@@ -1609,7 +1577,7 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
     const logSetNumInput = document.getElementById('logSetNumber');
     const modalTitle = document.getElementById('modalEntrenamientoActivoLabel');
     const btnFinish = document.getElementById('btnFinalizarEntrenamiento');
-    // const addExSection = document.getElementById('addExerciseSection'); // Ya no existe en tu versión
+    
 
     if(modalTitle) modalTitle.textContent = 'Entrenamiento en Curso'; // Título por defecto
     if(btnFinish) btnFinish.style.display = 'block'; // Asegura que el botón finalizar sea visible
@@ -1621,22 +1589,17 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
     if(logSessionInput) logSessionInput.value = ''; // Limpia IDs ocultos
     if(logExInput) logExInput.value = '';
     if(logSetNumInput) logSetNumInput.value = '1';
-    // if(addExSection) addExSection.style.display = 'none'; // Asegura ocultar si volviera a existir
-
-    // /// ---- FIN BLOQUE DE REINICIO MEJORADO ---- ///
+    
 
 
-    // Si es entrenamiento libre (ya no soportado según tu código, pero por si acaso)
+    
     if (!routineId) {
-        alert("La función de entrenamiento libre ha sido deshabilitada. Por favor, selecciona una rutina.");
-        // Podrías decidir si quieres crear una sesión SIN routine_id aquí,
-        // pero tu código actual parece requerirlo.
-         console.warn("Intento de iniciar entrenamiento libre (no soportado).");
-         // Limpiamos UI por si acaso
+        alert("La función de entrenamiento libre ha sido deshabilitada. Por favor, selecciona una rutina.");   
+         console.warn("Intento de iniciar entrenamiento libre (no soportado).");   
          if(nameEl) nameEl.textContent = 'Selecciona Rutina';
          if(targetEl) targetEl.textContent = 'Entrenamiento libre no disponible.';
          if(timelineList) timelineList.innerHTML = '';
-        return; // Detiene la ejecución si no hay rutina
+        return; 
     }
 
 
@@ -1671,7 +1634,6 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
 
         // Prepara la lista de ejercicios para la sesión actual
         __CURRENT_WORKOUT_SESSION__.exercises = routineExercises.map((re, index) => {
-            // Asegúrate de acceder a las propiedades correctas (pueden ser snake_case o camelCase según la API)
             const exerciseId = re.exercise_id || re.exerciseId;
             const targetWeight = re.target_weight ?? re.targetWeight ?? null; // Maneja ambos casos y default a null
 
@@ -1712,14 +1674,6 @@ console.log("[reanudar] Fetched entriesData RAW:", JSON.stringify(entriesData));
          if (modalEntrenamientoActivo) modalEntrenamientoActivo.hide(); // Ocultar modal si falla
     }
 }
-
-/**
- * Llena el dropdown para añadir ejercicios en modo libre
- */
-
-
-  
-
 /**
  * Renderiza la lista de ejercicios en la sidebar izquierda del Modal 2
  */
@@ -1728,14 +1682,14 @@ function renderWorkoutTimeline() {
     if (!listEl) return;
     listEl.innerHTML = ''; // Limpia
     
-    // Asegúrate que __CURRENT_WORKOUT_SESSION__ existe
+
     if (!__CURRENT_WORKOUT_SESSION__ || !__CURRENT_WORKOUT_SESSION__.exercises) {
         listEl.innerHTML = '<div class="text-muted small">No hay ejercicios.</div>';
         return;
     }
 
     __CURRENT_WORKOUT_SESSION__.exercises.forEach((ex, index) => {
-        // Usa targetSets o un valor por defecto si no existe
+      
         const targetS = ex.targetSets || '?'; 
         const isCompleted = ex.completedSets >= targetS && targetS !== '?'; // Completo solo si sabemos el target
         const isActive = index === __CURRENT_EXERCISE_INDEX__;
@@ -1756,18 +1710,13 @@ function renderWorkoutTimeline() {
         item.appendChild(badgeSpan);
         
         item.addEventListener('click', () => {
-             // Eliminamos la restricción de isReadOnly aquí. 
-             // Permitimos el clic, y la función activarEjercicio manejará el estado Read-Only de los inputs.
+            
              activarEjercicio(index);
         });
         listEl.appendChild(item);
     });
 }
 
-
-/**
- * Activa un ejercicio en el logger (panel derecho del Modal 2)
- */
 function activarEjercicio(index) {
         console.log(`[activarEjercicio] START - Activating index: ${index}`);
 
@@ -1792,12 +1741,9 @@ function activarEjercicio(index) {
             index = -1; // No hay ejercicio para activar
         } else if (index < 0 || index >= __CURRENT_WORKOUT_SESSION__.exercises.length) {
             console.warn(`[activarEjercicio] Index ${index} out of range (0-${__CURRENT_WORKOUT_SESSION__.exercises.length - 1}). Handling edge case.`);
-             // Comportamiento anterior: seleccionaba el último. ¿Es deseado?
-             // Considera si es mejor ir al primero o mostrar un estado "finalizado".
-             // Por ahora, mantenemos ir al último si ya pasó el rango.
+            
              index = __CURRENT_WORKOUT_SESSION__.exercises.length - 1;
-             // Quizás añadir lógica para preguntar si finalizar aquí si no es readOnly?
-             // if (!__CURRENT_WORKOUT_SESSION__.isReadOnly && index >= 0) { ... }
+      
         }
 
         __CURRENT_EXERCISE_INDEX__ = index; // Actualiza el índice global DESPUÉS de validarlo
@@ -1808,7 +1754,7 @@ function activarEjercicio(index) {
             console.log("[activarEjercicio] No active exercise (index -1). Displaying empty state.");
             if(nameEl) nameEl.textContent = 'Selecciona un ejercicio';
             if(targetEl) targetEl.textContent = 'No hay ejercicios en esta rutina o sesión.';
-            // setsCont ya está limpio. formEl ya está oculto.
+           
         } else { // Caso: Hay un ejercicio activo válido
             const ex = __CURRENT_WORKOUT_SESSION__.exercises[__CURRENT_EXERCISE_INDEX__];
             const exerciseId = ex.exerciseId;
@@ -1828,7 +1774,7 @@ function activarEjercicio(index) {
                     ? `Objetivo: ${ex.targetSets} series`
                     : 'Registra tus series'; // Mensaje genérico
             if(targetEl) targetEl.textContent = targetText;
-// --- INICIO: CÓDIGO NUEVO PARA MOSTRAR DETALLES ---
+
             const detailsContainer = document.getElementById('currentExerciseDetails');
             const descriptionEl = document.getElementById('currentExerciseDescription');
             const mediaEl = document.getElementById('currentExerciseMedia');
@@ -1844,16 +1790,15 @@ function activarEjercicio(index) {
 
                 // Mostrar imagen o video (si existe URL)
                 mediaEl.innerHTML = ''; // Limpiar contenido previo
-                if (fullExerciseData.media_url) { // El DTO usa media_url
+                if (fullExerciseData.media_url) { 
                     // Detectar si es imagen o video (simple verificación por extensión)
                     const url = fullExerciseData.media_url;
                     if (/\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
                         mediaEl.innerHTML = `<img src="${url}" alt="${ex.name}" class="img-fluid rounded mb-2" style="max-height: 200px;">`;
                     } else if (/\.(mp4|webm|ogg)$/i.test(url)) {
-                        // Podríamos añadir un video, pero un link es más simple por ahora
+                       
                         mediaEl.innerHTML = `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-primary mb-2"><i class="bi bi-play-circle-fill me-1"></i> Ver Video</a>`;
-                        // O si quieres embeberlo (puede necesitar ajustes de tamaño/controles):
-                        // mediaEl.innerHTML = `<video controls muted loop playsinline src="${url}" class="img-fluid rounded mb-2" style="max-height: 200px;"></video>`;
+    
                     } else {
                         // Si no es imagen/video conocido, mostrar un link genérico
                          mediaEl.innerHTML = `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary mb-2"><i class="bi bi-link-45deg me-1"></i> Ver Media</a>`;
@@ -1870,8 +1815,7 @@ function activarEjercicio(index) {
                         instructionsEl.appendChild(li);
                     });
                 } else {
-                    // Opcional: Mostrar mensaje si no hay instrucciones
-                    // instructionsEl.innerHTML = '<li class="text-muted">No hay instrucciones específicas.</li>';
+
                 }
 
                 // Mostrar el contenedor de detalles
@@ -1884,7 +1828,7 @@ function activarEjercicio(index) {
                     console.warn(`[activarEjercicio] No se encontraron detalles completos para exerciseId ${exerciseId} en __CATALOGO_EJERCICIOS__`);
                  }
             }
-            // --- FIN: CÓDIGO NUEVO ---
+
             // Muestra el formulario (renderSetLogger decidirá si mostrar inputs o mensaje de completado)
             if(formEl) formEl.style.display = 'block';
             console.log("[activarEjercicio] Form display set to block.");
@@ -1894,19 +1838,12 @@ function activarEjercicio(index) {
             renderSetLogger();
         }
 
-        // Re-renderiza la sidebar izquierda para marcar el ejercicio activo (sin cambios)
+        // Re-renderiza la sidebar izquierda para marcar el ejercicio activo 
         console.log("[activarEjercicio] Calling renderWorkoutTimeline...");
         renderWorkoutTimeline();
         console.log("[activarEjercicio] END");
     }
-
     /**
-     * Renderiza los inputs para la serie actual
-     */
-    /**
- * Renderiza los inputs para la serie actual (o los logs si es read-only)
- */
-/**
      * Renderiza los inputs para la serie actual (o los logs si es read-only)
      */
     function renderSetLogger() {
@@ -1962,15 +1899,14 @@ function activarEjercicio(index) {
             for (const i of setNumbers) {
                 const log = logsForThisExercise[i]; // Obtiene el objeto log para el set 'i'
                 if (!log) {
-                    // Esto no debería ocurrir si setNumbers viene de Object.keys, pero es una salvaguarda
+                 
                     console.warn(`[renderSetLogger] Log data unexpectedly missing for set ${i}, skipping.`);
                     continue;
                 }
-                // Lee los datos del log usando camelCase (como se guardó en reanudarEntrenamiento)
+           
                 const reps = log.repsDone ?? '?'; // Usa '? ' si repsDone es null o undefined
                 const weight = log.weightUsed ?? null; // Usa null si weightUsed es null o undefined
-                const weightText = (weight !== null) ? `${weight} kg` : 'Solo reps'; // Formato para mostrar
-
+                const weightText = (weight !== null) ? `${weight} kg` : 'Solo reps'; 
                 // Loguea los datos que se van a renderizar para este set
                 console.log(`[renderSetLogger] Rendering logged set ${i}: Reps=${reps}, Weight=${weight}`);
 
@@ -1984,7 +1920,7 @@ function activarEjercicio(index) {
 
 
         // Decide si mostrar el formulario para registrar el SIGUIENTE set
-        // Condiciones: No estar en modo solo lectura Y (el objetivo es '?' O aún no se alcanzó el número de sets objetivo)
+
         const shouldShowNextSetInput = !isReadOnly && (targetS === '?' || ex.completedSets < targetS);
         console.log(`[renderSetLogger] Should show next set input? isReadOnly=${isReadOnly}, targetS=${targetS}, completedSets=${ex.completedSets} -> ${shouldShowNextSetInput}`);
 
@@ -2028,7 +1964,7 @@ function activarEjercicio(index) {
                   console.log("[renderSetLogger] All target sets completed. Showing completion message.");
                   container.innerHTML += '<p class="text-success mt-2">¡Todas las series completadas para este ejercicio!</p>';
              } else {
-                  // Otro caso (podría ser si targetS es '?' y se decide no mostrar más inputs)
+               
                   console.log("[renderSetLogger] Condition not met to show next set input.");
              }
              // Oculta el botón de guardar si no hay input para el siguiente set
@@ -2039,10 +1975,6 @@ function activarEjercicio(index) {
         }
         console.log("[renderSetLogger] END"); // Log fin función
     }
-
-
-    // Listener para el Formulario de Loggear Serie (Modal 2)
-   // user_home.html, encuentra y reemplaza el bloque completo formLogSet.addEventListener('submit', ...)
 
  formLogSet.addEventListener('submit', async e => {
  e.preventDefault();
@@ -2101,14 +2033,14 @@ if (!__CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey]) {
         __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey] = {};
       }
 
-// Creamos la entrada canónica (camelCase) para el caché local
+
  const canonicalEntry = {
-        id: savedEntry.id || 'temp-id-' + Date.now(), // 'id' key is consistent
+        id: savedEntry.id || 'temp-id-' + Date.now(), 
         setNumber: savedSetNumber,
-        repsDone: savedEntry.reps_done ?? null,     // Read snake_case ('reps_done'), store as camelCase ('repsDone')
-        weightUsed: savedEntry.weight_used ?? null, // Read snake_case ('weight_used'), store as camelCase ('weightUsed')
-        timeSec: savedEntry.time_sec ?? null,       // Read snake_case ('time_sec'), store as camelCase ('timeSec')
-        perceivedEffort: savedEntry.perceived_effort ?? null // Read snake_case ('perceived_effort'), store as camelCase ('perceivedEffort')
+        repsDone: savedEntry.reps_done ?? null,     
+        weightUsed: savedEntry.weight_used ?? null,
+        timeSec: savedEntry.time_sec ?? null,      
+        perceivedEffort: savedEntry.perceived_effort ?? null 
       };
 __CURRENT_WORKOUT_SESSION__.logs[exerciseIdKey][savedSetNumber] = canonicalEntry;
 
@@ -2118,10 +2050,10 @@ ex.completedSets = Math.max(ex.completedSets, Object.keys(__CURRENT_WORKOUT_SESS
  console.log(`Log local actualizado (camelCase) para set ${savedSetNumber}:`, canonicalEntry); // Log for debugging
 
  // 5. Refrescar UI
-renderSetLogger();        // Re-render the sets for the current exercise
-      renderWorkoutTimeline();  // Update the left-side exercise list (progress badges)
-      await cargarHistorial();  // Refresh the main history table
-      await cargarStats();      // Refresh the dashboard KPIs/Charts
+renderSetLogger();        
+      renderWorkoutTimeline(); 
+      await cargarHistorial();  
+      await cargarStats();      
 
  } catch (err) {
  console.error("Error guardando serie:", err);
@@ -2177,15 +2109,13 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
             modalEntrenamientoActivo.hide();
         }
         
-        // Resetea el estado local (para que no interfiera la próxima vez)
         __CURRENT_WORKOUT_SESSION__ = null;
         __CURRENT_EXERCISE_INDEX__ = -1;
 
-        // Opcional: Refresca el historial para asegurar que se vea "En Curso"
         await cargarHistorial(); 
     });
 
-    // ======= RUTINAS (Lógica Pestaña Rutinas - Sin cambios) =======
+    // ======= RUTINAS (Lógica Pestaña Rutinas) =======
     
     async function cargarRutinas(){
       const grid = document.getElementById('gridRutinas');
@@ -2290,7 +2220,7 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
        } catch (e) { console.error('Error cargando catálogo ejercicios:', e); selectCatalogoEjercicios.innerHTML = '<option value="">Error</option>'; }
     }
     
-    // (Listeners de Pestaña Rutinas: Crear, Editar, Duplicar, Eliminar, etc. SIN CAMBIOS)
+    // (Listeners de Pestaña Rutinas: Crear, Editar, Duplicar, Eliminar, etc.)
     formCrearRutina?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nameEl = document.getElementById('newRoutineName');
@@ -2392,38 +2322,7 @@ document.getElementById('btnCerrarEntrenamiento')?.addEventListener('click', asy
       };
       if (pesoObj !== null && !isNaN(pesoObj)) { payload.target_weight = pesoObj; }
       try { 
-        // Esta ruta está mal en tu main.go, debería ser /api/routines/exercises
-        // Pero tu handler `routineHandler.AddExerciseToRoutine` usa /api/routines/:id/exercises
-        // Asumiendo que tu handler está en /api/routines/:id/exercises...
-        // ¡NO! Tu handler usa `POST /api/routines/:id/exercises` pero el JS lo llama a `/api/routines/${routineId}/exercises`
-        // Esto está mal. El handler usa POST /api/routines/:id/exercises
-        // ¡Tu handler `AddExerciseToRoutine` espera un `dto.RoutineExerciseCreateRequest`!
-        // Ese DTO requiere `routine_id` en el body.
-        // Tu ruta en main.go es `apiRoutines.POST("/:id/exercises", routineHandler.AddExerciseToRoutine)`
-        // Esto significa que el `routineId` *NO* debe ir en el payload, ya que se saca del :id
-        // PERO tu handler SÍ espera el `routine_id` en el body. 
-        // Vamos a confiar en el handler `AddExerciseToRoutine` que usa el DTO.
-        
-        // Vemos el handler: `routineHandler.AddExerciseToRoutine`
-        // Vemos el service: `routineService.AddExerciseToRoutine(actor, req dto.RoutineExerciseCreateRequest)`
-        // Vemos el DTO: `RoutineExerciseCreateRequest` tiene `RoutineID`
-        // PERO el JS llama a `/api/routines/${routineId}/exercises`...
-        // Tu `main.go` tiene: `apiRoutines.POST("/:id/exercises", routineHandler.AddExerciseToRoutine)`
-        // ¡Esto es un conflicto! El handler `AddExerciseToRoutine` NO usa el `:id` de la URL,
-        // sino que espera el `routine_id` en el JSON.
-        // VOY A ASUMIR QUE EL HANDLER ESTÁ BIEN Y QUE LA RUTA DEBERÍA SER `POST /api/routines/exercises`
-        
-        // Revisando tu main.go:
-        // `apiRoutines.POST("/:id/exercises", routineHandler.AddExerciseToRoutine)` (línea 286)
-        // Esto es muy confuso. El handler `AddExerciseToRoutine` (línea 139 de handler)
-        // usa `req dto.RoutineExerciseCreateRequest` que TIENE `RoutineID`.
-        
-        // Ok, tu JS actual (de `user_home.html` que me diste) llama a:
-        // `await api(`/routines/${routineId}/exercises`, ...`
-        // Y el `main.go` tiene `apiRoutines.POST("/:id/exercises", routineHandler.AddExerciseToRoutine)`
-        
-        // VOY A SEGUIR TU LÓGICA EXISTENTE, pero es propensa a errores.
-        // El `routineId` de la URL (el `:id`) no se usa, pero el `routine_id` del payload SÍ.
+       
         await api(`/routines/${routineId}/exercises`, { 
           method: 'POST', 
           body: JSON.stringify(payload) 
@@ -2459,14 +2358,12 @@ async function cargarGraficoFrecuencia() {
 
             if (!freqData || !freqData.buckets || freqData.buckets.length === 0) {
                 console.log("No frequency data available to display.");
-                // Opcional: Mostrar un mensaje en lugar del gráfico
-                // ctx.fillText("No hay datos de frecuencia.", 10, 50);
+ 
                 return;
             }
 
-            // Prepara los datos para Chart.js
-            const labels = freqData.buckets.map(b => b.label); // Etiquetas (ej: "Sem 42 (16 Oct)")
-            const dataCounts = freqData.buckets.map(b => b.count); // Valores (número de sesiones)
+            const labels = freqData.buckets.map(b => b.label); 
+            const dataCounts = freqData.buckets.map(b => b.count); 
 
             // Crea el gráfico de barras
             chartFrecuencia = new Chart(ctx, {
@@ -2521,8 +2418,7 @@ async function cargarGraficoFrecuencia() {
 
         } catch (error) {
             console.error("Error al cargar gráfico de frecuencia:", error.message);
-            // Opcional: Mostrar mensaje de error en el canvas
-            // ctx.fillText("Error al cargar el gráfico.", 10, 50);
+ 
         }
     }
     // ======= Init =======
@@ -2532,15 +2428,15 @@ async function cargarGraficoFrecuencia() {
             await cargarPerfil(); 
             await cargarCatalogoEjercicios();
 
-            // /// CÓDIGO NUEVO para poblar y escuchar el dropdown de progreso ///
+        
            const selectProgreso = document.getElementById('selectProgresoEjercicio');
-            // >> AÑADE ESTA LÍNEA <<
+   
             const searchProgresoInput = document.getElementById('buscarProgresoEjercicio');
 
-            if (selectProgreso && searchProgresoInput) { // << MODIFICA ESTA LÍNEA para incluir searchProgresoInput
-                // Limpia opciones previas (excepto la primera "Selecciona...")
+            if (selectProgreso && searchProgresoInput) { 
+               
                 selectProgreso.length = 1;
-                // Llena con ejercicios del catálogo cacheado
+           
                 (__CATALOGO_EJERCICIOS__ || []).forEach(ex => {
                     const option = document.createElement('option');
                     option.value = ex.id;
@@ -2548,19 +2444,19 @@ async function cargarGraficoFrecuencia() {
                     selectProgreso.appendChild(option);
                 });
 
-                // Añade listener para cuando cambie la selección
+      
                 selectProgreso.addEventListener('change', (event) => {
                     const selectedExerciseId = event.target.value;
-                    cargarGraficoProgresoTiempo(selectedExerciseId); // Llama a la función del gráfico
+                    cargarGraficoProgresoTiempo(selectedExerciseId); 
                 });
 
-                // >> AÑADE ESTE BLOQUE para el input de búsqueda <<
+               
                 searchProgresoInput.addEventListener('input', () => {
                     const searchTerm = searchProgresoInput.value.toLowerCase();
                     const options = selectProgreso.options;
                     let firstVisibleOptionValue = ""; // Para seleccionar la primera opción visible
 
-                    for (let i = 1; i < options.length; i++) { // Empezar en 1 para saltar "Selecciona..."
+                    for (let i = 1; i < options.length; i++) { 
                         const optionText = options[i].textContent.toLowerCase();
                         const isVisible = optionText.includes(searchTerm);
                         options[i].style.display = isVisible ? '' : 'none';
@@ -2571,11 +2467,8 @@ async function cargarGraficoFrecuencia() {
                         }
                     }
 
-                    // Opcional: Si hay búsqueda, selecciona la primera opción visible
-                    // y actualiza el gráfico, o vuelve a "Selecciona..." si no hay coincidencias.
                     if (searchTerm && firstVisibleOptionValue) {
-                       // selectProgreso.value = firstVisibleOptionValue; // Descomenta si quieres que seleccione automáticamente
-                       // cargarGraficoProgresoTiempo(firstVisibleOptionValue); // Descomenta si quieres que actualice el gráfico
+ 
                     } else if (!searchTerm) {
                        // Si se borra la búsqueda, vuelve a "Selecciona..."
                        selectProgreso.value = "";
@@ -2586,10 +2479,8 @@ async function cargarGraficoFrecuencia() {
                        cargarGraficoProgresoTiempo(""); // Limpia el gráfico
                     }
                 });
-                // >> FIN DEL BLOQUE AÑADIDO <<
 
-
-                // Opcional: Carga inicial del gráfico (puedes dejarlo vacío o cargar el primero)
+          
                  cargarGraficoProgresoTiempo(null); // Inicia sin ejercicio seleccionado
 
             } else {
@@ -2599,17 +2490,15 @@ async function cargarGraficoFrecuencia() {
             if (!currentUserId) { throw new Error("Fallo al obtener ID de usuario."); } 
 
           
-            // 1. Cargar las rutinas PRIMERO, porque el historial DEPENDE de ellas.
             console.log("Cargando rutinas (dependencia del historial)...");
             await cargarRutinas(); // Llena __USER_ROUTINES__
             console.log("Dependencia de rutinas cargada.");
 
-            // 2. Ahora, cargar el resto en paralelo.
-            //    El historial ya puede usar el caché __USER_ROUTINES__ de forma segura.
+        
             await Promise.all([
-                cargarStats(), // 🚀 Carga KPIs y Gráficos
-                cargarHistorial(), // 🚀 Carga la tabla de sesiones
-                // cargarCatalogoEjercicios() ya se llamó antes para el dropdown de progreso
+                cargarStats(), //  Carga KPIs y Gráficos
+                cargarHistorial(), //  Carga la tabla de sesiones
+               
             ]);
           
 
@@ -2625,26 +2514,23 @@ async function cargarGraficoFrecuencia() {
             if(mainContent) { mainContent.innerHTML = `<div class="alert alert-danger m-4">Error cargando datos: ${error.message}. Por favor, <a href="/login">inicia sesión</a> de nuevo.</div>`; }
         }
     }
-// CAMBIA ESTA LÍNEA para usar getElementById con el nuevo ID
+
 const historyFilterContainer = document.getElementById('historyFilterButtons');
 if (historyFilterContainer) {
     historyFilterContainer.addEventListener('click', (e) => {
         const clickedButton = e.target.closest('.chip[data-estado]');
-        if (!clickedButton) return; // Si no se hizo clic en un botón de filtro
+        if (!clickedButton) return; 
 
-        // Obtener el nuevo estado del filtro
+       
         const newFilterState = clickedButton.dataset.estado;
 
-        // Actualizar estado global
         __CURRENT_HISTORY_FILTER__ = newFilterState;
 
-        // Actualizar clases 'active' en los botones
         historyFilterContainer.querySelectorAll('.chip[data-estado]').forEach(btn => {
-            btn.classList.remove('active');
+           btn.classList.remove('active');
         });
         clickedButton.classList.add('active');
 
-        // Volver a renderizar la tabla con el nuevo filtro
         console.log(`Filter changed to: '${__CURRENT_HISTORY_FILTER__}'. Re-rendering history.`); // Log para confirmar
         renderFilteredHistorial();
     });

@@ -24,6 +24,5 @@ func (s *LogService) RecordAction(userID primitive.ObjectID, action string) {
 		Timestamp: time.Now(),
 	}
 
-	// Ignoramos el error porque el logging no debe interrumpir la ejecución principal
 	_, _ = s.repository.InsertLog(log)
 }

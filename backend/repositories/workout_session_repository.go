@@ -1,4 +1,3 @@
-// juanpoggi12/jgnsolutions/JGNSolutions-7c48b53190321ccfabc6877d44ae535f756457c5/backend/repositories/workout_session_repository.go
 package repositories
 
 import (
@@ -37,30 +36,28 @@ func NewWorkoutSessionRepository(db *mongo.Database) *WorkoutSessionRepository {
 
 // Crear una sesión
 func (r *WorkoutSessionRepository) Create(session *models.WorkoutSession) error {
-	// Ensure CreatedAt and UpdatedAt are set if zero
+
 	if session.CreatedAt.IsZero() {
 		session.CreatedAt = time.Now()
 	}
 	if session.UpdatedAt.IsZero() {
 		session.UpdatedAt = time.Now()
 	}
-	// Explicitly set a new ObjectID if the session doesn't have one
-	// This helps prevent accidental updates if an existing object is passed
+
 	if session.ID.IsZero() {
 		session.ID = primitive.NewObjectID()
 		log.Printf("[Repo.Create] Generated new ObjectID for session: %s", session.ID.Hex())
 	} else {
-		// If an ID already exists, log a warning - this function should ideally receive a new object
+
 		log.Printf("[Repo.Create] WARNING: Session object passed to Create already has an ID: %s. Attempting InsertOne anyway.", session.ID.Hex())
-		// Consider returning an error here if Create should *only* insert new documents
-		// return errors.New("cannot create session: object already has an ID")
+
 	}
 
 	log.Printf("[Repo.Create] Attempting InsertOne for session with tentative ID: %s", session.ID.Hex())
-	res, err := r.collection.InsertOne(context.TODO(), session) // Pass the session object directly
+	res, err := r.collection.InsertOne(context.TODO(), session)
 	if err != nil {
 		log.Printf("[Repo.Create] Error during InsertOne: %v", err)
-		// Check for duplicate key error specifically (if you added a unique index)
+
 		if mongo.IsDuplicateKeyError(err) {
 			log.Printf("[Repo.Create] Duplicate key error. Session ID %s might already exist.", session.ID.Hex())
 			return fmt.Errorf("error al insertar sesión: ID duplicado (%s)", session.ID.Hex())
@@ -68,24 +65,21 @@ func (r *WorkoutSessionRepository) Create(session *models.WorkoutSession) error 
 		return fmt.Errorf("error al insertar la sesión en la base de datos: %w", err)
 	}
 
-	// Double-check the returned InsertedID matches the ID we tried to insert
 	returnedOID, ok := res.InsertedID.(primitive.ObjectID)
 	if !ok {
 		log.Printf("[Repo.Create] InsertOne succeeded but InsertedID is not an ObjectID (%T): %v. Session object ID remains %s.", res.InsertedID, res.InsertedID, session.ID.Hex())
-		// Stick with the ID assigned *before* InsertOne: session.ID
+
 	} else if returnedOID != session.ID {
 		log.Printf("[Repo.Create] WARNING: InsertOne returned ObjectID %s which DIFFERS from the pre-generated ID %s. Using the pre-generated ID.", returnedOID.Hex(), session.ID.Hex())
-		// Stick with the ID assigned *before* InsertOne: session.ID
+
 	} else {
 		log.Printf("[Repo.Create] InsertOne successful. Returned InsertedID %s matches pre-generated ID %s.", returnedOID.Hex(), session.ID.Hex())
 	}
 
-	// Log the final ID value *in the session object* before returning
 	log.Printf("[Repo.Create] Session object ID before returning: %s", session.ID.Hex())
-	return nil // Success
+	return nil
 }
 
-// Buscar por ID
 func (r *WorkoutSessionRepository) FindByID(id primitive.ObjectID) (*models.WorkoutSession, error) {
 	var session models.WorkoutSession
 	if err := r.collection.FindOne(context.TODO(), bson.M{"_id": id}).Decode(&session); err != nil {
@@ -102,7 +96,6 @@ func (r *WorkoutSessionRepository) FindByID(id primitive.ObjectID) (*models.Work
 func (r *WorkoutSessionRepository) FindByUser(userID primitive.ObjectID) ([]models.WorkoutSession, error) {
 	var sessions []models.WorkoutSession
 
-	// Añadir ordenación por defecto, por ejemplo, más recientes primero
 	opts := options.Find().SetSort(bson.D{{Key: "startTime", Value: -1}})
 
 	cursor, err := r.collection.Find(context.TODO(), bson.M{"userId": userID}, opts)
@@ -122,10 +115,8 @@ func (r *WorkoutSessionRepository) FindByUser(userID primitive.ObjectID) ([]mode
 
 // Actualizar una sesión
 func (r *WorkoutSessionRepository) Update(session *models.WorkoutSession) error {
-	// Asegura que UpdatedAt se actualice
 	session.UpdatedAt = time.Now()
-	// Usa UpdateOne con $set para actualizar solo los campos necesarios
-	// Asume que 'session' tiene los campos actualizados
+
 	update := bson.M{"$set": session}
 	log.Printf("[Repo.Update] Attempting UpdateOne for session ID: %s", session.ID.Hex())
 	res, err := r.collection.UpdateOne(context.TODO(), bson.M{"_id": session.ID}, update)
@@ -135,7 +126,7 @@ func (r *WorkoutSessionRepository) Update(session *models.WorkoutSession) error 
 	}
 	if res.MatchedCount == 0 {
 		log.Printf("[Repo.Update] No session found with ID %s to update.", session.ID.Hex())
-		return mongo.ErrNoDocuments // O un error personalizado
+		return mongo.ErrNoDocuments
 	}
 	log.Printf("[Repo.Update] Successfully updated session %s (Matched: %d, Modified: %d)", session.ID.Hex(), res.MatchedCount, res.ModifiedCount)
 	return nil

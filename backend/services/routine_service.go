@@ -106,14 +106,13 @@ func (service *RoutineService) DeleteRoutine(actor Actor, id string) error {
 func (service *RoutineService) SearchRoutines(actor Actor, search dto.RoutineSearchRequest) ([]dto.RoutineResponse, error) {
 	var userID string
 
-	// Un usuario solo puede ver sus propias rutinas
 	if actor.Role != "admin" {
 		userID = actor.UserID.Hex()
 	}
 
 	rutinas, err := service.routineRepository.SearchRoutines(
 		search.Name,
-		userID, // usamos el userID derivado del actor, no del DTO
+		userID,
 		search.IsTemplate,
 		search.IncludeDel,
 	)
@@ -156,7 +155,6 @@ func (service *RoutineService) AddExerciseToRoutine(actor Actor, req dto.Routine
 	if oid, ok := resultado.InsertedID.(primitive.ObjectID); ok {
 		rutinaEjercicio.ID = oid
 
-		// Log de agregado exitoso
 		if service.logService != nil {
 			service.logService.RecordAction(actor.UserID, "rutina_ejercicio:agregado "+rutinaEjercicio.RoutineID.Hex())
 		}
@@ -189,7 +187,6 @@ func (service *RoutineService) UpdateRoutineExercise(actor Actor, id string, req
 		return dto.RoutineExerciseResponse{}, err
 	}
 
-	// Log de modificación exitosa
 	if service.logService != nil {
 		service.logService.RecordAction(actor.UserID, "rutina_ejercicio:modificado "+rutinaEjercicio.ID.Hex())
 	}
@@ -225,7 +222,6 @@ func (service *RoutineService) DeleteRoutineExercise(actor Actor, id string) err
 		return mongo.ErrNoDocuments
 	}
 
-	// Log de eliminación exitosa
 	if service.logService != nil {
 		service.logService.RecordAction(actor.UserID, "rutina_ejercicio:eliminado "+id)
 	}
@@ -262,7 +258,6 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 		return dto.RoutineResponse{}, err
 	}
 
-	// Solo admin o el dueño puede duplicar la rutina
 	if actor.Role != "admin" && original.UserID != actor.UserID {
 		return dto.RoutineResponse{}, errors.New("no tienes permiso para duplicar esta rutina")
 	}
@@ -307,7 +302,6 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 		}
 	}
 
-	// Log de duplicación exitosa
 	if service.logService != nil {
 		service.logService.RecordAction(actor.UserID, "rutina:duplicada "+nuevaRutina.Name)
 	}
@@ -315,7 +309,6 @@ func (service *RoutineService) DuplicateRoutine(actor Actor, routineID string, n
 	return utils.ConvertRoutineModelToResponse(nuevaRutina), nil
 }
 
-// --- Funciones privadas (no cambian) ---
 func (service *RoutineService) cargarRutinaActiva(id string) (models.Routine, error) {
 	rutina, err := service.routineRepository.GetRoutineByID(id)
 	if err != nil {

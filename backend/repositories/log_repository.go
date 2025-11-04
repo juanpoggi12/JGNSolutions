@@ -27,7 +27,6 @@ func (repository LogRepository) collection() *mongo.Collection {
 	return repository.db.Collection("logs")
 }
 
-// InsertarLog → Guarda un nuevo registro en la colección de logs
 func (repository LogRepository) InsertLog(log models.Log) (*mongo.InsertOneResult, error) {
 	collection := repository.collection()
 
@@ -39,7 +38,6 @@ func (repository LogRepository) InsertLog(log models.Log) (*mongo.InsertOneResul
 	return resultado, err
 }
 
-// ListLogs -> Returns all logs ordered by timestamp desc
 func (repository LogRepository) ListLogs() ([]models.Log, error) {
 	collection := repository.collection()
 

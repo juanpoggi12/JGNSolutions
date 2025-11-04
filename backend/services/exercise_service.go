@@ -35,7 +35,7 @@ func NewExerciseService(repository repositories.ExerciseRepositoryInterface, log
 }
 
 func (service *ExerciseService) CreateExercise(actor Actor, req dto.ExerciseCreateRequest) (dto.ExerciseResponse, error) {
-	// Defensa adicional: solo admin puede crear ejercicios
+
 	if actor.Role != "admin" {
 		return dto.ExerciseResponse{}, errors.New("solo los administradores pueden crear ejercicios")
 	}
@@ -45,7 +45,6 @@ func (service *ExerciseService) CreateExercise(actor Actor, req dto.ExerciseCrea
 		return dto.ExerciseResponse{}, err
 	}
 
-	// Asignar auditoría
 	exercise.CreatedBy = actor.UserID
 	exercise.CreatedAt = time.Now()
 	exercise.UpdatedAt = time.Now()
@@ -81,7 +80,7 @@ func (service *ExerciseService) GetExerciseByID(actor Actor, id string) (dto.Exe
 }
 
 func (service *ExerciseService) UpdateExercise(actor Actor, id string, req dto.ExerciseUpdateRequest) (dto.ExerciseResponse, error) {
-	// Defensa adicional: solo admin puede modificar ejercicios
+
 	if actor.Role != "admin" {
 		return dto.ExerciseResponse{}, errors.New("solo los administradores pueden modificar ejercicios")
 	}
@@ -110,7 +109,7 @@ func (service *ExerciseService) UpdateExercise(actor Actor, id string, req dto.E
 }
 
 func (service *ExerciseService) DeleteExercise(actor Actor, id string) error {
-	// Defensa adicional: solo admin puede eliminar ejercicios
+
 	if actor.Role != "admin" {
 		return errors.New("solo los administradores pueden eliminar ejercicios")
 	}

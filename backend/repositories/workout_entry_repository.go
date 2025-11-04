@@ -10,13 +10,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// 🧩 Interfaz del repositorio (contrato que usa el service)
+// Interfaz del repositorio (contrato que usa el service)
 type WorkoutEntryRepositoryInterface interface {
 	Create(entry *models.WorkoutEntry) error
 	Search(filter bson.M, opts ...*options.FindOptions) ([]models.WorkoutEntry, error)
 }
 
-// 🧩 Implementación concreta (usa MongoDB)
+// Implementación concreta (usa MongoDB)
 type WorkoutEntryRepository struct {
 	collection *mongo.Collection
 }

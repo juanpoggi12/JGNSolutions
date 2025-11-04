@@ -12,13 +12,13 @@ type UserProfileUpdateRequest struct {
 type UserProfileResponse struct {
 	ID        string  `json:"id"`
 	FullName  string  `json:"full_name"`
-	BirthDate string  `json:"birth_date"` // yyyy-mm-dd in mapper
+	BirthDate string  `json:"birth_date"`
 	WeightKg  float64 `json:"weight_kg"`
 	HeightCm  int     `json:"height_cm"`
 	Level     string  `json:"level"`
 	Goal      string  `json:"goal"`
-	CreatedAt string  `json:"created_at"` // 👈 nuevo campo (RFC3339)
-	UpdatedAt string  `json:"updated_at"` // RFC3339
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
 }
 
 type UserProfileListResponse struct {

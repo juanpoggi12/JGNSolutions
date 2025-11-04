@@ -46,13 +46,11 @@ func (h *AuthHandler) ResetPassword(c *gin.Context) {
 
 	err := h.service.ResetPassword(c.Request.Context(), req)
 	if err != nil {
-		// El servicio devuelve un error genérico si el email no existe,
-		// así evitamos dar pistas a atacantes.
+
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Éxito - No devolvemos contenido, solo status OK.
 	c.Status(http.StatusOK)
 }
 

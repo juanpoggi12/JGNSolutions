@@ -9,7 +9,7 @@ import (
 	"github.com/juanpoggi12/JGNSolutions/backend/services"
 )
 
-// AdminHandler maneja las rutas de estadísticas y administración
+// maneja las rutas de estadísticas y administración
 type AdminHandler struct {
 	adminService *services.AdminService
 }
@@ -19,11 +19,6 @@ func NewAdminHandler(adminService *services.AdminService) *AdminHandler {
 	return &AdminHandler{adminService: adminService}
 }
 
-// GET /api/admin/routines/count → Total de rutinas
-
-// GET /api/admin/workouts/count → Total de sesiones de entrenamiento
-
-// GET /api/admin/users → Lista básica de usuarios (solo admin)
 func (h *AdminHandler) ListUsers(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
@@ -42,7 +37,6 @@ func (h *AdminHandler) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
-// GET /api/admin/exercises/top?limit=5 → Ejercicios más usados
 func (h *AdminHandler) TopExercises(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
@@ -62,7 +56,6 @@ func (h *AdminHandler) TopExercises(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
-// GET /api/admin/routines/top?limit=5 → Rutinas más usadas
 func (h *AdminHandler) TopRoutines(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")
@@ -82,7 +75,7 @@ func (h *AdminHandler) TopRoutines(c *gin.Context) {
 	c.JSON(http.StatusOK, stats)
 }
 
-// --- 📜 LISTAR LOGS DEL SISTEMA (solo admin) ---
+// ---  LISTAR LOGS DEL SISTEMA (solo admin) ---
 func (h *AdminHandler) ListLogs(c *gin.Context) {
 	role := c.GetString("role")
 	userID := c.GetString("userId")

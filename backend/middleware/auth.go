@@ -17,7 +17,6 @@ func AuthMiddleware(cfg utils.Config) gin.HandlerFunc {
 			return
 		}
 
-		// ✅ Usamos SplitN o Fields para tolerar espacios extra
 		parts := strings.Fields(authHeader)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "formato de token inválido"})
@@ -34,11 +33,9 @@ func AuthMiddleware(cfg utils.Config) gin.HandlerFunc {
 			return
 		}
 
-		// Guardar en el contexto (acceso global para handlers y services)
 		c.Set("userId", claims.Subject)
 		c.Set("role", claims.Role)
 
 		c.Next()
 	}
 }
-

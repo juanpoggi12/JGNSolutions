@@ -49,7 +49,6 @@ func (h *WorkoutEntryHandler) CreateEntry(c *gin.Context) {
 
 }
 
-// PUT /api/workout-entries/:id → actualizar una entrada
 // GET /api/workout-entries/search → buscar entradas
 func (h *WorkoutEntryHandler) SearchEntries(c *gin.Context) {
 	role := c.GetString("role")

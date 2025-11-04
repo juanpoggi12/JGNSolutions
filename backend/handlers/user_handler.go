@@ -18,8 +18,6 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
-// POST /api/users → Crear usuario (solo admin)
-
 // GET /api/users/:id → Obtener usuario (admin o el mismo usuario)
 func (h *UserHandler) GetUserByID(c *gin.Context) {
 	role := c.GetString("role")
@@ -38,8 +36,6 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, user)
 }
-
-// PUT /api/users/:id → Actualizar usuario (admin o el mismo usuario)
 
 // DELETE /api/users/:id → Eliminar usuario (solo admin)
 func (h *UserHandler) DeleteUser(c *gin.Context) {

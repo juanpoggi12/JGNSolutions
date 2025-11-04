@@ -29,7 +29,6 @@ func (repository UserProfileRepository) collection() *mongo.Collection {
 	return repository.db.Collection("user_profiles")
 }
 
-// Create inserts a new user profile (used by AuthService to create default profiles)
 func (repository *UserProfileRepository) Create(ctx context.Context, profile *models.UserProfile) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -47,8 +46,6 @@ func (repository *UserProfileRepository) Create(ctx context.Context, profile *mo
 	}
 	return nil
 }
-
-// --- Métodos para usuarios ---
 
 func (repository UserProfileRepository) GetProfileByUserID(userID primitive.ObjectID) (models.UserProfile, error) {
 	collection := repository.collection()

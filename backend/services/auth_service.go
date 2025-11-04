@@ -36,7 +36,7 @@ type userProfileRepository interface {
 type AuthService struct {
 	users      userAuthRepository
 	sessions   sessionAuthRepository
-	profiles   userProfileRepository // 👈 NUEVO campo
+	profiles   userProfileRepository
 	logService *LogService
 	cfg        utils.Config
 }
@@ -45,7 +45,7 @@ func NewAuthService(users userAuthRepository, sessions sessionAuthRepository, pr
 	return &AuthService{
 		users:      users,
 		sessions:   sessions,
-		profiles:   profiles, // 👈 agregado
+		profiles:   profiles,
 		logService: logService,
 		cfg:        cfg,
 	}
@@ -59,7 +59,7 @@ var (
 )
 
 func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
-	// 1) Validaciones básicas
+
 	exists, err := s.users.ExistsByEmail(ctx, req.Email)
 	if err != nil {
 		return err
@@ -67,8 +67,6 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 	if exists {
 		return ErrEmailExists
 	}
-
-	// 2) Hash de contraseña
 	hashed, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return err
@@ -77,7 +75,7 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 	now := time.Now()
 	user := models.User{
 		Email:        req.Email,
-		Username:     req.Email, // Puedes cambiar esto a req.Name si prefieres
+		Username:     req.Email,
 		PasswordHash: hashed,
 		Role:         models.RoleUser,
 		CreatedAt:    now,
@@ -85,23 +83,20 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 		IsActive:     true,
 	}
 
-	// 3) Guardar usuario en base de datos
 	if err := s.users.Create(ctx, &user); err != nil {
 		return err
 	}
 
-	// 4) Crear perfil por defecto (opcional)
 	if s.profiles != nil {
 		profile := models.UserProfile{
 			UserID:    user.ID,
-			FullName:  req.Name,                  // <-- CAMBIO: Usar el nombre del DTO
-			Goal:      models.ObjetivoMantenerse, // <-- CAMBIO: Usar constante del modelo
-			Level:     models.NivelPrincipiante,  // <-- CAMBIO: Usar constante del modelo
+			FullName:  req.Name,
+			Goal:      models.ObjetivoMantenerse,
+			Level:     models.NivelPrincipiante,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}
 
-		// No interrumpe el registro si falla la creación del perfil
 		_ = s.profiles.Create(ctx, &profile)
 	}
 
@@ -109,44 +104,31 @@ func (s *AuthService) Register(ctx context.Context, req dto.RegisterReq) error {
 }
 
 func (s *AuthService) ResetPassword(ctx context.Context, req dto.ResetPasswordRequest) error {
-	// 1. Buscar usuario por email
+
 	user, err := s.users.FindByEmail(ctx, req.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			// Es importante no revelar si el email existe o no por seguridad.
-			// Podrías retornar un error genérico o simplemente no hacer nada y retornar nil.
-			// Por simplicidad, retornaremos un error indicando que no se pudo procesar.
+
 			return errors.New("no se pudo procesar la solicitud para este email")
 		}
-		// Otro error de base de datos
+
 		return err
 	}
-
-	// (Opcional: Podrías añadir validaciones extra, como verificar si el usuario está activo)
-	// if !user.IsActive {
-	// 	 return errors.New("usuario inactivo")
-	// }
-
-	// 2. Hashear la nueva contraseña
 	hashedPassword, err := utils.HashPassword(req.NewPassword)
 	if err != nil {
 		return errors.New("error al procesar la nueva contraseña")
 	}
 
-	// 3. Actualizar la contraseña en la base de datos usando el ID del usuario encontrado
 	_, err = s.users.UpdatePassword(user.ID, hashedPassword)
 	if err != nil {
 		return errors.New("error al actualizar la contraseña en la base de datos")
 	}
 
-	// 4. (Opcional) Registrar log
 	if s.logService != nil {
 		s.logService.RecordAction(user.ID, "password_reset")
 	}
 
-	// (Opcional avanzado: Podrías invalidar sesiones activas para este usuario aquí)
-
-	return nil // Éxito
+	return nil
 }
 
 func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip string) (string, int64, func(http.ResponseWriter), error) {
@@ -158,24 +140,20 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip
 		return "", 0, nil, err
 	}
 
-	// 🔹 Verificar si el usuario está activo antes de cualquier otra cosa
 	if !user.IsActive {
 		return "", 0, nil, errors.New("usuario inactivo o bloqueado")
 	}
 
-	// 🔹 Validar contraseña
 	if !utils.VerifyPassword(req.Password, user.PasswordHash) {
 		return "", 0, nil, ErrInvalidCredentials
 	}
 
-	// 🔹 Generar access token
 	accessTTL := time.Duration(s.cfg.AccessTTLMinutes) * time.Minute
 	accessToken, err := utils.GenerateAccessToken(user.ID.Hex(), string(user.Role), s.cfg.JWTSecret, accessTTL)
 	if err != nil {
 		return "", 0, nil, err
 	}
 
-	// 🔹 Generar refresh token (par hash + cookie)
 	plainRefresh, refreshHash, err := utils.GenerateRefreshToken()
 	if err != nil {
 		return "", 0, nil, err
@@ -195,12 +173,10 @@ func (s *AuthService) Login(ctx context.Context, req dto.LoginReq, userAgent, ip
 		return "", 0, nil, err
 	}
 
-	// 🔹 Registrar acción si hay servicio de logs
 	if s.logService != nil {
 		s.logService.RecordAction(user.ID, "login")
 	}
 
-	// 🔹 Crear cookie de refresh segura
 	setCookie := func(w http.ResponseWriter) {
 		http.SetCookie(w, buildRefreshCookie(plainRefresh, session.ExpiresAt, s.cfg.CookieSecure))
 	}
